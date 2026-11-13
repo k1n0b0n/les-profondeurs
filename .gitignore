@@ -1,0 +1,8 @@
+# Outils d'agent
+.claude/
+.serena/
+node_modules/
+
+# OS / éditeurs
+.DS_Store
+*.swp
