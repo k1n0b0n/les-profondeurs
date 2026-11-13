@@ -405,6 +405,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
       <div id="side">
         <canvas id="minimap" aria-label="Carte de l'étage"></canvas>
         <div class="side-btns">
+          <button class="icon-btn" id="music" aria-label="Couper la musique" aria-pressed="true">
+            <svg id="ico-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <svg id="ico-music-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="m3 3 18 18"/></svg>
+          </button>
           <button class="icon-btn" id="mute" aria-label="Couper le son">
             <svg id="ico-sound" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
             <svg id="ico-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>
@@ -563,6 +567,7 @@ const METERS_PER_FLOOR = 12;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 const MUTE_KEY = 'profondeurs.muted';
+const MUSIC_KEY = 'profondeurs.music';
 const LAYOUT_KEY = 'profondeurs.layout';
 const KEYMAPS = {
   droitier: {
@@ -2530,6 +2535,157 @@ const sfx = {
   icicle: () => { if (!throttled('icicle', 0.05)) return; hiss(0.2, 5200, 0.1); tone(2100, 0.15, { type: 'triangle', vol: 0.05, slide: 0.5 }); },
   sizzle: () => { if (!throttled('sizzle', 0.3)) return; hiss(0.35, 2600, 0.07); },
 };
+
+// ---------- Musique
+const SONG = [
+  ['Am', [76, 4], [69, 2], [71, 2], [72, 4], [71, 2], [69, 2]],
+  ['F', [69, 6], [67, 2], [65, 4], [69, 4]],
+  ['C', [67, 4], [72, 2], [74, 2], [76, 4], [74, 2], [72, 2]],
+  ['G', [74, 8], [71, 4], [67, 4]],
+  ['Am', [76, 4], [81, 4], [79, 2], [76, 2], [72, 4]],
+  ['F', [77, 4], [76, 2], [74, 2], [72, 4], [69, 4]],
+  ['C', [76, 4], [79, 4], [72, 4], [76, 4]],
+  ['E', [74, 4], [71, 4], [68, 4], [71, 4]],
+  ['Dm', [77, 6], [76, 2], [74, 4], [69, 4]],
+  ['Am', [72, 6], [71, 2], [69, 4], [64, 4]],
+  ['E', [68, 4], [71, 4], [76, 4], [74, 2], [71, 2]],
+  ['Am', [72, 4], [69, 4], [64, 4], [69, 4]],
+  ['Dm', [74, 4], [77, 4], [81, 4], [77, 4]],
+  ['Am', [76, 4], [72, 4], [69, 8]],
+  ['F', [77, 4], [76, 4], [74, 4], [72, 4]],
+  ['E', [71, 8], [68, 4], [64, 4]],
+].map(([chord, ...lead]) => {
+  const notes = new Map();
+  let at = 0;
+  for (const [midi, len] of lead) {
+    notes.set(at, [midi, len]);
+    at += len;
+  }
+  return { chord, notes };
+});
+const CHORDS = { Am: [45, 3], F: [41, 4], C: [48, 4], G: [43, 4], E: [40, 4], Dm: [38, 3] };
+const BIOME_KEY = { crypte: 0, glace: 3, forge: -2, fongus: 5 };
+const music = { on: store.get(MUSIC_KEY, true), bus: null, wave: null, timer: 0, step: 0, t: 0, boss: false, key: 0, level: -1 };
+const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
+
+function pulseWave(duty) {
+  const n = 32;
+  const real = new Float32Array(n);
+  const imag = new Float32Array(n);
+  for (let k = 1; k < n; k++) real[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty);
+  return audio.ctx.createPeriodicWave(real, imag);
+}
+
+function musicNote(midi, t, dur, vol, type) {
+  const a = audio.ctx;
+  const o = a.createOscillator();
+  const g = a.createGain();
+  if (type === 'pulse') o.setPeriodicWave(music.wave);
+  else o.type = type;
+  o.frequency.setValueAtTime(hz(midi), t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.006);
+  g.gain.linearRampToValueAtTime(vol * 0.7, t + Math.min(0.08, dur * 0.5));
+  g.gain.setValueAtTime(vol * 0.7, t + dur * 0.85);
+  g.gain.linearRampToValueAtTime(0, t + dur);
+  o.connect(g);
+  g.connect(music.bus);
+  o.start(t);
+  o.stop(t + dur + 0.02);
+}
+
+function musicDrum(kind, t) {
+  const a = audio.ctx;
+  const g = a.createGain();
+  g.connect(music.bus);
+  if (kind === 'kick') {
+    const o = a.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(130, t);
+    o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    g.gain.setValueAtTime(0.32, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g);
+    o.start(t);
+    o.stop(t + 0.18);
+    return;
+  }
+  const src = a.createBufferSource();
+  src.buffer = audio.noise;
+  const f = a.createBiquadFilter();
+  const snare = kind === 'snare';
+  f.type = snare ? 'bandpass' : 'highpass';
+  f.frequency.value = snare ? 1900 : 7000;
+  const len = snare ? 0.13 : 0.035;
+  g.gain.setValueAtTime(snare ? 0.14 : 0.05, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  src.connect(f);
+  f.connect(g);
+  src.start(t);
+  src.stop(t + len + 0.02);
+}
+
+function musicStep(s, t, dur) {
+  const bar = SONG[Math.floor(s / 16)];
+  const i = s % 16;
+  const k = music.key;
+  const [root, third] = CHORDS[bar.chord];
+  const lead = bar.notes.get(i);
+  if (lead) musicNote(lead[0] + k, t, lead[1] * dur * 0.92, 0.075, 'pulse');
+  if (i % 2 === 0) musicNote(root + k + (i % 4 ? 12 : 0), t, dur * 1.7, 0.2, 'triangle');
+  musicNote(root + k + 24 + [0, third, 7, 12][i % 4], t, dur * 0.8, 0.02, 'square');
+  if (music.boss) {
+    if (i % 8 === 0 || i === 6 || i === 14) musicDrum('kick', t);
+    if (i === 4 || i === 12) musicDrum('snare', t);
+    if (i % 2 === 1) musicDrum('hat', t);
+  } else {
+    if (i === 0 || i === 8) musicDrum('kick', t);
+    if (i === 4 || i === 12) musicDrum('hat', t);
+  }
+}
+
+function musicTick() {
+  const a = audio.ctx;
+  if (!a || a.state !== 'running') return;
+  if (music.t < a.currentTime) music.t = a.currentTime + 0.05;
+  while (music.t < a.currentTime + 0.15) {
+    const s = music.step % (SONG.length * 16);
+    if (s % 16 === 0) {
+      music.boss = !!(L && L.boss && L.boss.awake && L.boss.dying < 0);
+      music.key = L ? BIOME_KEY[L.biome.id] ?? 0 : 0;
+    }
+    const dur = 60 / (music.boss ? 132 : 112) / 4;
+    musicStep(s, music.t, dur);
+    music.t += dur;
+    music.step++;
+  }
+}
+
+function updateMusic() {
+  if (!audio.ctx) return;
+  if (!music.bus) {
+    music.bus = audio.ctx.createGain();
+    music.bus.gain.value = 0;
+    music.bus.connect(audio.master);
+    music.wave = pulseWave(0.25);
+    music.timer = setInterval(musicTick, 25);
+  }
+  const target = !music.on || state === 'dead' ? 0
+    : state === 'play' ? 0.55
+    : state === 'choice' || state === 'altar' ? 0.35 : 0.25;
+  if (target === music.level) return;
+  music.level = target;
+  music.bus.gain.setTargetAtTime(target, audio.ctx.currentTime, target ? 0.4 : music.on ? 0.8 : 0.1);
+}
+
+function setMusic(on) {
+  music.on = on;
+  store.set(MUSIC_KEY, on);
+  $('ico-music').toggleAttribute('hidden', !on);
+  $('ico-music-off').toggleAttribute('hidden', on);
+  $('music').setAttribute('aria-label', on ? 'Couper la musique' : 'Activer la musique');
+  $('music').setAttribute('aria-pressed', String(on));
+}
 
 // ---------- Aptitudes et reliques
 const PERKS = [
@@ -5221,6 +5377,8 @@ function setMuted(m) {
   $('mute').setAttribute('aria-label', m ? 'Activer le son' : 'Couper le son');
 }
 $('mute').addEventListener('click', () => { initAudio(); setMuted(!audio.muted); });
+$('music').addEventListener('click', () => { initAudio(); setMusic(!music.on); });
+setMusic(music.on);
 $('pause-btn').addEventListener('click', pauseGame);
 $('resume').addEventListener('click', () => { initAudio(); resumeGame(); });
 
@@ -5723,6 +5881,7 @@ function loop() {
   player = heroes[0];
   updateParticles(running ? dt : 0);
   updateLights();
+  updateMusic();
   updateCamera(realDt);
   updateTransition(realDt);
   updateOverlays(realDt, running);
