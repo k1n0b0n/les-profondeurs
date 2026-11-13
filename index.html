@@ -175,6 +175,11 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #boss .boss-bar { height: 9px; overflow: hidden; border-radius: 5px; background: var(--blood-dim); border: 1px solid rgba(241, 231, 212, 0.25); }
 #boss .boss-bar div { width: 100%; height: 100%; background: linear-gradient(90deg, var(--blood), var(--ember)); transition: width 0.15s ease-out; }
 #hud.duo .ctl, #hud.duo #joy { display: none; }
+.downmark { --pc: var(--p1); position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border: 1px solid var(--pc); border-radius: 999px; background: rgba(11, 9, 16, 0.85); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; will-change: transform; }
+.downmark.p2 { --pc: var(--p2); }
+.downmark i { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--pc); }
+.downmark.here i { display: none; }
+.downmark.here { animation: pulse 0.8s ease-in-out infinite alternate; }
 
 #toast {
   position: absolute;
@@ -412,6 +417,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
     </div>
   </div>
   <div id="boss" hidden><p id="boss-name">Le Veilleur de pierre</p><div class="boss-bar"><div id="boss-fill"></div></div></div>
+  <div class="downmark" id="down-1" hidden><i></i><span>J1 à terre</span></div>
+  <div class="downmark p2" id="down-2" hidden><i></i><span>J2 à terre</span></div>
   <div id="toast" role="status" aria-live="polite"><strong id="toast-title"></strong><small id="toast-sub"></small></div>
   <div id="joy" aria-hidden="true"><div id="knob"></div></div>
   <button id="potion" class="ctl" tabindex="-1" aria-label="Boire une potion">
@@ -3283,7 +3290,7 @@ function updateRevives(dt) {
 }
 
 function enforceLeash() {
-  if (heroes.length < 2) return;
+  if (heroes.length < 2 || heroes.some((h) => h.down)) return;
   const [a, b] = heroes;
   const dx = b.x - a.x;
   const dz = b.z - a.z;
@@ -4742,6 +4749,40 @@ function floatText(x, y, z, text, kind) {
   floaters.push({ el, x, y, z, t: 0, life: kind === 'crit' ? 0.9 : 0.75, dx: rand(-0.3, 0.3) });
 }
 
+const markV = new THREE.Vector3();
+function updateDownMarks() {
+  const w = window.innerWidth;
+  const hgt = window.innerHeight;
+  heroes.forEach((h, n) => {
+    const el = $(`down-${n + 1}`);
+    const show = state === 'play' && h.down && heroes.some((o) => !o.down);
+    el.hidden = !show;
+    if (!show) return;
+    markV.set(h.x, 1.4, h.z).project(camera);
+    const x = ((markV.x + 1) / 2) * w;
+    const y = ((1 - markV.y) / 2) * hgt;
+    const left = 70;
+    const right = w - 70;
+    const top = 130;
+    const bottom = hgt - 40;
+    const inside = x >= left && x <= right && y >= top && y <= bottom;
+    el.classList.toggle('here', inside);
+    if (inside) {
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+      return;
+    }
+    const cx = w / 2;
+    const cy = (top + bottom) / 2;
+    const dx = x - cx;
+    const dy = y - cy;
+    const k = Math.min(dx ? (dx > 0 ? right - cx : left - cx) / dx : Infinity, dy ? (dy > 0 ? bottom - cy : top - cy) / dy : Infinity);
+    const ex = cx + dx * k;
+    const ey = cy + dy * k;
+    el.querySelector('i').style.transform = `rotate(${Math.atan2(dy, dx) + Math.PI / 2}rad)`;
+    el.style.transform = `translate(${ex}px, ${ey}px) translate(-50%, -50%)`;
+  });
+}
+
 function updateFloaters(dt) {
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -4962,15 +5003,17 @@ let camDist = CAM_BASE;
 let camZoom = 1;
 
 function updateCamera(dt) {
+  const standing = heroes.filter((h) => !h.down);
+  const focus = standing.length ? standing : heroes;
   let tx = 0;
   let tz = 0;
-  for (const h of heroes) {
-    tx += h.x / heroes.length;
-    tz += h.z / heroes.length;
+  for (const h of focus) {
+    tx += h.x / focus.length;
+    tz += h.z / focus.length;
   }
   camLook.x += (tx - camLook.x) * damp(6, dt);
   camLook.z += (tz - camLook.z) * damp(6, dt);
-  const spread = heroes.length > 1 ? Math.hypot(heroes[0].x - heroes[1].x, heroes[0].z - heroes[1].z) : 0;
+  const spread = focus.length > 1 ? Math.hypot(focus[0].x - focus[1].x, focus[0].z - focus[1].z) : 0;
   camZoom += ((L.boss && L.boss.awake && L.boss.dying < 0 ? 1.15 : 1) * (1 + clamp((spread - 6) / 14, 0, 0.55)) - camZoom) * damp(3, dt);
   const zoom = camZoom;
   camera.position.copy(camLook).addScaledVector(CAM_DIR, camDist * zoom);
@@ -5684,6 +5727,7 @@ function loop() {
   updateTransition(realDt);
   updateOverlays(realDt, running);
   updateFloaters(running ? realDt : 0);
+  updateDownMarks();
   drawMinimap();
   if (state === 'play' && pendingChoices.length) openChoice(pendingChoices.shift());
   renderer.render(scene, camera);
