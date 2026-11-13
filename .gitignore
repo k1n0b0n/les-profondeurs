@@ -1,5 +1,6 @@
 # Outils d'agent
 .serena/
+.playwright-mcp/
 node_modules/
 
 # OS / éditeurs
