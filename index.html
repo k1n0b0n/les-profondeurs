@@ -375,6 +375,15 @@ details.more summary::before { content: "▸ "; }
 details.more[open] summary::before { content: "▾ "; }
 details.more > :not(summary) { margin-top: 10px; }
 .best:empty { display: none; }
+.grimoire-line { margin: -6px 0 0; font-size: 13px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.grimoire-line:empty { display: none; }
+.pacts { display: grid; gap: 6px; margin-top: 8px; }
+.pact { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; text-align: left; color: var(--ink-dim); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; touch-action: manipulation; }
+.pact b { color: var(--ink); font-weight: 700; }
+.pact small { grid-column: 1 / -1; font-size: 13px; }
+.pact::after { content: "Non"; grid-row: 1; grid-column: 2; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.pact[aria-pressed="true"] { border-color: var(--blood); background: rgba(217, 67, 77, 0.12); }
+.pact[aria-pressed="true"]::after { content: "Oui"; color: var(--alert); }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 1px; overflow: hidden; background: var(--line); border: 1px solid var(--line); border-radius: 8px; }
 .stats div { padding: 10px 12px; background: var(--panel-solid); }
 .stats dt { font-size: 12px; letter-spacing: 0.04em; color: var(--ink-dim); }
@@ -415,12 +424,20 @@ details.more > :not(summary) { margin-top: 10px; }
 .perk[data-cat="Fortune"] .perk-cat { color: var(--gold); }
 .perk[data-cat="Ruse"] .perk-cat { color: var(--heal); }
 .perk strong { font: 400 23px/1.1 var(--font-display); }
-.perks.shop { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.perks.shop { grid-template-columns: 1fr; }
+@media (min-width: 760px) { .perks.shop { grid-template-columns: 1fr 1fr; } }
+.gear-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gear-row.single { grid-template-columns: 1fr; }
 .perk .price { font-size: 14px; font-weight: 700; color: var(--gold); }
 .perk:disabled { opacity: 0.45; cursor: not-allowed; }
 .perk[data-cat="Soins"] .perk-cat { color: var(--heal); }
 .chips li.gear { border-color: rgba(242, 196, 80, 0.45); }
 .perk-desc { font-size: 14px; line-height: 1.35; color: var(--ink-dim); }
+.perk.rare { border-color: rgba(106, 176, 255, 0.45); }
+.perk.legendaire { border-color: rgba(242, 196, 80, 0.7); background: linear-gradient(180deg, rgba(242, 196, 80, 0.12), var(--panel-solid) 60%); box-shadow: 0 0 22px rgba(242, 196, 80, 0.18); }
+.perk.rare .perk-cat { color: var(--rune); }
+.perk.legendaire .perk-cat { color: var(--gold); }
+.perk-duo { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--gold); }
 
 @media (max-height: 520px) {
   .card { padding: 16px 18px; gap: 10px; }
@@ -495,7 +512,7 @@ details.more > :not(summary) { margin-top: 10px; }
   <div class="card start">
     <div class="card-head">
       <div>
-        <p class="kicker">Donjon tiré au hasard, sans fond</p>
+        <p class="kicker">Donjon tiré au hasard</p>
         <h1>Les Profondeurs</h1>
       </div>
       <div class="audio-btns">
@@ -504,8 +521,14 @@ details.more > :not(summary) { margin-top: 10px; }
         <button type="button" class="audio-btn" id="audio-start-sound" aria-pressed="true" aria-label="Son" title="Son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></button>
       </div>
     </div>
-    <p class="lead" id="start-lead">Descends le plus bas possible. Tous les trois étages, le gardien du biome scelle l’escalier.</p>
+    <p class="lead" id="start-lead">Atteins le fond du gouffre, à −144 m. Tous les trois étages, le gardien du biome scelle l’escalier : abats les quatre.</p>
     <p class="best" id="best"></p>
+    <p class="grimoire-line" id="grimoire-line"></p>
+    <details class="more" id="pacts-box" hidden>
+      <summary>Pactes · <span id="pacts-heat">aucun</span></summary>
+      <p class="keys-hint">Chaque pacte durcit la descente. Une victoire sous pacte entre au record.</p>
+      <div class="pacts" id="pacts"></div>
+    </details>
     <p class="section-label">Choisis ton héros <span class="key-hint">← →</span></p>
     <div class="hero-pick">
       <button type="button" class="hero-card" id="hero-start-lame" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><b>La Lame</b><small id="hero-desc-lame"></small></button>
@@ -560,6 +583,7 @@ details.more > :not(summary) { margin-top: 10px; }
     <p class="kicker" id="choice-kicker">Niveau 2</p>
     <h1 id="choice-title">Choisis une aptitude</h1>
     <div class="perks" id="perks"></div>
+    <button class="secondary" id="choice-skip">Passer</button>
   </div>
 </div>
 
@@ -603,6 +627,25 @@ details.more > :not(summary) { margin-top: 10px; }
       <div class="relics"><p class="relics-title">Pouvoirs et équipement</p><ul class="chips" id="pause-relics"></ul></div>
     </div>
     <button class="secondary quit" id="abandon">Abandonner la partie</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu-win" hidden>
+  <div class="card">
+    <p class="kicker">Le fond du gouffre · −144 m</p>
+    <h1>Les quatre gardiens sont tombés</h1>
+    <p class="lead" id="win-lead"></p>
+    <dl class="stats">
+      <div><dt>Niveau</dt><dd id="w-level">1</dd></div>
+      <div><dt>Écus</dt><dd id="w-gold">0</dd></div>
+      <div><dt>Ennemis vaincus</dt><dd id="w-kills">0</dd></div>
+      <div><dt>Combo max</dt><dd id="w-combo">0</dd></div>
+      <div><dt>Pactes</dt><dd id="w-heat">0</dd></div>
+      <div><dt>Gardiens</dt><dd id="w-bosses">0</dd></div>
+    </dl>
+    <button class="primary" id="win-deeper">Descendre plus loin</button>
+    <button class="secondary" id="win-surface">Remonter à la surface</button>
+    <p class="best" id="win-best"></p>
   </div>
 </div>
 
@@ -663,6 +706,7 @@ const ATTACK_CD = 0.42;
 const DASH_TIME = 0.2;
 const DASH_SPEED = 15;
 const DASH_CD = 1.3;
+const DODGE_TIME = DASH_TIME + 0.06;
 const ELAN_WINDOW = 0.35;
 const COMBO_WINDOW = 5;
 const TRAP_PERIOD = 2.8;
@@ -1795,7 +1839,7 @@ function populate(dun) {
 
   const fighting = others.filter((r) => r !== L.bossRoom && r !== L.haven && !ambushRooms.includes(r));
   const area = fighting.reduce((sum, r) => sum + r.w * r.h, 0) || 1;
-  const total = Math.min(40, 13 + (depth - 1) * 2) * (boss ? 0.6 : 1);
+  const total = Math.min(40, 13 + (depth - 1) * 2) * (boss ? 0.6 : 1) * (hasPact('hordes') ? 1.3 : 1);
   for (const r of others) {
     if (r === L.bossRoom || ambushRooms.includes(r)) continue;
     const count = fighting.includes(r) ? clamp(Math.round((total * r.w * r.h) / area + rand(-1, 1)), 0, 6) : 0;
@@ -2335,15 +2379,15 @@ function spawnShroom(x, z, kind) {
   L.props.push({ x, z, r: 0.3, g, kind: heal ? 'shroomHeal' : 'shroomToxic', breakable: true, dead: false, halo, cap });
 }
 
-function spawnCloud(x, z) {
+function spawnCloud(x, z, friendly = false) {
   const sprites = [];
   for (let k = 0; k < 6; k++) {
-    const s = glow(k % 2 ? 0x9a5ae0 : 0x6ad070, 1.6, 0.35);
+    const s = glow(friendly ? (k % 2 ? 0x6ad0a0 : 0x9af0c0) : k % 2 ? 0x9a5ae0 : 0x6ad070, 1.6, 0.35);
     s.position.set(x + rand(-0.9, 0.9), 0.5 + rand(0, 0.5), z + rand(-0.9, 0.9));
     L.group.add(s);
     sprites.push(s);
   }
-  L.clouds.push({ x, z, R: 1.9, t: 4.5, max: 4.5, sprites, hit: new Map() });
+  L.clouds.push({ x, z, R: 1.9, t: 4.5, max: 4.5, sprites, hit: new Map(), friendly });
   sfx.spore();
   burst(x, 0.4, z, 0x9a5ae0, 14, 2, -2, 0.7);
 }
@@ -2509,7 +2553,7 @@ function updateClouds(dt) {
       s.position.y += dt * 0.05;
     });
     for (const h of heroes) {
-      if (state !== 'play' || h.down || Math.hypot(h.x - c.x, h.z - c.z) >= c.R) continue;
+      if (c.friendly || state !== 'play' || h.down || Math.hypot(h.x - c.x, h.z - c.z) >= c.R) continue;
       h.slowT = 0.25;
       if (h.dodge <= 0) hurtPlayer(trapMe(0.5, h), c.x, c.z, h);
     }
@@ -2562,12 +2606,12 @@ function spawnEnemy(type, x, z, opts = {}) {
   const model = buildEnemyModel(type, opts.kind);
   const bar = buildBar(elite);
   const party = heroes.length > 1 ? (type === 'boss' ? 1.6 : 1.3) : 1;
-  const hp = def.hp * hpScale(L.depth) * (opts.hpMul ?? 1) * (elite ? 2 : 1) * party;
+  const hp = def.hp * hpScale(L.depth) * (opts.hpMul ?? 1) * (elite ? 2 : 1) * party * (hasPact('acier') ? 1.3 : 1);
   const e = {
     type, def, x, z, size, elite, splits: !!opts.splits, ambush: opts.ambush ?? null, guard: opts.guard ?? null,
     r: def.r * size, hp, maxHp: hp, armor: Math.min(0.5, (def.def ?? 0) + (elite ? 0.15 : 0)),
-    speed: def.speed * (1 + Math.min(L.depth - 1, 8) * 0.04) * (opts.speedMul ?? 1) * (elite ? 1.1 : 1),
-    dmg: def.dmg * dmgScale(L.depth) * (elite ? 1.25 : 1),
+    speed: def.speed * (1 + Math.min(L.depth - 1, 8) * 0.04) * (opts.speedMul ?? 1) * (elite ? 1.1 : 1) * (hasPact('hate') ? 1.15 : 1),
+    dmg: def.dmg * dmgScale(L.depth) * (elite ? 1.25 : 1) * (hasPact('fureur') ? 1.25 : 1),
     xp: Math.max(1, Math.round(def.xp * (1 + (L.depth - 1) * 0.2) * (opts.xpMul ?? 1) * (elite ? 3 : 1))),
     model, bar, face: rand(0, Math.PI * 2),
     atkCd: 0.5, flash: 0, look: 0, frost: null, vx: 0, vz: 0, aware: 0, seen: false, spawnT: 0,
@@ -2822,7 +2866,7 @@ function reveal() {
   const pi = player.ti;
   const pj = player.tj;
   const b = L.biome;
-  const R = b.reveal;
+  const R = b.reveal + player.sight;
   const r2 = R * R + 1;
   let dirty = false;
   let lavaDirty = false;
@@ -3304,34 +3348,85 @@ function setMusic(on) {
 
 // ---------- Aptitudes et reliques
 const PERKS = [
-  { id: 'allonge', cls: 'lame', cat: 'Attaque', name: 'Allonge', max: 3, desc: 'Portée +20 % et arc de frappe plus large.', apply: (p) => { p.rangeMul += 0.2; p.arcDeg += 10; } },
-  { id: 'tourbillon', cls: 'lame', cat: 'Attaque', name: 'Tourbillon', max: 2, desc: (n) => (n === 0 ? 'Un coup sur trois devient une frappe circulaire.' : 'Un coup sur deux devient circulaire.'), apply: (p) => { p.spinEvery = p.spinEvery ? 2 : 3; } },
-  { id: 'frenesie', cat: 'Attaque', name: 'Frénésie', max: 3, desc: 'Après chaque ennemi vaincu, attaques 12 % plus rapides pendant 3 s (cumulable par rang).', apply: () => {} },
-  { id: 'critique', cat: 'Attaque', name: 'Œil du chasseur', max: 3, desc: '+12 % de coups critiques, qui frappent double.', apply: (p) => { p.crit += 0.12; } },
-  { id: 'onde', cat: 'Attaque', name: 'Onde de choc', max: 2, desc: (n) => (n === 0 ? 'Les ennemis vaincus explosent et blessent leurs voisins.' : 'Explosions plus larges et plus fortes.'), apply: () => {} },
-  { id: 'braise', cat: 'Attaque', name: 'Torche ardente', max: 2, desc: (n) => (n === 0 ? 'La torche brûle les ennemis à moins de 2 m : un tiers de tes dégâts par seconde.' : 'Brûlure plus forte, rayon de 2,6 m.'), apply: () => {} },
-  { id: 'miroir', cls: 'lame', cat: 'Attaque', name: 'Miroir', max: 1, desc: 'Chaque orbe renvoyée se divise en trois.', apply: () => {} },
-  { id: 'perforant', cls: 'arbalete', cat: 'Attaque', name: 'Carreaux perforants', max: 2, desc: (n) => (n === 0 ? 'Les carreaux traversent un ennemi de plus.' : 'Les carreaux traversent deux ennemis de plus.'), apply: () => {} },
-  { id: 'salve', cls: 'arbalete', cat: 'Attaque', name: 'Salve', max: 2, desc: (n) => (n === 0 ? 'Un tir sur trois part en éventail de trois carreaux.' : 'Un tir sur deux part en éventail.'), apply: () => {} },
-  { id: 'ricochet', cls: 'arbalete', cat: 'Attaque', name: 'Ricochet', max: 1, desc: 'Un carreau qui touche rebondit vers un ennemi proche.', apply: () => {} },
-  { id: 'foudre', cat: 'Attaque', name: 'Foudre', max: 2, desc: (n) => (n === 0 ? '15 % de chances qu’un coup lance un éclair vers deux ennemis proches.' : 'Éclairs : 30 % de chances.'), apply: () => {} },
-  { id: 'follet', cat: 'Attaque', name: 'Feu follet', max: 2, desc: (n) => (n === 0 ? 'Chaque ennemi vaincu libère un feu follet qui fond sur un ennemi proche.' : 'Deux feux follets par ennemi vaincu.'), apply: () => {} },
-  { id: 'givre', cat: 'Ruse', name: 'Givre', max: 1, desc: 'Tes coups ralentissent les ennemis touchés pendant 2 s.', apply: () => {} },
-  { id: 'roulade', cat: 'Mobilité', name: 'Roulade tranchante', max: 2, desc: "L'esquive blesse tout ce qu'elle traverse.", apply: () => {} },
-  { id: 'contre', cat: 'Mobilité', name: 'Contre-attaque', max: 1, desc: "Une esquive parfaite libère une onde de choc et recharge l'esquive.", apply: () => {} },
-  { id: 'egide', cat: 'Défense', name: 'Égide', max: 2, desc: (n) => (n === 0 ? 'Un bouclier bloque un coup, puis revient après 15 s.' : 'Le bouclier revient après 10 s.'), apply: (p) => { p.shieldCd = p.shieldCd ? 10 : 15; p.shieldReady = true; } },
-  { id: 'soif', cat: 'Défense', name: 'Soif de sang', max: 3, desc: '15 % de chances de reprendre 10 PV par ennemi vaincu.', apply: () => {} },
-  { id: 'avarice', cat: 'Fortune', name: 'Avarice', max: 2, desc: '+50 % d’écus et un aimant deux fois plus large.', apply: (p) => { p.goldMul += 0.5; p.magnet *= 2; } },
-  { id: 'saboteur', cat: 'Ruse', name: 'Saboteur', max: 1, desc: 'Pièges et barils frappent deux fois plus fort les monstres, et deux fois moins fort toi.', apply: () => {} },
+  { id: 'allonge', rar: 'commune', cls: 'lame', cat: 'Attaque', name: 'Allonge', max: 3, desc: 'Portée +20 % et arc de frappe plus large.', apply: (p) => { p.rangeMul += 0.2; p.arcDeg += 10; } },
+  { id: 'tourbillon', rar: 'rare', cls: 'lame', cat: 'Attaque', name: 'Tourbillon', max: 2, desc: (n) => (n === 0 ? 'Un coup sur trois devient une frappe circulaire.' : 'Un coup sur deux devient circulaire.'), apply: (p) => { p.spinEvery = p.spinEvery ? 2 : 3; } },
+  { id: 'frenesie', rar: 'commune', cat: 'Attaque', name: 'Frénésie', max: 3, desc: 'Après chaque ennemi vaincu, attaques 12 % plus rapides pendant 3 s (cumulable par rang).', apply: () => {} },
+  { id: 'critique', rar: 'commune', cat: 'Attaque', name: 'Œil du chasseur', max: 3, desc: '+12 % de coups critiques, qui frappent double.', apply: (p) => { p.crit += 0.12; } },
+  { id: 'onde', rar: 'rare', cat: 'Attaque', name: 'Onde de choc', max: 2, desc: (n) => (n === 0 ? 'Les ennemis vaincus explosent et blessent leurs voisins.' : 'Explosions plus larges et plus fortes.'), apply: () => {} },
+  { id: 'braise', rar: 'rare', cat: 'Attaque', name: 'Torche ardente', max: 2, desc: (n) => (n === 0 ? 'La torche brûle les ennemis à moins de 2 m : un tiers de tes dégâts par seconde.' : 'Brûlure plus forte, rayon de 2,6 m.'), apply: () => {} },
+  { id: 'miroir', rar: 'rare', cls: 'lame', cat: 'Attaque', name: 'Miroir', max: 1, desc: 'Chaque orbe renvoyée se divise en trois.', apply: () => {} },
+  { id: 'perforant', rar: 'commune', cls: 'arbalete', cat: 'Attaque', name: 'Carreaux perforants', max: 2, desc: (n) => (n === 0 ? 'Les carreaux traversent un ennemi de plus.' : 'Les carreaux traversent deux ennemis de plus.'), apply: () => {} },
+  { id: 'salve', rar: 'rare', cls: 'arbalete', cat: 'Attaque', name: 'Salve', max: 2, desc: (n) => (n === 0 ? 'Un tir sur trois part en éventail de trois carreaux.' : 'Un tir sur deux part en éventail.'), apply: () => {} },
+  { id: 'ricochet', rar: 'rare', cls: 'arbalete', cat: 'Attaque', name: 'Ricochet', max: 1, desc: 'Un carreau qui touche rebondit vers un ennemi proche.', apply: () => {} },
+  { id: 'foudre', rar: 'rare', cat: 'Attaque', name: 'Foudre', max: 2, desc: (n) => (n === 0 ? '15 % de chances qu’un coup lance un éclair vers deux ennemis proches.' : 'Éclairs : 30 % de chances.'), apply: () => {} },
+  { id: 'follet', rar: 'rare', cat: 'Attaque', name: 'Feu follet', max: 2, desc: (n) => (n === 0 ? 'Chaque ennemi vaincu libère un feu follet qui fond sur un ennemi proche.' : 'Deux feux follets par ennemi vaincu.'), apply: () => {} },
+  { id: 'givre', rar: 'rare', cat: 'Ruse', name: 'Givre', max: 1, desc: 'Tes coups ralentissent les ennemis touchés pendant 2 s.', apply: () => {} },
+  { id: 'roulade', rar: 'rare', cat: 'Mobilité', name: 'Roulade tranchante', max: 2, desc: "L'esquive blesse tout ce qu'elle traverse.", apply: () => {} },
+  { id: 'contre', rar: 'rare', cat: 'Mobilité', name: 'Contre-attaque', max: 1, desc: "Une esquive parfaite libère une onde de choc et recharge l'esquive.", apply: () => {} },
+  { id: 'egide', rar: 'commune', cat: 'Défense', name: 'Égide', max: 2, desc: (n) => (n === 0 ? 'Un bouclier bloque un coup, puis revient après 15 s.' : 'Le bouclier revient après 10 s.'), apply: (p) => { p.shieldCd = p.shieldCd ? 10 : 15; p.shieldReady = true; } },
+  { id: 'soif', rar: 'commune', cat: 'Défense', name: 'Soif de sang', max: 3, desc: '15 % de chances de reprendre 10 PV par ennemi vaincu.', apply: () => {} },
+  { id: 'avarice', rar: 'commune', cat: 'Fortune', name: 'Avarice', max: 2, desc: '+50 % d’écus et un aimant deux fois plus large.', apply: (p) => { p.goldMul += 0.5; p.magnet *= 2; } },
+  { id: 'saboteur', rar: 'rare', cat: 'Ruse', name: 'Saboteur', max: 1, desc: 'Pièges et barils frappent deux fois plus fort les monstres, et deux fois moins fort toi.', apply: () => {} },
+  // Duos : n'apparaissent qu'une fois les deux aptitudes requises acquises.
+  { id: 'orage', rar: 'legendaire', req: ['foudre', 'givre'], cat: 'Attaque', name: 'Orage glacé', max: 1, desc: 'Tes éclairs gèlent leurs cibles et partent 10 % plus souvent.', apply: () => {} },
+  { id: 'elme', rar: 'legendaire', req: ['follet', 'onde'], cat: 'Attaque', name: 'Feux de Saint-Elme', max: 1, desc: 'Les feux follets explosent à l’impact et blessent les monstres autour.', apply: () => {} },
+  { id: 'danse', rar: 'legendaire', req: ['roulade', 'contre'], cat: 'Mobilité', name: 'Danse des lames', max: 1, desc: 'Chaque ennemi traversé par l’esquive la recharge de 0,35 s.', apply: () => {} },
+  { id: 'brasier', rar: 'legendaire', req: ['braise', 'frenesie'], cat: 'Attaque', name: 'Brasier', max: 1, desc: 'Pendant la Frénésie, la torche brûle deux fois plus fort et plus loin.', apply: () => {} },
+  { id: 'bastion', rar: 'legendaire', req: ['egide', 'soif'], cat: 'Défense', name: 'Bastion', max: 1, desc: 'Quand l’Égide bloque un coup, tu reprends 20 PV et une onde repousse les monstres.', apply: () => {} },
+  { id: 'reflet', rar: 'legendaire', req: ['miroir', 'foudre'], cat: 'Attaque', name: 'Reflet d’orage', max: 1, desc: 'Chaque orbe renvoyée qui touche lance un éclair.', apply: () => {} },
+  { id: 'pluie', rar: 'legendaire', req: ['salve', 'ricochet'], cat: 'Attaque', name: 'Pluie de carreaux', max: 1, desc: 'La salve tire cinq carreaux et chaque carreau ricoche deux fois.', apply: () => {} },
+  // Reliques de gardien : rejoignent le gouffre à la première victoire contre leur gardien.
+  { id: 'veilleur', rar: 'legendaire', unlock: 'crypte', cat: 'Attaque', name: 'Œil du Veilleur', max: 1, desc: 'Élites et gardiens subissent 30 % de dégâts en plus.', apply: () => {} },
+  { id: 'coeurgivre', rar: 'legendaire', unlock: 'glace', cat: 'Ruse', name: 'Cœur de givre', max: 1, desc: 'Chaque esquive libère une nova de givre qui ralentit les monstres proches.', apply: () => {} },
+  { id: 'coeurforge', rar: 'legendaire', unlock: 'forge', cat: 'Attaque', name: 'Cœur de forge', max: 1, desc: 'La Transe dure 4 s de plus et chaque ennemi vaincu en Transe explose.', apply: () => {} },
+  { id: 'coeurspores', rar: 'legendaire', unlock: 'fongus', cat: 'Ruse', name: 'Cœur de spores', max: 1, desc: 'Un ennemi vaincu sur trois éclate en nuage de spores qui ronge les autres monstres.', apply: () => {} },
 ];
 const FEAST = { id: 'festin', cat: 'Défense', name: 'Festin', max: Infinity, desc: 'Rend tous les PV.', apply: (p) => { p.hp = p.maxHp; } };
 const perkById = (id) => PERKS.find((p) => p.id === id) ?? FEAST;
 
-function rollPerks(who) {
-  const fits = (p) => !p.cls || p.cls === who.cls;
-  const open = shuffle(PERKS.filter((p) => fits(p) && (who.perks[p.id] || 0) < p.max)).slice(0, 3);
+const RARITY = { commune: 'Commune', rare: 'Rare', legendaire: 'Légendaire' };
+const BOSS_RELIC = { crypte: 'veilleur', glace: 'coeurgivre', forge: 'coeurforge', fongus: 'coeurspores' };
+// Ce qui survit d'une partie à l'autre : gardiens déjà vaincus (leurs reliques), victoires, pacte le plus lourd remporté.
+const GRIMOIRE_KEY = 'profondeurs.grimoire';
+const grimoire = (() => {
+  const g = store.get(GRIMOIRE_KEY, {}) || {};
+  return {
+    bosses: Array.isArray(g.bosses) ? g.bosses.filter((b) => BOSS_RELIC[b]) : [],
+    wins: Number.isInteger(g.wins) ? g.wins : 0,
+    bestHeat: Number.isInteger(g.bestHeat) ? g.bestHeat : -1,
+  };
+})();
+const saveGrimoire = () => store.set(GRIMOIRE_KEY, grimoire);
+const perkCls = (p) => p.cls ?? (p.req ? p.req.map((id) => perkById(id).cls).find(Boolean) : undefined);
+const duosOpenedBy = (who, perk) => PERKS.filter((d) => d.req && d.req.includes(perk.id) && !who.perks[d.id] && d.req.every((id) => id === perk.id || who.perks[id]));
+
+// Le niveau tire au poids de la rareté ; l'autel et le sanctuaire garantissent une rare, le gardien une légendaire.
+function rollPerks(who, kind = 'level') {
+  const fits = (p) => {
+    const cls = perkCls(p);
+    if (cls && cls !== who.cls) return false;
+    if ((who.perks[p.id] || 0) >= p.max) return false;
+    if (p.req && !p.req.every((id) => who.perks[id])) return false;
+    return !p.unlock || grimoire.bosses.includes(p.unlock);
+  };
+  const weight = (p) => (p.req ? 0.9 : p.rar === 'legendaire' ? 0.3 : p.rar === 'rare' ? 0.4 : 1);
+  const pool = PERKS.filter(fits);
+  const take = (list) => {
+    let r = Math.random() * list.reduce((n, p) => n + weight(p), 0);
+    const p = list.find((c) => (r -= weight(c)) <= 0) ?? list[list.length - 1];
+    pool.splice(pool.indexOf(p), 1);
+    return p;
+  };
+  const open = [];
+  const best = kind === 'relic' ? ['legendaire'] : kind === 'altar' || kind === 'secret' ? ['rare', 'legendaire'] : null;
+  if (best) {
+    let top = pool.filter((p) => best.includes(p.rar));
+    if (!top.length && kind === 'relic') top = pool.filter((p) => p.rar === 'rare');
+    if (top.length) open.push(take(top));
+  }
+  while (open.length < 3 && pool.length) open.push(take(pool));
   if (open.length < 3) open.push(FEAST);
-  return open;
+  return shuffle(open);
 }
 
 function applyPerk(id, who = player) {
@@ -3345,6 +3440,7 @@ function applyPerk(id, who = player) {
 const BASE_STATS = {
   dmgMul: 1, rangeMul: 1, arcDeg: 70, atkCdMul: 1, crit: 0.08, speedMul: 1, dashCdMul: 1,
   goldMul: 1, magnet: 2.4, potionHeal: 3.5, maxPotions: 3, spinEvery: 0, shieldCd: 0, armor: 0, parry: 0,
+  thorns: 0, sight: 0, finder: false, riposte: 0, emberDash: 0, potionBlast: 0, potionTranse: 0,
 };
 const TEAM_START = { level: 1, xp: 0, bosses: 0 };
 const HERO_START = { gold: 0, potions: 2, kills: 0, altarUses: 0, maxHp: 10 };
@@ -3353,25 +3449,49 @@ const HeroProto = {};
 for (const k of Object.keys(TEAM_START)) {
   Object.defineProperty(HeroProto, k, { get() { return team[k]; }, set(v) { team[k] = v; }, enumerable: false });
 }
+// Deux objets par emplacement : acheter l'un ferme l'autre pour la partie, les rangs suivants améliorent celui choisi.
 const GEAR = {
-  arme: { group: 'Attaque', name: (h) => (h.cls === 'arbalete' ? 'Arbalète' : 'Épée'), tiers: ['de fer', 'd’acier', 'runique', 'légendaire'], price: [60, 140, 260, 420], desc: '+20 % de dégâts', apply: (h) => { h.dmgMul += 0.2; } },
-  armure: { group: 'Défense', name: () => 'Cuirasse', tiers: ['de cuir', 'de mailles', 'de plates'], price: [55, 130, 250], desc: 'Défense : −10 % de dégâts subis', apply: (h) => { h.armor += 0.1; } },
-  heaume: { group: 'Défense', name: (h) => (h.cls === 'arbalete' ? 'Chaperon' : 'Heaume'), tiers: ['clouté', 'renforcé', 'runique'], price: [45, 110, 210], desc: '+20 PV max, rendus tout de suite', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
-  bouclier: { group: 'Défense', name: (h) => (h.cls === 'arbalete' ? 'Brassards' : 'Bouclier'), tiers: ['de garde', 'du rempart'], price: [90, 200], desc: '12 % de chances de parer un coup entier', apply: (h) => { h.parry += 0.12; } },
-  bottes: { group: 'Mobilité', name: () => 'Bottes', tiers: ['souples', 'de rôdeur', 'de vent'], price: [40, 100, 190], desc: '+8 % de vitesse, esquive rechargée plus vite', apply: (h) => { h.speedMul += 0.08; h.dashCdMul *= 0.88; } },
-  ceinture: { group: 'Soins', name: () => 'Ceinturon', tiers: ['à fioles', 'd’alchimiste'], price: [50, 140], desc: '+1 place de potion', apply: (h) => { h.maxPotions += 1; } },
-  fioles: { group: 'Soins', name: () => 'Fioles', tiers: ['épaisses', 'cristallines', 'enchantées'], price: [40, 100, 190], desc: 'Chaque potion rend 20 PV de plus', apply: (h) => { h.potionHeal += 2; } },
+  arme: { group: 'Attaque', price: [60, 140, 260, 420], kinds: {
+    lourde: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète lourde' : 'Épée lourde'), desc: 'Dégâts +30 % par rang, mais attaques 8 % plus lentes.', apply: (h) => { h.dmgMul += 0.3; h.atkCdMul *= 1.08; } },
+    vive: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète légère' : 'Épée vive'), desc: 'Attaques 10 % plus rapides et +5 % de critiques par rang.', apply: (h) => { h.atkCdMul *= 0.9; h.crit += 0.05; } },
+  } },
+  armure: { group: 'Défense', price: [55, 130, 250], kinds: {
+    plates: { name: () => 'Cuirasse', desc: 'Dégâts subis −10 % par rang.', apply: (h) => { h.armor += 0.1; } },
+    epines: { name: () => 'Cotte d’épines', desc: 'Dégâts subis −5 % par rang, et chaque coup reçu blesse les monstres collés à toi.', apply: (h) => { h.armor += 0.05; h.thorns += 1; } },
+  } },
+  heaume: { group: 'Défense', price: [45, 110, 210], kinds: {
+    heaume: { name: (h) => (h.cls === 'arbalete' ? 'Chaperon' : 'Heaume'), desc: '+20 PV max par rang, rendus tout de suite.', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
+    lanterne: { name: () => 'Lanterne de mineur', desc: 'Tu vois une case plus loin par rang, et les murs fissurés apparaissent sur la minicarte.', apply: (h) => { h.sight += 1; h.finder = true; } },
+  } },
+  bouclier: { group: 'Défense', price: [90, 200], kinds: {
+    garde: { name: (h) => (h.cls === 'arbalete' ? 'Brassards' : 'Bouclier'), desc: '12 % de chances par rang de parer un coup entier.', apply: (h) => { h.parry += 0.12; } },
+    riposte: { name: () => 'Gantelets de riposte', desc: 'Après une esquive parfaite, ton critique frappe 60 % plus fort par rang.', apply: (h) => { h.riposte += 1; } },
+  } },
+  bottes: { group: 'Mobilité', price: [40, 100, 190], kinds: {
+    vent: { name: () => 'Bottes de vent', desc: '+8 % de vitesse et esquive rechargée 12 % plus vite par rang.', apply: (h) => { h.speedMul += 0.08; h.dashCdMul *= 0.88; } },
+    braise: { name: () => 'Bottes de braise', desc: 'L’esquive laisse une traînée de braises qui brûle les monstres, plus fort à chaque rang.', apply: (h) => { h.emberDash += 1; } },
+  } },
+  ceinture: { group: 'Soins', price: [50, 140], kinds: {
+    ceinturon: { name: () => 'Ceinturon', desc: '+1 place de potion par rang.', apply: (h) => { h.maxPotions += 1; } },
+    bandouliere: { name: () => 'Bandoulière d’alchimiste', desc: 'Boire une potion libère une onde qui blesse et repousse les monstres proches.', apply: (h) => { h.potionBlast += 1; } },
+  } },
+  fioles: { group: 'Soins', price: [40, 100, 190], kinds: {
+    epaisses: { name: () => 'Fioles épaisses', desc: 'Chaque potion rend 20 PV de plus par rang.', apply: (h) => { h.potionHeal += 2; } },
+    rage: { name: () => 'Fioles de rage', desc: 'Boire une potion déclenche la Transe pendant 3 s par rang.', apply: (h) => { h.potionTranse += 1; } },
+  } },
 };
+const ROMAN = ['I', 'II', 'III', 'IV'];
+const gearKind = (h, slot) => GEAR[slot].kinds[h.gearKind[slot]] ?? Object.values(GEAR[slot].kinds)[0];
 const potionPrice = () => 25 + L.depth * 3;
 const gearStart = () => Object.fromEntries(Object.keys(GEAR).map((k) => [k, 0]));
-const gearLabel = (h, slot, level) => `${GEAR[slot].name(h)} ${GEAR[slot].tiers[level]}`;
-const heroStats = () => ({ ...HERO_START, ...BASE_STATS, perks: {}, gear: gearStart() });
+const gearLabel = (h, slot, level) => `${gearKind(h, slot).name(h)} ${ROMAN[level]}`;
+const heroStats = () => ({ ...HERO_START, ...BASE_STATS, perks: {}, gear: gearStart(), gearKind: {} });
 const bodyStart = () => ({
   x: 0, z: 0, face: 0, faceTarget: 0, hp: 10,
   atkCd: 0, swing: -1, swingCount: 0, spinning: false, inv: 0, dodge: 0, kvx: 0, kvz: 0,
   dashT: 0, dashCd: 0, dashDir: [0, 1], dashHits: new Set(), dashEndAt: -9, perfectDone: false, nextCrit: false, auraT: 0,
   ivx: 0, ivz: 0, chill: 0, slowT: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
-  shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9,
+  shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9, riposteT: 0, emberT: 0,
 });
 function makeHero(index, mesh, light, cls = 'lame') {
   const h = Object.create(HeroProto);
@@ -3406,6 +3526,8 @@ const hasteMul = (h) => (h.hasteT > 0 ? 1 - 0.12 * (h.perks.frenesie || 0) : 1);
 const heroes = [makeHero(0, hero, torchLight)];
 let heroTwo = null;
 let player = heroes[0];
+// À deux, chaque bourse reçoit 60 % de l'or ramassé : l'équipe gagne 20 % de plus qu'en solo, pas le double.
+const goldShare = () => (heroes.length > 1 ? 0.6 : 1);
 const nearestHero = (x, z) => {
   let best = null;
   let bd = Infinity;
@@ -3436,13 +3558,15 @@ const comboMul = () => (combo.n >= 2 ? 1 + Math.min(combo.n - 1, 10) * 0.1 : 1);
 const TRANSE_AT = 8;
 const TRANSE_TIME = 10;
 const TRANSE_MAX = 14;
+const transeBonus = () => (anyPerk('coeurforge') ? 4 : 0);
+const transeMax = () => TRANSE_MAX + transeBonus();
 const transe = { t: 0 };
 const inTranse = () => transe.t > 0;
 const pendingChoices = [];
 let choiceHero = null;
 let altarHero = null;
 let shopHero = null;
-let hints = { orb: false, perfect: false, traps: new Set() };
+let hints = { orb: false, perfect: false, late: false, traps: new Set() };
 
 let state = 'menu';
 let debugRun = false;
@@ -3524,6 +3648,7 @@ function updatePlayer(dt) {
   player.dodge -= dt;
   player.dashCd -= dt;
   player.hasteT -= dt;
+  player.riposteT -= dt;
   player.chill -= dt;
   player.slowT -= dt;
   if (player.dashT > 0) {
@@ -3539,6 +3664,13 @@ function updatePlayer(dt) {
     movePlayer(dx * DASH_SPEED * dt, dz * DASH_SPEED * dt);
     player.moving = true;
     emit({ x: player.x + rand(-0.2, 0.2), y: rand(0.3, 1), z: player.z + rand(-0.2, 0.2), vx: 0, vy: 0.3, vz: 0, g: 0, life: 0.25, max: 0.25, color: 0x9cc8ff, size: 0.8 });
+    if (player.emberDash) {
+      player.emberT -= dt;
+      if (player.emberT <= 0) {
+        player.emberT = 0.06;
+        spawnEmber(player.x, player.z, 0.55, 2.2, dmgOf() * (0.2 + 0.15 * player.emberDash), player);
+      }
+    }
     for (const p of L.props) {
       if (!p.dead && p.breakable && Math.hypot(p.x - player.x, p.z - player.z) < p.r + PLAYER_R + 0.25) breakProp(p);
     }
@@ -3549,6 +3681,7 @@ function updatePlayer(dt) {
         if (Math.hypot(e.x - player.x, e.z - player.z) < e.r + PLAYER_R + 0.3) {
           player.dashHits.add(e);
           hitEnemy(e, dmgOf() * (0.5 + 0.4 * blade), dx, dz, { knock: 0.6 });
+          if (player.perks.danse) player.dashCd = Math.max(0, player.dashCd - 0.35);
         }
       }
     }
@@ -3610,8 +3743,9 @@ function updatePlayer(dt) {
     player.auraT -= dt;
     if (player.auraT <= 0) {
       player.auraT = 0.5;
-      const R = aura > 1 ? 2.6 : 2;
-      const burn = dmgOf() * (aura > 1 ? 0.55 : 0.4);
+      const blaze = player.perks.brasier && player.hasteT > 0 ? 2 : 1;
+      const R = (aura > 1 ? 2.6 : 2) * (blaze > 1 ? 1.4 : 1);
+      const burn = dmgOf() * (aura > 1 ? 0.55 : 0.4) * blaze;
       for (const e of L.enemies.slice()) {
         if (e.dying >= 0 || !e.seen || e.spawnT > 0 || e.hidden) continue;
         if (Math.hypot(e.x - player.x, e.z - player.z) < R + e.r) {
@@ -3640,13 +3774,18 @@ function tryDash(toward) {
   player.dashDir = dir;
   player.dashT = DASH_TIME;
   player.dashCd = DASH_CD * player.dashCdMul * (inTranse() ? 0.7 : 1);
-  player.dodge = DASH_TIME + 0.06;
+  player.dodge = DODGE_TIME;
   player.perfectDone = false;
+  player.lateDone = false;
   player.dashHits = new Set();
   player.swing = -1;
   player.spinning = false;
   player.face = player.faceTarget = Math.atan2(dir[0], dir[1]);
   sfx.dash();
+  if (player.perks.coeurgivre) {
+    for (const e of L.enemies) if (e.dying < 0 && Math.hypot(e.x - player.x, e.z - player.z) < 2.6 + e.r) e.chill = 2.5;
+    ring(player.x, player.z, 0x9fdcff, 18, 6, 0.35);
+  }
 }
 
 function tryAttack() {
@@ -3773,6 +3912,7 @@ function chainLightning(from, amount) {
       emit({ x: from.x + (o.x - from.x) * t + rand(-0.15, 0.15), y: 0.9 + rand(-0.2, 0.2), z: from.z + (o.z - from.z) * t + rand(-0.15, 0.15), vx: 0, vy: 0, vz: 0, g: 0, life: 0.18, max: 0.18, color: 0xbfe0ff, size: 0.5 });
     }
     hitEnemy(o, amount * 0.6, 0, 0, { chain: true, knock: 0.2 });
+    if (player.perks.orage) o.chill = 2.5;
   }
   if (near.length) sfx.zap();
 }
@@ -3832,7 +3972,8 @@ function shoot() {
   const ang = aim ? Math.atan2(aim[0] - p.x, aim[1] - p.z) : p.face;
   p.face = p.faceTarget = ang;
   const dmg = dmgOf() * BOLT_DMG;
-  for (const a of fan ? [-0.2, 0, 0.2] : [0]) spawnBolt(p, ang + a, dmg, sure && a === 0);
+  const spread = !fan ? [0] : p.perks.pluie ? [-0.32, -0.16, 0, 0.16, 0.32] : [-0.2, 0, 0.2];
+  for (const a of spread) spawnBolt(p, ang + a, dmg, sure && a === 0);
   sfx.bolt();
 }
 
@@ -3851,7 +3992,7 @@ function spawnBolt(p, ang, dmg, sure) {
   L.group.add(g);
   L.shots.push({
     x, z, y: 0.72, vx, vz, owner: 'bolt', from: p, g, core, halo: null, life: BOLT_RANGE / BOLT_SPEED, dmg, sure,
-    pierce: p.perks.perforant || 0, bounce: p.perks.ricochet ? 1 : 0, hits: new Set(),
+    pierce: p.perks.perforant || 0, bounce: p.perks.ricochet ? (p.perks.pluie ? 2 : 1) : 0, hits: new Set(),
   });
 }
 
@@ -3918,7 +4059,13 @@ function hitEnemy(e, amount, nx, nz, opts = {}) {
     if (e.hidden) return false;
     amount *= bossGuard(e);
   }
-  if (!opts.quiet && !opts.chain && player.perks.foudre && Math.random() < 0.15 * player.perks.foudre) chainLightning(e, amount);
+  if (player.perks.veilleur && (e.elite || e.type === 'boss')) amount *= 1.3;
+  if (opts.crit && player.riposteT > 0) {
+    amount *= 1 + 0.6 * player.riposte;
+    player.riposteT = 0;
+    floatText(e.x, e.def.barY * e.size + 0.4, e.z, 'Riposte !', 'crit');
+  }
+  if (!opts.quiet && !opts.chain && player.perks.foudre && Math.random() < 0.15 * player.perks.foudre + (player.perks.orage ? 0.1 : 0)) chainLightning(e, amount);
   if (!opts.quiet && player.perks.givre) e.chill = 2;
   const exposed = (e.type === 'rodeur' || e.type === 'brute') && e.mode === 'recover';
   amount *= exposed ? 1.5 : 1 - e.armor;
@@ -3959,15 +4106,15 @@ function killEnemy(e) {
 
   combo.n = combo.t > 0 ? combo.n + 1 : 1;
   combo.t = COMBO_WINDOW;
-  if (inTranse()) transe.t = Math.min(TRANSE_MAX, transe.t + 0.6);
+  if (inTranse()) transe.t = Math.min(transeMax(), transe.t + 0.6);
   combo.best = Math.max(combo.best, combo.n);
   if (combo.n >= 2) {
     sfx.combo(combo.n);
     bumpCombo();
     if (combo.n === 5) toast('Combo ×5', 'écus +40 %');
     if (combo.n === TRANSE_AT && !inTranse()) {
-      transe.t = TRANSE_TIME;
-      toast('Transe', `${TRANSE_TIME} s de coups plus vifs et plus forts`);
+      transe.t = TRANSE_TIME + transeBonus();
+      toast('Transe', `${TRANSE_TIME + transeBonus()} s de coups plus vifs et plus forts`);
       sfx.transe();
       flash(e.x, 1, e.z, 0xf0a04b, 5, 0.35);
       for (const h of heroes) rumble(0.4, 160, h);
@@ -3990,7 +4137,13 @@ function killEnemy(e) {
     if (L.bossLock) unsealRoom(L.bossLock);
     for (const m of L.embers) m.t = Math.min(m.t, 0.3);
     $('boss').hidden = true;
-    toast(bossSpec(e).fall, 'l’escalier s’ouvre');
+    const relic = unlockRelic(e.kind);
+    if (L.depth === VICTORY_DEPTH && !run.won) {
+      winRun();
+      toast(bossSpec(e).fall, relic ? `${relic.name} rejoint le gouffre · le fond est atteint` : 'le fond du gouffre est atteint');
+    } else {
+      toast(bossSpec(e).fall, relic ? `${relic.name} rejoint le gouffre pour de bon` : 'l’escalier s’ouvre');
+    }
     clearBossMarks(e);
     for (const p of L.props) {
       if (p.kind !== 'sporange' || p.dead) continue;
@@ -4024,6 +4177,8 @@ function killEnemy(e) {
     const lvl = player.perks.onde;
     L.blasts.push({ x: e.x, z: e.z, t: 0.1, R: 1.6 + 0.6 * lvl, dmg: dmgOf() * (0.4 + 0.3 * lvl), color: 0xffa040, by: player });
   }
+  if (player.perks.coeurforge && inTranse()) L.blasts.push({ x: e.x, z: e.z, t: 0.05, R: 1.9, dmg: dmgOf() * 0.6, color: 0xff7a20, by: player });
+  if (player.perks.coeurspores && e.type !== 'boss' && Math.random() < 0.33) spawnCloud(e.x, e.z, true);
   gainXp(e.xp);
 }
 
@@ -4234,6 +4389,7 @@ function gainXp(n) {
 function perfectDodge(p) {
   if (p.perfectDone) return;
   p.perfectDone = true;
+  if (p.riposte) p.riposteT = 2;
   slowMo = 0.45;
   p.nextCrit = true;
   p.dashCd = p.perks.contre ? 0 : Math.min(p.dashCd, 0.4);
@@ -4248,11 +4404,24 @@ function perfectDodge(p) {
   }
 }
 
+// Seul un coup encaissé au tout début de l'esquive est « parfait » : le reste de l'invulnérabilité protège, sans bonus.
+const PERFECT_WINDOW = coarse ? 0.16 : 0.12;
+function dodgedLate(p) {
+  if (p.lateDone || p.perfectDone) return;
+  p.lateDone = true;
+  floatText(p.x, 1.6, p.z, 'Esquivé', 'armored');
+  if (!hints.late) {
+    hints.late = true;
+    toast('Esquivé de justesse', 'esquive au dernier moment pour un Parfait');
+  }
+}
+
 function hurtPlayer(amount, sx, sz, who = player) {
   const p = who;
   if (state !== 'play' || p.down) return false;
   if (p.dodge > 0) {
-    perfectDodge(p);
+    if (DODGE_TIME - p.dodge <= PERFECT_WINDOW) perfectDodge(p);
+    else dodgedLate(p);
     return false;
   }
   if (p.inv > 0) return false;
@@ -4264,6 +4433,10 @@ function hurtPlayer(amount, sx, sz, who = player) {
     burst(p.x, 0.8, p.z, 0x6ab0ff, 14, 3);
     ring(p.x, p.z, 0x6ab0ff, 16, 5, 0.3);
     floatText(p.x, 1.6, p.z, 'Bouclier brisé', 'block');
+    if (p.perks.bastion) {
+      heal(2, p);
+      L.blasts.push({ x: p.x, z: p.z, t: 0, R: 2.4, dmg: dmgOf(p) * 0.6, color: 0x6ab0ff, by: p });
+    }
     return true;
   }
   if (p.parry && Math.random() < p.parry) {
@@ -4288,6 +4461,14 @@ function hurtPlayer(amount, sx, sz, who = player) {
   rumble(0.6, 180, p);
   burst(p.x, 0.8, p.z, 0xd9434d, 8, 2.5);
   floatText(p.x, 1.6, p.z, `−${D(amount)}`, 'hurt');
+  if (p.thorns) {
+    withHero(p, () => {
+      for (const e of L.enemies.slice()) {
+        const d = Math.hypot(e.x - p.x, e.z - p.z);
+        if (e.dying < 0 && d < 1.9 + e.r) hitEnemy(e, dmgOf(p) * 0.5 * p.thorns, (e.x - p.x) / (d || 1), (e.z - p.z) / (d || 1), { knock: 0.8 });
+      }
+    });
+  }
   updateHud();
   if (p.hp <= 0 && !p.lastBreath) {
     p.lastBreath = true;
@@ -4312,11 +4493,36 @@ function heroFalls(p) {
   if (heroes.some((h) => !h.down)) {
     sfx.die();
     floatText(p.x, 1.8, p.z, 'À terre', 'hurt');
-    toast(`Joueur ${p.index + 1} à terre`, 'reste 2 s à côté pour le relever');
+    toast(`Joueur ${p.index + 1} à terre`, 'il rampe et tire encore · reste 2 s à côté pour le relever');
     updateHud();
     return;
   }
   die();
+}
+
+// À terre, on rampe vers son coéquipier et la torche crache une étincelle : faible, mais on reste dans la partie.
+const DOWN_SPEED = 0.3;
+function updateDowned(dt) {
+  player.atkCd -= dt;
+  player.kvx = 0;
+  player.kvz = 0;
+  const m = readMove();
+  if (m.mag > (m.analog ? 0.18 : 0)) {
+    const sp = PLAYER_SPEED * DOWN_SPEED * Math.min(1, m.mag);
+    movePlayer((m.x / m.mag) * sp * dt, (m.z / m.mag) * sp * dt);
+    player.face = Math.atan2(m.x, m.z);
+  }
+  const km = heroKeymap(player);
+  const touchHeld = player.device.kind === 'any' && attackPointers.size > 0;
+  if (player.atkCd <= 0 && (touchHeld || (km && held(km.attack)) || heroPads(player).some((st) => st.attack))) {
+    const aim = boltAim(player);
+    if (aim) {
+      player.atkCd = 0.9;
+      spawnBolt(player, Math.atan2(aim[0] - player.x, aim[1] - player.z), dmgOf() * 0.3, false);
+      sfx.bolt();
+    }
+  }
+  updatePlayerTile();
 }
 
 function updateRevives(dt) {
@@ -4358,6 +4564,15 @@ function drinkPotion() {
   sfx.potion();
   burst(player.x, 0.6, player.z, 0xff5a70, 12, 2, -4, 0.8);
   heal(player.potionHeal);
+  if (player.potionBlast) L.blasts.push({ x: player.x, z: player.z, t: 0, R: 2.6, dmg: dmgOf() * 0.8 * player.potionBlast, color: 0x8ee09a, by: player });
+  if (player.potionTranse) {
+    const was = inTranse();
+    transe.t = Math.max(transe.t, 3 * player.potionTranse);
+    if (!was) {
+      sfx.transe();
+      toast('Transe', 'la fiole embrase la torche');
+    }
+  }
 }
 
 function openChest(c, who) {
@@ -4365,31 +4580,122 @@ function openChest(c, who) {
   sfx.chest();
   burst(c.x, 0.6, c.z, 0xf2c450, 14, 3);
   const base = (randi(6, 12) + L.depth) * (c.rich ? 2 : 1);
-  const gold = Math.round(base * who.goldMul);
+  const gold = Math.round(base * who.goldMul * goldShare());
   const potion = who.potions < who.maxPotions && Math.random() < (c.rich ? 0.35 : 0.12);
   if (potion) who.potions++;
   const title = `${tagOf(who)} Coffre`.trim();
   if (potion && !c.rich) {
     toast(title, 'une potion');
   } else {
-    for (const h of heroes) h.gold += Math.round(base * h.goldMul);
+    for (const h of heroes) h.gold += Math.round(base * h.goldMul * goldShare());
     toast(title, potion ? `${gold} écus et une potion` : `${gold} écus`);
   }
   updateHud();
 }
 
+// Une victoire bat toute défaite ; ensuite le nombre de pactes, la profondeur et les écus départagent.
+const recordKey = (r) => [r.won ? 1 : 0, r.won ? r.heat ?? 0 : 0, r.depth, r.gold];
 function recordBest() {
   if (debugRun) return false;
   const best = store.get(BEST_KEY, null);
-  const gold = teamGold();
-  const better = !best || L.depth > best.depth || (L.depth === best.depth && gold > best.gold);
-  if (better) store.set(BEST_KEY, { depth: L.depth, gold });
+  const now = { depth: L.depth, gold: teamGold(), won: run.won, heat: run.pacts.length };
+  const a = recordKey(now);
+  const b = best ? recordKey(best) : null;
+  const k = b ? a.findIndex((v, n) => v !== b[n]) : 0;
+  const better = !b || (k >= 0 && a[k] > b[k]);
+  if (better) store.set(BEST_KEY, now);
   return better && L.depth > 1;
 }
 
 function bestLine() {
   const b = store.get(BEST_KEY, null);
-  return b ? `Record : étage ${b.depth}, ${meters(b.depth)}, ${b.gold} écus` : '';
+  if (!b) return '';
+  const pacts = b.heat ? `, ${b.heat} pacte${b.heat > 1 ? 's' : ''}` : '';
+  return b.won ? `Record : victoire${pacts}, étage ${b.depth}, ${b.gold} écus` : `Record : étage ${b.depth}, ${meters(b.depth)}, ${b.gold} écus`;
+}
+
+// ---------- Fin de partie, pactes, grimoire
+const VICTORY_DEPTH = BOSS_EVERY * 4;
+const PACTS_KEY = 'profondeurs.pactes';
+const PACTS = [
+  { id: 'hordes', name: 'Hordes', desc: '30 % de monstres en plus à chaque étage.' },
+  { id: 'acier', name: 'Acier', desc: 'Monstres et gardiens ont 30 % de PV en plus.' },
+  { id: 'fureur', name: 'Fureur', desc: 'Les monstres frappent 25 % plus fort.' },
+  { id: 'hate', name: 'Hâte', desc: 'Les monstres sont 15 % plus rapides.' },
+  { id: 'disette', name: 'Disette', desc: 'Une potion de moins au départ, et chacune soigne 10 PV de moins.' },
+];
+const run = { won: false, pacts: [] };
+const hasPact = (id) => run.pacts.includes(id);
+let chosenPacts = (store.get(PACTS_KEY, []) || []).filter((id) => PACTS.some((p) => p.id === id));
+let winPending = false;
+
+function renderGrimoire() {
+  const relics = Object.keys(BOSS_RELIC).filter((b) => grimoire.bosses.includes(b)).length;
+  $('grimoire-line').textContent = relics || grimoire.wins
+    ? `Reliques de gardien ${relics}/4${grimoire.wins ? ` · ${grimoire.wins} victoire${grimoire.wins > 1 ? 's' : ''}` : ''}`
+    : '';
+  const box = $('pacts-box');
+  box.hidden = grimoire.wins < 1;
+  if (box.hidden) return;
+  const list = $('pacts');
+  list.replaceChildren();
+  for (const pact of PACTS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pact';
+    b.id = `pact-${pact.id}`;
+    b.setAttribute('aria-pressed', String(chosenPacts.includes(pact.id)));
+    const name = document.createElement('b');
+    name.textContent = pact.name;
+    const desc = document.createElement('small');
+    desc.textContent = pact.desc;
+    b.append(name, desc);
+    b.addEventListener('click', () => {
+      chosenPacts = chosenPacts.includes(pact.id) ? chosenPacts.filter((id) => id !== pact.id) : [...chosenPacts, pact.id];
+      store.set(PACTS_KEY, chosenPacts);
+      renderGrimoire();
+    });
+    list.append(b);
+  }
+  $('pacts-heat').textContent = chosenPacts.length ? `${chosenPacts.length} actif${chosenPacts.length > 1 ? 's' : ''}` : 'aucun';
+}
+
+function unlockRelic(kind) {
+  if (debugRun || !BOSS_RELIC[kind] || grimoire.bosses.includes(kind)) return null;
+  grimoire.bosses.push(kind);
+  saveGrimoire();
+  return perkById(BOSS_RELIC[kind]);
+}
+
+function winRun() {
+  run.won = true;
+  winPending = 'again';
+  if (debugRun) return;
+  if (grimoire.wins === 0) winPending = 'first';
+  grimoire.wins++;
+  grimoire.bestHeat = Math.max(grimoire.bestHeat, run.pacts.length);
+  saveGrimoire();
+}
+
+function openWin() {
+  const first = winPending === 'first';
+  winPending = false;
+  state = 'victory';
+  resetInputs();
+  const record = recordBest();
+  const heat = run.pacts.length;
+  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${record ? ' Nouveau record.' : ''}${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence.`;
+  const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
+  $('w-level').textContent = team.level;
+  $('w-gold').textContent = split('gold');
+  $('w-kills').textContent = split('kills');
+  $('w-combo').textContent = combo.best;
+  $('w-heat').textContent = heat;
+  $('w-bosses').textContent = team.bosses;
+  $('win-best').textContent = bestLine();
+  sfx.level();
+  showOverlay('menu-win');
+  armOverlay('menu-win');
 }
 
 function renderRelics(list) {
@@ -5086,13 +5392,13 @@ function updateBombs(dt) {
   }
 }
 
-function spawnEmber(x, z, R, t, dmg) {
+function spawnEmber(x, z, R, t, dmg, by = null) {
   if (isWall(tileOf(x), tileOf(z))) return;
-  const g = glow(0xff6a20, R * 2.6, 0.6);
+  const g = glow(by ? 0xffa040 : 0xff6a20, R * 2.6, 0.6);
   g.position.set(x, 0.12, z);
   L.group.add(g);
-  L.embers.push({ x, z, R, t, dmg, g, tick: 0.25 });
-  trapHint('ember', x, z);
+  L.embers.push({ x, z, R, t, dmg, g, tick: 0.25, by });
+  if (!by) trapHint('ember', x, z);
 }
 
 function updateEmbers(dt) {
@@ -5110,6 +5416,12 @@ function updateEmbers(dt) {
     m.tick -= dt;
     if (m.tick > 0 || state !== 'play') continue;
     m.tick = 0.45;
+    if (m.by) {
+      withHero(m.by, () => {
+        for (const e of L.enemies.slice()) if (e.dying < 0 && !e.hidden && Math.hypot(e.x - m.x, e.z - m.z) < m.R + e.r) hitEnemy(e, m.dmg, 0, 0, { knock: 0, quiet: true });
+      });
+      continue;
+    }
     for (const h of heroes) if (!h.down && h.dodge <= 0 && Math.hypot(h.x - m.x, h.z - m.z) < m.R + PLAYER_R * 0.3) hurtPlayer(m.dmg, m.x, m.z, h);
     splashFoes(m.x, m.z, m.R, m.dmg / dmgScale(L.depth), null);
   }
@@ -5468,12 +5780,16 @@ function updateShots(dt) {
         }
         if (s.owner === 'wisp') {
           withHero(s.by, () => hitEnemy(e, s.dmg, s.vx / speed, s.vz / speed, { knock: 0.3 }));
+          if (s.by && s.by.perks.elme) L.blasts.push({ x: e.x, z: e.z, t: 0, R: 1.6, dmg: dmgOf(s.by) * 0.5, color: 0x9af0ff, by: s.by });
           dead = true;
           break;
         }
         if (s.owner === 'mine') {
           const by = s.by ?? nearestHero(e.x, e.z);
-          withHero(by, () => hitEnemy(e, dmgOf(by) * 2, s.vx / speed, s.vz / speed, { crit: true }));
+          withHero(by, () => {
+            hitEnemy(e, dmgOf(by) * 2, s.vx / speed, s.vz / speed, { crit: true });
+            if (by.perks.reflet) chainLightning(e, dmgOf(by) * 2);
+          });
         }
         else if (!trapHitEnemy(e, s.edmg, s.vx / speed, s.vz / speed, 0.6)) continue;
         dead = true;
@@ -5915,7 +6231,7 @@ function updateItems(dt) {
     if (d < 0.55) {
       let value = 0;
       for (const h of heroes) {
-        const v = Math.max(1, Math.round(c.value * h.goldMul * comboMul()));
+        const v = Math.max(1, Math.round(c.value * h.goldMul * comboMul() * goldShare()));
         h.gold += v;
         if (h === near) value = v;
       }
@@ -5940,7 +6256,8 @@ function updateItems(dt) {
     if (!active) continue;
     const close = heroes.filter((h) => !h.down && Math.hypot(h.x - p.x, h.z - p.z) < 0.7);
     if (close.length) {
-      const who = close.find((h) => h.potions < h.maxPotions);
+      const room = heroes.filter((h) => h.potions < h.maxPotions).sort((a, b) => a.potions - b.potions || (close.includes(b) ? 1 : 0) - (close.includes(a) ? 1 : 0));
+      const who = room[0];
       if (!who) {
         if (!p.warned) { toast('Sacoche pleine', `${close[0].maxPotions} potions au maximum`); p.warned = true; }
         continue;
@@ -6109,24 +6426,33 @@ function openChoice({ kind, hero: who }) {
   $('choice-title').textContent = title;
   const box = $('perks');
   box.replaceChildren();
-  for (const perk of rollPerks(choiceHero)) {
+  for (const perk of rollPerks(choiceHero, kind)) {
     const n = choiceHero.perks[perk.id] || 0;
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'perk';
+    b.className = `perk ${perk.rar ?? ''}`;
     b.dataset.cat = perk.cat;
     const cat = document.createElement('span');
     cat.className = 'perk-cat';
-    cat.textContent = perk.max === Infinity ? perk.cat : `${perk.cat} · rang ${n + 1}/${perk.max}`;
+    const rank = perk.max > 1 && perk.max !== Infinity ? ` · rang ${n + 1}/${perk.max}` : '';
+    cat.textContent = perk.rar ? `${RARITY[perk.rar]}${perk.req ? ' · Duo' : ''} · ${perk.cat}${rank}` : perk.cat;
     const name = document.createElement('strong');
     name.textContent = perk.name;
     const desc = document.createElement('span');
     desc.className = 'perk-desc';
     desc.textContent = typeof perk.desc === 'function' ? perk.desc(n) : perk.desc;
     b.append(cat, name, desc);
+    const duo = perk.req ? `${perk.req.map((id) => perkById(id).name).join(' + ')}` : duosOpenedBy(choiceHero, perk).map((d) => `Ouvre le duo ${d.name}`).join(' · ');
+    if (duo) {
+      const tag = document.createElement('span');
+      tag.className = 'perk-duo';
+      tag.textContent = duo;
+      b.append(tag);
+    }
     b.addEventListener('click', () => choosePerk(perk));
     box.append(b);
   }
+  $('choice-skip').textContent = choiceHero.hp < choiceHero.maxHp ? `Passer et reprendre ${SKIP_HEAL * 10} PV` : 'Passer';
   sfx.relic();
   showOverlay('menu-choice');
   armOverlay('menu-choice');
@@ -6135,8 +6461,12 @@ function openChoice({ kind, hero: who }) {
 function choosePerk(perk) {
   if (state !== 'choice') return;
   const who = choiceHero;
-  applyPerk(perk.id, who);
-  burst(who.x, 0.5, who.z, 0xf2c450, 18, 3, -6, 0.8);
+  if (perk) {
+    applyPerk(perk.id, who);
+    burst(who.x, 0.5, who.z, perk.rar === 'legendaire' ? 0xffd36a : 0xf2c450, perk.rar === 'legendaire' ? 30 : 18, 3, -6, 0.8);
+  } else {
+    heal(SKIP_HEAL, who);
+  }
   choiceHero = null;
   if (pendingChoices.length) {
     openChoice(pendingChoices.shift());
@@ -6144,8 +6474,9 @@ function choosePerk(perk) {
   }
   state = 'play';
   showOverlay(null);
-  toast(perk.name, heroes.length > 1 ? `acquis par ${tagOf(who)}` : 'acquis');
+  if (perk) toast(perk.name, heroes.length > 1 ? `acquis par ${tagOf(who)}` : 'acquis');
 }
+const SKIP_HEAL = 3;
 
 function openAltar(who) {
   state = 'altar';
@@ -6170,24 +6501,36 @@ function openShop(who) {
   sfx.chest();
 }
 
+// Le marchand propose ce que le héros porte déjà (rang suivant) et trois emplacements libres tirés à sa première visite.
+function shopSlots(who) {
+  const m = L.merchant;
+  const all = Object.keys(GEAR);
+  if (!m) return all;
+  m.stock = m.stock || {};
+  if (!m.stock[who.index]) m.stock[who.index] = shuffle(all.filter((k) => !who.gear[k])).slice(0, 3);
+  return all.filter((k) => who.gear[k] || m.stock[who.index].includes(k));
+}
+
 function shopItems(who) {
-  const items = Object.keys(GEAR).map((slot) => {
+  const rows = shopSlots(who).map((slot) => {
+    const g = GEAR[slot];
     const level = who.gear[slot];
-    const max = GEAR[slot].tiers.length;
-    const price = GEAR[slot].price[level];
-    return {
-      key: slot,
-      group: GEAR[slot].group,
-      cat: `${GEAR[slot].group} · ${level >= max ? 'maximum' : `niveau ${level + 1}/${max}`}`,
-      name: level >= max ? gearLabel(who, slot, max - 1) : gearLabel(who, slot, level),
-      desc: GEAR[slot].desc,
-      price: level >= max ? null : price,
-      ok: level < max && who.gold >= price,
-    };
+    const max = g.price.length;
+    const price = level >= max ? null : g.price[level];
+    const kinds = level ? [who.gearKind[slot]] : Object.keys(g.kinds);
+    return kinds.map((kind) => ({
+      key: `${slot}:${kind}`,
+      group: g.group,
+      cat: level ? `${g.group} · ${level >= max ? 'maximum' : `rang ${level + 1}/${max}`}` : `${g.group} · au choix`,
+      name: `${g.kinds[kind].name(who)} ${ROMAN[Math.min(level, max - 1)]}`,
+      desc: g.kinds[kind].desc,
+      price,
+      ok: price !== null && who.gold >= price,
+    }));
   });
   const price = potionPrice();
-  items.push({ key: 'potion', group: 'Soins', cat: 'Soins · consommable', name: 'Potion', desc: `Rend ${who.potionHeal * 10} PV · ${who.potions}/${who.maxPotions} dans la sacoche`, price, ok: who.gold >= price && who.potions < who.maxPotions });
-  return items;
+  rows.push([{ key: 'potion', group: 'Soins', cat: 'Soins · consommable', name: 'Potion', desc: `Rend ${who.potionHeal * 10} PV · ${who.potions}/${who.maxPotions} dans la sacoche`, price, ok: who.gold >= price && who.potions < who.maxPotions }]);
+  return rows;
 }
 
 function renderShop(focusKey) {
@@ -6195,34 +6538,39 @@ function renderShop(focusKey) {
   const duo = heroes.length > 1;
   $('shop-kicker').textContent = duo ? `Marchand ambulant · ${tagOf(who)} · ${CLASSES[who.cls].name}` : 'Marchand ambulant';
   $('shop-kicker').style.color = duo ? P_COLOR[who.index] : '';
-  $('shop-lead').textContent = `Tu as ${who.gold} écus · ${who.maxHp * 10} PV max · défense ${Math.round(who.armor * 100)} % · parade ${Math.round(who.parry * 100)} %. Les pouvoirs, eux, viennent des niveaux, des gardiens et des autels.`;
+  $('shop-lead').textContent = `Tu as ${who.gold} écus · ${who.maxHp * 10} PV max · défense ${Math.round(who.armor * 100)} %. Deux objets par emplacement : en prendre un ferme l’autre.`;
   const box = $('shop-items');
   box.replaceChildren();
   let focus = null;
-  for (const it of shopItems(who)) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'perk';
-    b.dataset.cat = it.group;
-    b.dataset.key = it.key;
-    b.disabled = !it.ok;
-    const cat = document.createElement('span');
-    cat.className = 'perk-cat';
-    cat.textContent = it.cat;
-    const name = document.createElement('strong');
-    name.textContent = it.name;
-    const desc = document.createElement('span');
-    desc.className = 'perk-desc';
-    desc.textContent = it.desc;
-    const price = document.createElement('span');
-    price.className = 'price';
-    price.textContent = it.price === null ? 'Déjà au maximum' : `${it.price} écus`;
-    b.append(cat, name, desc, price);
-    b.addEventListener('click', () => buy(it.key));
-    box.append(b);
-    if (it.key === focusKey) focus = b;
+  for (const row of shopItems(who)) {
+    const line = document.createElement('div');
+    line.className = row.length > 1 ? 'gear-row' : 'gear-row single';
+    for (const it of row) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'perk';
+      b.dataset.cat = it.group;
+      b.dataset.key = it.key;
+      b.disabled = !it.ok;
+      const cat = document.createElement('span');
+      cat.className = 'perk-cat';
+      cat.textContent = it.cat;
+      const name = document.createElement('strong');
+      name.textContent = it.name;
+      const desc = document.createElement('span');
+      desc.className = 'perk-desc';
+      desc.textContent = it.desc;
+      const price = document.createElement('span');
+      price.className = 'price';
+      price.textContent = it.price === null ? 'Déjà au maximum' : `${it.price} écus`;
+      b.append(cat, name, desc, price);
+      b.addEventListener('click', () => buy(it.key));
+      line.append(b);
+      if (it.key === focusKey || (focusKey && it.key.startsWith(`${focusKey.split(':')[0]}:`))) focus = b;
+    }
+    box.append(line);
   }
-  if (focus) padFocus(focus.disabled ? [...box.children].find((b) => !b.disabled) ?? $('shop-leave') : focus);
+  if (focus) padFocus(focus.disabled ? box.querySelector('button:not(:disabled)') ?? $('shop-leave') : focus);
 }
 
 function buy(key) {
@@ -6234,14 +6582,17 @@ function buy(key) {
     who.gold -= price;
     who.potions++;
   } else {
-    const level = who.gear[key];
-    const price = GEAR[key].price[level];
-    if (level >= GEAR[key].tiers.length || who.gold < price) return;
+    const [slot, kind] = key.split(':');
+    const g = GEAR[slot];
+    const level = who.gear[slot];
+    const price = g.price[level];
+    if (!g.kinds[kind] || (level && who.gearKind[slot] !== kind) || level >= g.price.length || who.gold < price) return;
     who.gold -= price;
-    who.gear[key]++;
-    GEAR[key].apply(who);
+    who.gearKind[slot] = kind;
+    who.gear[slot]++;
+    g.kinds[kind].apply(who);
     who.hp = Math.min(who.hp, who.maxHp);
-    floatText(who.x, 1.8, who.z, gearLabel(who, key, level), 'gold');
+    floatText(who.x, 1.8, who.z, gearLabel(who, slot, level), 'gold');
   }
   sfx.buy();
   burst(who.x, 0.8, who.z, 0xf2c450, 12, 2.5, -4, 0.6);
@@ -6330,6 +6681,9 @@ function startFloor(depth) {
 
 function newRun(saved) {
   Object.assign(team, TEAM_START);
+  run.won = !!(saved && saved.won);
+  run.pacts = saved ? (Array.isArray(saved.pacts) ? saved.pacts.filter((id) => PACTS.some((p) => p.id === id)) : []) : grimoire.wins ? chosenPacts.slice() : [];
+  winPending = false;
   for (const h of heroes) {
     Object.assign(h, bodyStart(), heroStats());
     h.mesh.rig.rotation.set(0, 0, 0);
@@ -6343,7 +6697,7 @@ function newRun(saved) {
   transe.t = 0;
   comboEl.hidden = true;
   pendingChoices.length = 0;
-  hints = { orb: false, perfect: false, traps: new Set() };
+  hints = { orb: false, perfect: false, late: false, traps: new Set() };
   debugRun = false;
   $('perf').hidden = true;
   runBiomes = saved && Array.isArray(saved.biomes) && saved.biomes.length === 4 && saved.biomes.every((b) => BIOMES[b])
@@ -6361,9 +6715,12 @@ function newRun(saved) {
         for (let k = 0; k < count && perkById(id) !== FEAST; k++) applyPerk(id, h);
       }
       for (const [slot, level] of Object.entries(sv.gear || {})) {
-        for (let k = 0; k < level && GEAR[slot] && h.gear[slot] < GEAR[slot].tiers.length; k++) {
+        if (!GEAR[slot]) continue;
+        const kind = sv.gearKind && GEAR[slot].kinds[sv.gearKind[slot]] ? sv.gearKind[slot] : Object.keys(GEAR[slot].kinds)[0];
+        if (level > 0) h.gearKind[slot] = kind;
+        for (let k = 0; k < level && h.gear[slot] < GEAR[slot].price.length; k++) {
           h.gear[slot]++;
-          GEAR[slot].apply(h);
+          GEAR[slot].kinds[kind].apply(h);
         }
       }
       for (const key of ['hp', ...Object.keys(HERO_START), 'shieldT']) {
@@ -6371,6 +6728,12 @@ function newRun(saved) {
       }
       if (typeof sv.shieldReady === 'boolean') h.shieldReady = sv.shieldReady && h.shieldCd > 0;
     });
+  }
+  if (hasPact('disette')) {
+    for (const h of heroes) {
+      h.potionHeal -= 1;
+      if (!saved) h.potions = Math.max(0, h.potions - 1);
+    }
   }
   startFloor(saved && saved.depth > 0 ? saved.depth : 1);
 }
@@ -6573,6 +6936,11 @@ function drawMinimap(dt) {
     mctx.fillStyle = '#7af0d0';
     mctx.fillRect((fo.x / TILE) * sx, (fo.z / TILE) * sy, sx, sy);
   }
+  const sc = L.secret;
+  if (sc && !sc.open && heroes.some((h) => h.finder)) {
+    mctx.fillStyle = `rgba(242, 196, 80, ${0.55 + 0.45 * Math.sin(elapsed * 5)})`;
+    mctx.fillRect(sc.door.i * sx - sx * 0.5, sc.door.j * sy - sy * 0.5, sx * 2, sy * 2);
+  }
   const st = L.stairs;
   if (L.seen[idx(st.i, st.j)]) {
     const cx = (st.i + 0.5) * sx;
@@ -6642,7 +7010,7 @@ function updateOverlays(dt, running) {
   if (combo.n && combo.t <= 0) combo.n = 0;
   const showCombo = combo.n >= 2 || inTranse();
   if (comboEl.hidden === showCombo) comboEl.hidden = !showCombo;
-  if (showCombo) setStyle(comboBar, 'transform', `scaleX(${(inTranse() ? transe.t / TRANSE_MAX : Math.max(0, combo.t / COMBO_WINDOW)).toFixed(3)})`);
+  if (showCombo) setStyle(comboBar, 'transform', `scaleX(${(inTranse() ? Math.min(1, transe.t / transeMax()) : Math.max(0, combo.t / COMBO_WINDOW)).toFixed(3)})`);
   if (inTranse() && combo.n < 2) setText($('combo-n'), `${Math.ceil(transe.t)} s`);
   const trance = inTranse() && state === 'play';
   if (trance !== lastTranse) {
@@ -7131,6 +7499,23 @@ $('play').addEventListener('click', () => {
   toast(L.biome.name, `Étage ${L.depth} · ${L.biome.desc}`, 3.2);
 });
 
+$('win-deeper').addEventListener('click', () => {
+  if (state !== 'victory') return;
+  state = 'play';
+  showOverlay(null);
+  toast('Au-delà du fond', 'le gouffre recommence, le record continue', 2.6);
+});
+$('win-surface').addEventListener('click', () => {
+  if (state !== 'victory') return;
+  newRun();
+  state = 'menu';
+  showOverlay('menu-start');
+  toastEl.classList.remove('show');
+  toastT = 0;
+  $('best').textContent = bestLine();
+  renderGrimoire();
+});
+
 $('restart').addEventListener('click', () => {
   initAudio();
   if (debugRun) {
@@ -7248,6 +7633,7 @@ $('altar-blood').addEventListener('click', () => {
   who.altarUses--;
   acceptAltar();
 });
+$('choice-skip').addEventListener('click', () => choosePerk(null));
 $('altar-leave').addEventListener('click', () => {
   if (state !== 'altar') return;
   altarHero = null;
@@ -7701,7 +8087,7 @@ function adaptQuality(frameDt) {
 }
 
 // ---------- Boucle
-const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby']);
+const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby', 'victory']);
 const clock = new THREE.Clock();
 let padStatusT = 0;
 // three.js ne redemande l'image suivante qu'après le retour de la boucle : une exception non rattrapée figerait le jeu.
@@ -7755,10 +8141,11 @@ function step(now) {
   if (running) {
     elapsed += dt;
     if (state === 'play') {
+      const standing = heroes.some((h) => !h.down);
       for (const h of heroes) {
-        if (h.down) continue;
         player = h;
-        updatePlayer(dt);
+        if (!h.down) updatePlayer(dt);
+        else if (standing) updateDowned(dt);
       }
       player = heroes[0];
       enforceLeash();
@@ -7791,6 +8178,7 @@ function step(now) {
   updateDownMarks();
   drawMinimap(realDt);
   if (state === 'play' && pendingChoices.length) openChoice(pendingChoices.shift());
+  else if (state === 'play' && winPending) openWin();
   if (state === 'play' && !trans && !document.hidden) adaptQuality(frameDt);
   if (debugRun && state === 'play') showPerf();
   if (!running && now - perf.lastRender < 100) return;
@@ -7820,13 +8208,13 @@ function warmShaders() {
 }
 
 function snapshot() {
-  if (!L || state === 'menu' || state === 'dead') return {};
+  if (!L || state === 'menu' || state === 'dead' || state === 'victory') return {};
   const duo = heroes.length > 1 ? { devices: heroes.map((h) => ({ ...h.device })) } : null;
   const saved = heroes.map((h) => {
     const { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT } = h;
-    return { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT, perks: { ...h.perks }, gear: { ...h.gear } };
+    return { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT, perks: { ...h.perks }, gear: { ...h.gear }, gearKind: { ...h.gearKind } };
   });
-  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice() } };
+  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice() } };
 }
 
 function boot(data) {
@@ -7836,12 +8224,13 @@ function boot(data) {
   resize();
   setMuted(audio.muted);
   $('best').textContent = bestLine();
-  const run = data && data.run;
-  if (run && run.depth > 0) {
-    const classes = Array.isArray(run.heroes) ? run.heroes.map((h) => h && h.cls) : Array.isArray(run.classes) ? run.classes : [];
-    if (run.duo && Array.isArray(run.duo.devices) && run.duo.devices.length === 2) setupHeroes(run.duo.devices, classes);
+  renderGrimoire();
+  const saved = data && data.run;
+  if (saved && saved.depth > 0) {
+    const classes = Array.isArray(saved.heroes) ? saved.heroes.map((h) => h && h.cls) : Array.isArray(saved.classes) ? saved.classes : [];
+    if (saved.duo && Array.isArray(saved.duo.devices) && saved.duo.devices.length === 2) setupHeroes(saved.duo.devices, classes);
     else setHeroClass(heroes[0], classes[0] ?? soloClass);
-    newRun(run);
+    newRun(saved);
     state = 'play';
     pauseGame();
   } else {
