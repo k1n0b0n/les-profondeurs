@@ -7,13 +7,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=IM+Fell+English+SC&display=swap">
 <style>
-/* Plein écran : scène 3D en fond, HUD collé aux bords (insets de sécurité), menus en carte centrée. Monde unique sombre, éclairé à la torche. */
+/* Plein écran : scène 3D en fond, HUD collé aux bords (insets de sécurité), menus en carte centrée. Monde unique sombre, éclairé à la torche.
+   Pas de backdrop-filter sur le HUD : au-dessus du canvas, le flou se recalcule à chaque image. */
 :root {
   color-scheme: dark;
   --void: #0b0910;
   --ink: #f1e7d4;
   --ink-dim: #b3a58c;
-  --panel: rgba(18, 14, 22, 0.72);
+  --panel: rgba(18, 14, 22, 0.84);
   --panel-solid: #17131c;
   --line: rgba(241, 231, 212, 0.14);
   --ember: #f0a04b;
@@ -83,8 +84,6 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   transition: opacity 0.2s;
 }
 #hud.duo .pcard { border-left: 3px solid var(--pc); }
@@ -132,8 +131,6 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
 .meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 .meta .floor { font-family: var(--font-display); font-size: 16px; color: var(--ink); }
@@ -264,8 +261,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #potion-count { position: absolute; top: -5px; right: -9px; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 11px; background: var(--ink); color: var(--ember-ink); font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 
 #transe { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity 0.4s; background: radial-gradient(ellipse at center, rgba(240, 160, 75, 0) 55%, rgba(240, 140, 50, 0.3)); }
-#transe.on { opacity: 1; animation: transe 0.9s ease-in-out infinite alternate; }
-@keyframes transe { to { filter: brightness(1.5); } }
+#transe.on { opacity: 1; animation: transe 0.9s ease-in-out 0.4s infinite alternate; }
+@keyframes transe { from { opacity: 1; } to { opacity: 0.65; } }
 #combo.transe { border-color: var(--ember); box-shadow: 0 0 18px rgba(240, 160, 75, 0.5); }
 #hurt { position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(190, 20, 30, 0) 42%, rgba(190, 20, 30, 0.6)); }
 #slow { position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(106, 176, 255, 0) 50%, rgba(106, 176, 255, 0.35)); }
@@ -452,7 +449,7 @@ details.more > :not(summary) { margin-top: 10px; }
       <section id="run" aria-label="Expédition">
         <div class="meta"><span class="floor" id="floor">Étage 1</span><span id="depth">−12 m</span></div>
         <div class="bar xp" title="Expérience"><div id="xp-fill"></div></div>
-        <div class="meta lvl"><span id="lvl">Niveau 1</span></div>
+        <div class="meta lvl"><span id="lvl">Niveau 1</span><span id="perf" hidden></span></div>
       </section>
       <div id="combo" hidden><b id="combo-n">×2</b><span id="combo-label">combo</span><i id="combo-bar"></i></div>
     </div>
@@ -637,9 +634,13 @@ details.more > :not(summary) { margin-top: 10px; }
     el.hidden = false;
   };
   window.addEventListener('error', (e) => {
+    if (window.__profondeursReady) return;
     show(e.message || "three.js (cdn.jsdelivr.net) n'a pas pu être téléchargé. Vérifie la connexion puis recharge la page.");
   }, true);
-  window.addEventListener('unhandledrejection', (e) => show(String((e.reason && e.reason.message) || e.reason)));
+  window.addEventListener('unhandledrejection', (e) => {
+    if (window.__profondeursReady) return;
+    show(String((e.reason && e.reason.message) || e.reason));
+  });
   setTimeout(() => {
     if (!window.__profondeursReady) show('le moteur 3D ne répond toujours pas après 15 s. Recharge la page.');
   }, 15000);
@@ -770,16 +771,23 @@ const store = {
 };
 
 // ---------- Rendu
+// MSAA inutile sur un écran tactile dense : l'aliasing ne s'y voit pas.
+const DPR_MAX = Math.min(window.devicePixelRatio || 1, 2);
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas: $('scene'), antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas: $('scene'), antialias: !(coarse && DPR_MAX >= 2), powerPreference: 'high-performance' });
 } catch (err) {
   $('start-lead').textContent = "WebGL est indisponible sur cet appareil, le donjon ne peut pas s'afficher.";
   $('play').hidden = true;
   throw err;
 }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(DPR_MAX);
 renderer.setClearColor(0x0b0910);
+renderer.domElement.addEventListener('webglcontextlost', () => pauseGame());
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  perf.lastRender = 0;
+  warmShaders();
+});
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 90);
@@ -886,8 +894,21 @@ const lavaTex = canvasTexture(64, (g, s) => {
   }
 });
 
+// Deux groupes (côtés, dessus) au lieu des six faces de BoxGeometry : deux appels de dessin au lieu de six.
+function wallGeometry() {
+  const geo = new THREE.BoxGeometry(TILE, WALL_H, TILE).translate(0, WALL_H / 2, 0);
+  const src = geo.index.array;
+  const range = (n) => Array.from(src.subarray(geo.groups[n].start, geo.groups[n].start + geo.groups[n].count));
+  const sides = [0, 1, 4, 5].flatMap(range);
+  geo.setIndex([...sides, ...range(2)]);
+  geo.clearGroups();
+  geo.addGroup(0, sides.length, 0);
+  geo.addGroup(sides.length, 6, 1);
+  return geo;
+}
+
 const G = {
-  wall: new THREE.BoxGeometry(TILE, WALL_H, TILE).translate(0, WALL_H / 2, 0),
+  wall: wallGeometry(),
   floor: new THREE.PlaneGeometry(TILE, TILE).rotateX(-Math.PI / 2),
   shadow: new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
   disc: new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2),
@@ -981,7 +1002,9 @@ const M = {
   shroomToxic: lambert(0x9a4ad0, { emissive: 0x40125a }),
   stem: lambert(0xd8cdb4),
 };
-const wallMats = [M.wallSide, M.wallSide, M.wallTop, M.wallTop, M.wallSide, M.wallSide];
+const wallMats = [M.wallSide, M.wallTop];
+// Transparent double face = deux passes dans three.js ; en additif, une seule suffit.
+for (const m of Object.values(M)) if (m.side === THREE.DoubleSide && m.blending === THREE.AdditiveBlending) m.forceSinglePass = true;
 
 const glowMats = new Map();
 function glowMat(color, opacity) {
@@ -1075,10 +1098,10 @@ function buildHero(tunic = 0x3a5ca8, tagColor = 0x6aa8ff) {
   halo.position.y = 0.38;
   torch.add(stick, flame, halo);
 
-  const arcMat = basic(0xffd7a0, { ...additive, opacity: 0, side: THREE.DoubleSide });
+  const arcMat = basic(0xffd7a0, { ...additive, opacity: 0, side: THREE.DoubleSide, forceSinglePass: true });
   const arc = new THREE.Mesh(new THREE.RingGeometry(0.45, ATTACK_RANGE, 28, 1, (-5 * Math.PI) / 6, (2 * Math.PI) / 3).rotateX(-Math.PI / 2), arcMat);
   arc.position.y = 0.45;
-  const spinMat = basic(0xffd7a0, { ...additive, opacity: 0, side: THREE.DoubleSide });
+  const spinMat = basic(0xffd7a0, { ...additive, opacity: 0, side: THREE.DoubleSide, forceSinglePass: true });
   const spinRing = new THREE.Mesh(new THREE.RingGeometry(0.45, ATTACK_RANGE, 48).rotateX(-Math.PI / 2), spinMat);
   spinRing.position.y = 0.45;
   const shield = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.74, 40).rotateX(-Math.PI / 2), M.shield);
@@ -1088,7 +1111,7 @@ function buildHero(tunic = 0x3a5ca8, tagColor = 0x6aa8ff) {
   const tag = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.54, 36).rotateX(-Math.PI / 2), basic(tagColor, { transparent: true, opacity: 0.8, depthWrite: false }));
   tag.position.y = 0.04;
   tag.visible = false;
-  const revive = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.9, 40).rotateX(-Math.PI / 2), basic(0x8ee09a, { ...additive, opacity: 0.75, side: THREE.DoubleSide }));
+  const revive = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.9, 40).rotateX(-Math.PI / 2), basic(0x8ee09a, { ...additive, opacity: 0.75, side: THREE.DoubleSide, forceSinglePass: true }));
   revive.position.y = 0.05;
   revive.visible = false;
 
@@ -1244,8 +1267,60 @@ function buildEnemyModel(type, kind) {
     extra.eye.position.set(0, 2.33, 0.62);
     body.add(extra.eye);
   }
+  mergeBody(body, `${type}:${kind ?? ''}`, extra);
   g.add(body, part(G.shadow, M.shadow, def.r * 1.25, 1, def.r * 1.25, 0, 0.02, 0));
   return { g, body, mats, extra };
+}
+
+// Les pièces d'un corps sont fixes entre elles : un maillage par matériau, géométrie partagée par modèle.
+const mergedGeo = new Map();
+function mergeBody(body, key, extra) {
+  const keep = new Set(Object.values(extra));
+  const byMat = new Map();
+  for (const o of body.children) {
+    if (!o.isMesh || keep.has(o) || Array.isArray(o.material)) continue;
+    if (!byMat.has(o.material)) byMat.set(o.material, []);
+    byMat.get(o.material).push(o);
+  }
+  let slot = 0;
+  for (const [mat, list] of byMat) {
+    const id = `${key}:${slot++}`;
+    if (list.length < 2) continue;
+    if (!mergedGeo.has(id)) mergedGeo.set(id, mergeGeometries(list));
+    for (const o of list) body.remove(o);
+    body.add(new THREE.Mesh(mergedGeo.get(id), mat));
+  }
+}
+
+function mergeGeometries(meshes) {
+  const parts = meshes.map((o) => {
+    o.updateMatrix();
+    const geo = o.geometry.clone().applyMatrix4(o.matrix);
+    return geo.index ? geo : geo.setIndex([...Array(geo.attributes.position.count).keys()]);
+  });
+  const names = ['position', 'normal', 'uv'];
+  const total = parts.reduce((n, g) => n + g.attributes.position.count, 0);
+  const out = new THREE.BufferGeometry();
+  for (const name of names) {
+    const size = parts[0].attributes[name].itemSize;
+    const arr = new Float32Array(total * size);
+    let at = 0;
+    for (const g of parts) {
+      arr.set(g.attributes[name].array, at);
+      at += g.attributes[name].array.length;
+    }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, size));
+  }
+  const index = [];
+  let base = 0;
+  for (const g of parts) {
+    for (const v of g.index.array) index.push(v + base);
+    base += g.attributes.position.count;
+  }
+  out.setIndex(index);
+  out.computeBoundingSphere();
+  for (const g of parts) g.dispose();
+  return out;
 }
 
 function buildBossBody(kind, body, own, extra) {
@@ -1292,6 +1367,7 @@ function buildBossBody(kind, body, own, extra) {
     extra.aura = new THREE.Sprite(auraMat);
     extra.aura.scale.setScalar(5.5);
     extra.aura.position.y = 1.3;
+    extra.aura.visible = false;
     extra.disposeMats = [auraMat];
     body.add(extra.eye, extra.aura);
   } else {
@@ -2142,12 +2218,13 @@ const iceTex = canvasTexture(64, (g, s) => {
   }
 });
 
+const iceSheen = new THREE.MeshBasicMaterial({ map: iceTex, ...additive, opacity: 0.42 });
+
 function buildIceMesh() {
   const tiles = [];
   for (let k = 0; k < L.ice.length; k++) if (L.ice[k]) tiles.push(k);
   if (!tiles.length) return;
-  const mat = new THREE.MeshBasicMaterial({ map: iceTex, ...additive, opacity: 0.42 });
-  const mesh = new THREE.InstancedMesh(G.floor, mat, tiles.length);
+  const mesh = new THREE.InstancedMesh(G.floor, iceSheen, tiles.length);
   const mtx = new THREE.Matrix4();
   const black = new THREE.Color(0x000000);
   tiles.forEach((k, n) => {
@@ -2157,7 +2234,7 @@ function buildIceMesh() {
     L.iceId[k] = n;
   });
   L.group.add(mesh);
-  L.disposables.push(mat, mesh);
+  L.disposables.push(mesh);
   L.iceMesh = mesh;
 }
 
@@ -2804,6 +2881,8 @@ const onIce = (x, z) => {
   return inside(i, j) && L.ice[idx(i, j)] === 1;
 };
 
+// Tableau réutilisé à chaque appel : à lire tout de suite.
+const flowOut = [0, 0];
 function flowDir(x, z) {
   const i = tileOf(x);
   const j = tileOf(z);
@@ -2819,7 +2898,9 @@ function flowDir(x, z) {
     const dx = h.x - x;
     const dz = h.z - z;
     const d = Math.hypot(dx, dz) || 1;
-    return [dx / d, dz / d];
+    flowOut[0] = dx / d;
+    flowOut[1] = dz / d;
+    return flowOut;
   }
   let best = cur;
   let bi = i;
@@ -2832,7 +2913,9 @@ function flowDir(x, z) {
   const tx = bi * TILE - x;
   const tz = bj * TILE - z;
   const d = Math.hypot(tx, tz) || 1;
-  return [tx / d, tz / d];
+  flowOut[0] = tx / d;
+  flowOut[1] = tz / d;
+  return flowOut;
 }
 
 // ---------- Son
@@ -4668,7 +4751,7 @@ function wakeBoss(e) {
   e.model.extra.eye.scale.setScalar(1.4);
   $('boss').hidden = false;
   $('boss-name').textContent = spec.name;
-  $('boss-fill').style.width = '100%';
+  setStyle($('boss-fill'), 'width', '100.0%');
   toast(spec.name, spec.sub, 3.2);
   sfx.roar();
   addShake(0.3);
@@ -4811,6 +4894,7 @@ function aiBoss(e, dt, d, dx, dz) {
   }
   if (e.kind === 'forge') {
     e.model.extra.aura.material.opacity = e.heatT > 0 ? 0.55 + Math.sin(elapsed * 12) * 0.15 : 0;
+    e.model.extra.aura.visible = e.heatT > 0;
     if (e.coolT > 0 && Math.random() < 0.4) emit({ x: e.x + rand(-0.8, 0.8), y: rand(1.5, 2.6), z: e.z + rand(-0.8, 0.8), vx: 0, vy: 1.2, vz: 0, g: 0, life: 0.8, max: 0.8, color: 0xb8b0a8, size: 0.6 });
   }
   updateBossMarks(e, dt);
@@ -4974,7 +5058,7 @@ function aiBoss(e, dt, d, dx, dz) {
     default:
       if (done) nextBossAct(e);
   }
-  $('boss-fill').style.width = `${clamp(e.hp / e.maxHp, 0, 1) * 100}%`;
+  setStyle($('boss-fill'), 'width', `${(clamp(e.hp / e.maxHp, 0, 1) * 100).toFixed(1)}%`);
 }
 
 function spawnBomb(x, z, R, dmg) {
@@ -6261,6 +6345,7 @@ function newRun(saved) {
   pendingChoices.length = 0;
   hints = { orb: false, perfect: false, traps: new Set() };
   debugRun = false;
+  $('perf').hidden = true;
   runBiomes = saved && Array.isArray(saved.biomes) && saved.biomes.length === 4 && saved.biomes.every((b) => BIOMES[b])
     ? saved.biomes
     : ['crypte', ...shuffle(['glace', 'forge', 'fongus'])];
@@ -6413,7 +6498,7 @@ function updateDownMarks() {
   heroes.forEach((h, n) => {
     const el = $(`down-${n + 1}`);
     const show = state === 'play' && h.down && heroes.some((o) => !o.down);
-    el.hidden = !show;
+    if (el.hidden === show) el.hidden = !show;
     if (!show) return;
     markV.set(h.x, 1.4, h.z).project(camera);
     const x = ((markV.x + 1) / 2) * w;
@@ -6462,7 +6547,11 @@ function updateFloaters(dt) {
 
 const mm = $('minimap');
 const mctx = mm.getContext('2d');
-function drawMinimap() {
+let minimapT = 0;
+function drawMinimap(dt) {
+  minimapT -= dt;
+  if (minimapT > 0) return;
+  minimapT = 1 / 20;
   const w = mm.width;
   const h = mm.height;
   mctx.clearRect(0, 0, w, h);
@@ -6523,6 +6612,20 @@ function drawMinimap() {
   mctx.globalAlpha = 1;
 }
 
+const styleCache = new WeakMap();
+function setStyle(el, prop, value) {
+  let cache = styleCache.get(el);
+  if (!cache) styleCache.set(el, (cache = {}));
+  if (cache[prop] === value) return;
+  cache[prop] = value;
+  el.style[prop] = value;
+}
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
+const comboBar = $('combo-bar');
+const hurtEl = $('hurt');
+const slowEl = $('slow');
 const dashBtn = $('dash');
 let lastCd = -1;
 let lastCharged = false;
@@ -6539,8 +6642,8 @@ function updateOverlays(dt, running) {
   if (combo.n && combo.t <= 0) combo.n = 0;
   const showCombo = combo.n >= 2 || inTranse();
   if (comboEl.hidden === showCombo) comboEl.hidden = !showCombo;
-  $('combo-bar').style.transform = `scaleX(${inTranse() ? transe.t / TRANSE_MAX : Math.max(0, combo.t / COMBO_WINDOW)})`;
-  if (inTranse() && combo.n < 2) $('combo-n').textContent = `${Math.ceil(transe.t)} s`;
+  if (showCombo) setStyle(comboBar, 'transform', `scaleX(${(inTranse() ? transe.t / TRANSE_MAX : Math.max(0, combo.t / COMBO_WINDOW)).toFixed(3)})`);
+  if (inTranse() && combo.n < 2) setText($('combo-n'), `${Math.ceil(transe.t)} s`);
   const trance = inTranse() && state === 'play';
   if (trance !== lastTranse) {
     lastTranse = trance;
@@ -6580,8 +6683,8 @@ function updateOverlays(dt, running) {
   }
   hurtFlash = Math.max(0, hurtFlash - dt * 2.2);
   const low = state === 'play' && heroes.some((h) => !h.down && h.hp / h.maxHp <= 0.3) ? 0.3 + Math.sin(elapsed * 5) * 0.12 : 0;
-  $('hurt').style.opacity = Math.max(hurtFlash, low).toFixed(3);
-  $('slow').style.opacity = slowMo > 0 ? Math.min(1, slowMo * 3).toFixed(3) : '0';
+  setStyle(hurtEl, 'opacity', Math.max(hurtFlash, low).toFixed(2));
+  setStyle(slowEl, 'opacity', slowMo > 0 ? Math.min(1, slowMo * 3).toFixed(2) : '0');
   if (state === 'dead' && heroes[0].deadT > 1.3 && $('menu-dead').hidden) showOverlay('menu-dead');
 }
 
@@ -6602,6 +6705,8 @@ function updateHero(dt) {
     h.rig.position.y = 0;
     h.arcMat.opacity = 0;
     h.spinMat.opacity = 0;
+    h.arc.visible = false;
+    h.spinRing.visible = false;
     h.shield.visible = false;
     h.revive.visible = state !== 'dead';
     h.revive.scale.setScalar(0.45 + (player.reviveT / 2.2) * 0.8);
@@ -6652,6 +6757,8 @@ function updateHero(dt) {
   if (player.chill > 0 && state === 'play' && Math.random() < 0.6) emit({ x: player.x + rand(-0.45, 0.45), y: rand(0.2, 1.3), z: player.z + rand(-0.45, 0.45), vx: rand(-0.2, 0.2), vy: 0.35, vz: rand(-0.2, 0.2), g: 0, life: 0.6, max: 0.6, color: 0xdff3ff, size: 0.4 });
   const glowHex = inTranse() && state === 'play' ? (Math.sin(elapsed * 9) > 0 ? 0x5a2a08 : 0x3a1a04) : 0x000000;
   h.bodyMat.emissive.setHex(blink ? 0x7a1010 : dashing ? 0x1a3a66 : player.chill > 0 ? FROST_TINT : glowHex);
+  h.arc.visible = h.arcMat.opacity > 0.005;
+  h.spinRing.visible = h.spinMat.opacity > 0.005;
 }
 
 function animateBow(h, dt) {
@@ -6724,9 +6831,10 @@ function resize() {
   const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   camDist = Math.max(CAM_BASE, 7 / (t * a), 5.6 / t);
   camera.updateProjectionMatrix();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  mm.width = Math.round(mm.clientWidth * dpr) || 208;
-  mm.height = Math.round(mm.clientHeight * dpr) || 208;
+  mm.width = Math.round(mm.clientWidth * DPR_MAX) || 208;
+  mm.height = Math.round(mm.clientHeight * DPR_MAX) || 208;
+  perf.lastRender = 0;
+  minimapT = 0;
 }
 
 // ---------- Commandes
@@ -7545,12 +7653,85 @@ function setSoloClass(id) {
 for (const [btn, id] of HERO_BTNS) btn.addEventListener('click', () => setSoloClass(id));
 setSoloClass(soloClass);
 
+// ---------- Fluidité
+// Sous ~50 images/s, un cran de définition en moins ; 5 s d'aisance, un cran en plus. Un cran sans effet (écran bridé à 30 Hz) devient plancher, une rechute plafond.
+const QUALITY_KEY = 'profondeurs.rendu';
+const DPR_STEPS = [1, 0.85, 0.72, 0.6, 0.5].map((f) => Math.round(DPR_MAX * f * 100) / 100).filter((v, n) => n === 0 || v >= 0.6);
+const perf = { level: 0, floor: DPR_STEPS.length - 1, top: 0, samples: new Float32Array(60), n: 0, easy: 0, check: null, lastFrame: 0, lastRender: 0, fps: 0 };
+
+function setQuality(level) {
+  perf.level = clamp(level, 0, DPR_STEPS.length - 1);
+  renderer.setPixelRatio(DPR_STEPS[perf.level]);
+  store.set(QUALITY_KEY, perf.level);
+}
+
+function adaptQuality(frameDt) {
+  perf.samples[perf.n++] = frameDt;
+  if (perf.n < perf.samples.length) return;
+  perf.n = 0;
+  const sorted = perf.samples.slice().sort();
+  const kept = Math.floor(sorted.length * 0.9);
+  let sum = 0;
+  for (let k = 0; k < kept; k++) sum += sorted[k];
+  const mean = sum / kept;
+  perf.fps = Math.round(1 / mean);
+  const slow = mean > 1 / 50;
+  const check = perf.check;
+  if (check) {
+    check.left--;
+    if (check.left <= 0) perf.check = null;
+    const undo = check.down ? mean > check.before * 0.92 : slow;
+    if (undo) {
+      perf.check = null;
+      if (check.down) perf.floor = check.from;
+      else perf.top = check.from;
+      setQuality(check.from);
+      return;
+    }
+  }
+  perf.easy = mean < 1 / 57 ? perf.easy + 1 : 0;
+  if (slow && perf.level < perf.floor) {
+    perf.check = { from: perf.level, before: mean, down: true, left: 1 };
+    setQuality(perf.level + 1);
+  } else if (perf.easy >= 5 && perf.level > perf.top) {
+    perf.easy = 0;
+    perf.check = { from: perf.level, down: false, left: 3 };
+    setQuality(perf.level - 1);
+  }
+}
+
 // ---------- Boucle
 const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby']);
 const clock = new THREE.Clock();
 let padStatusT = 0;
-function loop() {
-  const realDt = Math.min(clock.getDelta(), 0.05);
+// three.js ne redemande l'image suivante qu'après le retour de la boucle : une exception non rattrapée figerait le jeu.
+const loopErrors = new Set();
+function loopError(err) {
+  const key = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+  if (loopErrors.has(key)) return;
+  loopErrors.add(key);
+  console.error(err);
+}
+
+function loop(now) {
+  try {
+    step(now);
+  } catch (err) {
+    loopError(err);
+    try {
+      renderer.render(scene, camera);
+    } catch (renderErr) {
+      loopError(renderErr);
+    }
+  }
+}
+
+function step(now) {
+  // Tactile à 120 Hz : 60 images/s, le téléphone chauffe moins et ralentit moins vite.
+  if (coarse && now - perf.lastFrame < 10.5) return;
+  perf.lastFrame = now;
+  const frameDt = clock.getDelta();
+  const realDt = Math.min(frameDt, 0.05);
   updatePad(realDt);
   padStatusT -= realDt;
   if (padStatusT <= 0) {
@@ -7608,9 +7789,34 @@ function loop() {
   updateOverlays(realDt, running);
   updateFloaters(running ? realDt : 0);
   updateDownMarks();
-  drawMinimap();
+  drawMinimap(realDt);
   if (state === 'play' && pendingChoices.length) openChoice(pendingChoices.shift());
+  if (state === 'play' && !trans && !document.hidden) adaptQuality(frameDt);
+  if (debugRun && state === 'play') showPerf();
+  if (!running && now - perf.lastRender < 100) return;
+  perf.lastRender = now;
   renderer.render(scene, camera);
+}
+
+function showPerf() {
+  const el = $('perf');
+  const text = `${perf.fps || '…'} i/s · rendu ×${DPR_STEPS[perf.level]}`;
+  if (el.textContent !== text) el.textContent = text;
+  if (el.hidden) el.hidden = false;
+}
+
+// Toutes les variantes de shaders dès le démarrage, tenues par des matériaux jamais libérés : aucune compilation (saccade) en cours de partie.
+function warmShaders() {
+  const warm = new THREE.Scene();
+  const instanced = (geo, mat) => {
+    const m = new THREE.InstancedMesh(geo, mat, 1);
+    m.setColorAt(0, new THREE.Color(1, 1, 1));
+    return m;
+  };
+  for (const mat of Object.values(M)) warm.add(new THREE.Mesh(G.box, mat));
+  warm.add(instanced(G.wall, wallMats), instanced(G.floor, M.floor), instanced(G.floor, M.lava), instanced(G.floor, iceSheen), new THREE.Sprite(glowMat(0xffffff, 0.9)));
+  if (renderer.extensions.has('KHR_parallel_shader_compile')) renderer.compileAsync(warm, camera, scene).catch(() => {});
+  else renderer.compile(warm, camera, scene);
 }
 
 function snapshot() {
@@ -7625,6 +7831,8 @@ function snapshot() {
 
 function boot(data) {
   window.addEventListener('resize', resize);
+  const quality = store.get(QUALITY_KEY, 0);
+  setQuality(Number.isInteger(quality) ? quality : 0);
   resize();
   setMuted(audio.muted);
   $('best').textContent = bestLine();
@@ -7643,6 +7851,7 @@ function boot(data) {
     toastEl.classList.remove('show');
     toastT = 0;
   }
+  warmShaders();
   renderer.setAnimationLoop(loop);
   window.__profondeursReady = true;
   $('play').disabled = false;
