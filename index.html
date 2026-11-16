@@ -3461,7 +3461,7 @@ const GEAR = {
   } },
   heaume: { group: 'Défense', price: [45, 110, 210], kinds: {
     heaume: { name: (h) => (h.cls === 'arbalete' ? 'Chaperon' : 'Heaume'), desc: '+20 PV max par rang, rendus tout de suite.', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
-    lanterne: { name: () => 'Lanterne de mineur', desc: 'Tu vois une case plus loin par rang, et les murs fissurés apparaissent sur la minicarte.', apply: (h) => { h.sight += 1; h.finder = true; } },
+    lanterne: { name: () => 'Lanterne de mineur', desc: 'Tu vois une case plus loin par rang, et l’escalier apparaît sur la minicarte dès l’arrivée.', apply: (h) => { h.sight += 1; h.finder = true; } },
   } },
   bouclier: { group: 'Défense', price: [90, 200], kinds: {
     garde: { name: (h) => (h.cls === 'arbalete' ? 'Brassards' : 'Bouclier'), desc: '12 % de chances par rang de parer un coup entier.', apply: (h) => { h.parry += 0.12; } },
@@ -5863,7 +5863,6 @@ const TRAP_HINTS = {
   lava: ['Lave', 'elle brûle, sauf pendant une esquive'],
   ember: ['Braises', 'le Colosse laisse un sol brûlant derrière lui'],
   sarco: ['Sarcophage', 'vide, trésor ou occupants · s’il tremble, il est habité'],
-  secret: ['Mur fissuré', 'frappe-le trois fois : il sonne creux'],
   merchant: ['Refuge du marchand', 'trêve : ni monstre ni combat dans sa salle'],
   icicle: ['Stalactite', 'une ombre au sol, puis elle tombe'],
   shroomToxic: ['Vesse toxique', 'éclate en nuage au moindre contact'],
@@ -6304,7 +6303,6 @@ function updateItems(dt) {
   if (sc && !sc.open) {
     const seen = L.seen[sc.k] === 1;
     sc.crack.visible = seen;
-    if (seen) trapHint('secret', sc.door.i * TILE, sc.door.j * TILE);
     if (seen && Math.random() < 0.05) emit({ x: sc.door.i * TILE + sc.out[0] * 1.05 + rand(-0.6, 0.6), y: rand(0.4, 1.4), z: sc.door.j * TILE + sc.out[1] * 1.05 + rand(-0.6, 0.6), vx: 0, vy: -0.5, vz: 0, g: 0, life: 0.9, max: 0.9, color: 0xb8ad98, size: 0.3 });
     if (sc.shake > 0) sc.shake -= dt;
     sc.crack.position.x = sc.door.i * TILE + (sc.shake > 0 ? Math.sin(elapsed * 80) * 0.04 : 0);
@@ -6936,13 +6934,8 @@ function drawMinimap(dt) {
     mctx.fillStyle = '#7af0d0';
     mctx.fillRect((fo.x / TILE) * sx, (fo.z / TILE) * sy, sx, sy);
   }
-  const sc = L.secret;
-  if (sc && !sc.open && heroes.some((h) => h.finder)) {
-    mctx.fillStyle = `rgba(242, 196, 80, ${0.55 + 0.45 * Math.sin(elapsed * 5)})`;
-    mctx.fillRect(sc.door.i * sx - sx * 0.5, sc.door.j * sy - sy * 0.5, sx * 2, sy * 2);
-  }
   const st = L.stairs;
-  if (L.seen[idx(st.i, st.j)]) {
+  if (L.seen[idx(st.i, st.j)] || heroes.some((h) => h.finder)) {
     const cx = (st.i + 0.5) * sx;
     const cy = (st.j + 0.5) * sy;
     const pulse = 0.5 + 0.5 * Math.sin(elapsed * 4);
