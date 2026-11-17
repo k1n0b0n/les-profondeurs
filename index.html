@@ -1658,23 +1658,45 @@ function bfsFrom(grid, sources, out, maxD = 32767) {
   return out;
 }
 
+// Arène de gardien : au moins 14 m sur 14 m, sinon ses attaques couvrent toute la salle.
+const isArena = (r) => Math.min(r.w, r.h) >= 7 && r.w * r.h >= 56;
+
+// Cases de couloir collées à la salle : les grilles d'une salle scellée s'y posent.
+function roomGates(grid, r) {
+  const sides = [];
+  for (let i = r.x; i < r.x + r.w; i++) sides.push([i, r.y - 1, 0, -1], [i, r.y + r.h, 0, 1]);
+  for (let j = r.y; j < r.y + r.h; j++) sides.push([r.x - 1, j, -1, 0], [r.x + r.w, j, 1, 0]);
+  return sides.filter(([i, j, di, dj]) => inside(i, j) && grid[idx(i, j)] === 1 && grid[idx(i - di, j - dj)] === 1);
+}
+
+// Vrai si sceller la salle isole du départ une partie de l'étage (un couloir la traverse).
+const sealDist = new Int16Array(MAP_W * MAP_H);
+function sealCuts(grid, start, r) {
+  const sealed = grid.slice();
+  for (const [i, j] of roomGates(grid, r)) sealed[idx(i, j)] = 0;
+  for (let j = r.y; j < r.y + r.h; j++) for (let i = r.x; i < r.x + r.w; i++) sealed[idx(i, j)] = 0;
+  bfs(grid, start.cx, start.cy, genDist);
+  bfs(sealed, start.cx, start.cy, sealDist);
+  return sealed.some((v, k) => v === 1 && genDist[k] >= 0 && sealDist[k] < 0);
+}
+
 function tryGenerate(depth, relaxed) {
   const grid = new Uint8Array(MAP_W * MAP_H);
   const rooms = [];
   const want = Math.min(8 + depth, 14);
+  const boss = isBossFloor(depth);
   for (let t = 0; t < 400 && rooms.length < want; t++) {
-    const w = randi(4, 9);
-    const h = randi(4, 8);
+    // Sur un étage de gardien, la deuxième salle est taillée en arène.
+    const arena = boss && rooms.length === 1;
+    const w = arena ? randi(8, 9) : randi(4, 9);
+    const h = arena ? randi(7, 8) : randi(4, 8);
     const x = randi(1, MAP_W - w - 1);
     const y = randi(1, MAP_H - h - 1);
     if (rooms.some((o) => x <= o.x + o.w && o.x <= x + w && y <= o.y + o.h && o.y <= y + h)) continue;
     rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
   }
   if (rooms.length < 5) return null;
-  if (isBossFloor(depth)) {
-    const big = rooms.slice(1).sort((a, b) => b.w * b.h - a.w * a.h)[0];
-    if (big.w * big.h < 36) return null;
-  }
+  if (boss && !rooms.slice(1).some(isArena)) return null;
 
   for (const r of rooms) {
     for (let j = r.y; j < r.y + r.h; j++) for (let i = r.x; i < r.x + r.w; i++) grid[idx(i, j)] = 1;
@@ -1712,7 +1734,7 @@ function tryGenerate(depth, relaxed) {
   let far = null;
   let fd = -1;
   for (const r of rooms.slice(1)) {
-    if (isBossFloor(depth) && r.w * r.h < 36) continue;
+    if (boss && !isArena(r)) continue;
     const v = genDist[idx(r.cx, r.cy)];
     if (v > fd) { fd = v; far = r; }
   }
@@ -1955,7 +1977,9 @@ function populate(dun) {
   if (!boss && depth >= 2 && smallRooms.length && (depth % BOSS_EVERY === 2 || Math.random() < 0.3)) L.haven = pick(smallRooms);
 
   if (!boss && depth >= 2 && Math.random() < 0.55) {
-    const pool = normal.filter((r) => !ambushRooms.includes(r) && r !== L.haven && r.w * r.h >= 12 && r.w * r.h <= 42);
+    // La chambre forte ne coupe rien : ni l'escalier, ni la cachette de la clé, ni l'accès à la salle secrète.
+    const host = L.secret && [L.secret.door.i + L.secret.out[0], L.secret.door.j + L.secret.out[1]];
+    const pool = normal.filter((r) => !ambushRooms.includes(r) && r !== L.haven && r.w * r.h >= 12 && r.w * r.h <= 42 && !(host && inRoom(r, ...host)) && !sealCuts(grid, dun.start, r));
     if (pool.length) L.vault = { room: pick(pool), open: false, lock: null, warned: false };
   }
   let steleRoom = null;
@@ -7199,12 +7223,7 @@ function updateBarrels(dt) {
 }
 
 function sealRoom(a, mat = M.gate, haloColor = 0xb070ff, outside = false) {
-  const r = a.room;
-  const sides = [];
-  for (let i = r.x; i < r.x + r.w; i++) sides.push([i, r.y - 1, 0, -1], [i, r.y + r.h, 0, 1]);
-  for (let j = r.y; j < r.y + r.h; j++) sides.push([r.x - 1, j, -1, 0], [r.x + r.w, j, 1, 0]);
-  for (const [i, j, di, dj] of sides) {
-    if (!inside(i, j) || L.grid[idx(i, j)] !== 1 || L.grid[idx(i - di, j - dj)] !== 1) continue;
+  for (const [i, j, di, dj] of roomGates(L.grid, a.room)) {
     L.grid[idx(i, j)] = 0;
     for (const e of L.enemies) {
       if (e.dying >= 0 || tileOf(e.x) !== i || tileOf(e.z) !== j) continue;
