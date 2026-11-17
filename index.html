@@ -1685,15 +1685,26 @@ function tryGenerate(depth, relaxed) {
   const rooms = [];
   const want = Math.min(8 + depth, 14);
   const boss = isBossFloor(depth);
-  for (let t = 0; t < 400 && rooms.length < want; t++) {
-    // Sur un étage de gardien, la deuxième salle est taillée en arène.
-    const arena = boss && rooms.length === 1;
-    const w = arena ? randi(8, 9) : randi(4, 9);
-    const h = arena ? randi(7, 8) : randi(4, 8);
+  const free = (x, y, w, h) => !rooms.some((o) => x <= o.x + o.w && o.x <= x + w && y <= o.y + o.h && o.y <= y + h);
+  for (let t = 0; t < 400 && rooms.length < want - (boss ? 1 : 0); t++) {
+    const w = randi(4, 9);
+    const h = randi(4, 8);
     const x = randi(1, MAP_W - w - 1);
     const y = randi(1, MAP_H - h - 1);
-    if (rooms.some((o) => x <= o.x + o.w && o.x <= x + w && y <= o.y + o.h && o.y <= y + h)) continue;
-    rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
+    if (free(x, y, w, h)) rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
+  }
+  // Étage de gardien : l'arène est taillée à part, sur l'emplacement libre le plus éloigné du départ.
+  if (boss && rooms.length) {
+    let best = null;
+    for (let t = 0; t < 200; t++) {
+      const w = randi(8, 9);
+      const h = randi(7, 8);
+      const x = randi(1, MAP_W - w - 1);
+      const y = randi(1, MAP_H - h - 1);
+      const d = Math.abs(x + (w >> 1) - rooms[0].cx) + Math.abs(y + (h >> 1) - rooms[0].cy);
+      if (free(x, y, w, h) && d > (best?.d ?? -1)) best = { x, y, w, h, d };
+    }
+    if (best) rooms.push({ x: best.x, y: best.y, w: best.w, h: best.h, cx: best.x + (best.w >> 1), cy: best.y + (best.h >> 1) });
   }
   if (rooms.length < 5) return null;
   if (boss && !rooms.slice(1).some(isArena)) return null;
@@ -2504,7 +2515,7 @@ function openSarco(p) {
     return;
   }
   const want = clamp(1 + Math.floor((team.level - 1) / 3), 1, 4);
-  const guard = { x: p.x, z: p.z, left: 0 };
+  const guard = { left: 0 };
   const spots = shuffle([[1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2], [1, 1], [-1, 1], [1, -1], [-1, -1]]);
   for (const [dx, dz] of spots) {
     if (guard.left >= want) break;
@@ -2518,12 +2529,15 @@ function openSarco(p) {
   toast('Sarcophage', guard.left > 1 ? `${guard.left} occupants · ils gardent un trésor` : 'il était occupé · il garde un trésor');
 }
 
-function guardFalls(g) {
+// Chaque occupant lâche sa part là où il tombe ; le dernier lâche le reste du trésor.
+function guardFalls(g, e) {
+  const coins = () => spawnCoins(e.x + rand(-0.6, 0.6), e.z + rand(-0.6, 0.6), randi(4, 7) + L.depth, true);
+  coins();
   if (--g.left > 0) return;
-  for (let k = 0; k <= g.size; k++) spawnCoins(g.x + rand(-0.6, 0.6), g.z + rand(-0.6, 0.6), randi(4, 7) + L.depth, true);
-  if (Math.random() < 0.2 + 0.1 * g.size) spawnPotion(g.x, g.z + 0.8);
-  burst(g.x, 0.8, g.z, 0xf2c450, 16, 3, -5, 0.8);
-  toast('Sarcophage', 'ses gardiens livrent leur trésor');
+  coins();
+  if (Math.random() < 0.2 + 0.1 * g.size) spawnPotion(e.x, e.z + 0.8);
+  burst(e.x, 0.8, e.z, 0xf2c450, 16, 3, -5, 0.8);
+  toast('Sarcophage', g.size > 1 ? 'ses gardiens ont livré leur trésor' : 'son gardien a livré son trésor');
 }
 
 function spawnShroom(x, z, kind) {
@@ -4463,7 +4477,7 @@ function killEnemy(e) {
     e.ambush.alive--;
     checkAmbush(e.ambush);
   }
-  if (e.guard) guardFalls(e.guard);
+  if (e.guard) guardFalls(e.guard, e);
   if (e.trial) e.trial.alive--;
   if (e.carriesKey) {
     spawnKey(e.x, e.z);

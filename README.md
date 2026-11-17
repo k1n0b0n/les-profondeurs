@@ -36,29 +36,29 @@ Les sections du module, dans l'ordre du fichier :
 | 1124–1215 | Héros | Modèle 3D des héros (`buildHero`), anneaux de garde et d'esquive prête |
 | 1216–1560 | Monstres | `ENEMIES`, `BIOMES`, escouades (`SQUADS`, `rollSquad`), `rollEnemy`, modèles 3D des monstres et gardiens |
 | 1561–1621 | Particules | Pool `InstancedMesh` de 420 particules (`burst`, `ring`) |
-| 1622–1792 | Génération du donjon | BFS, `tryGenerate`, `generateDungeon`, salle secrète |
-| 1793–2060 | Niveau | Objet global `L`, `buildLevel`, escalier, `populate` (escouades, élites, chambre forte, stèle) |
-| 2061–2315 | Pièges : placement | Plaques, bouches de feu, lames, fléchettes, barils |
-| 2316–2982 | Biomes : placement et effets | Lave, glace, stalactites et rochers, sarcophages, champignons, nuages, affixes, `spawnEnemy`, butin |
-| 2983–3146 | Collisions, vision | Collisions par tuile, ligne de vue, brouillard (`reveal`), champ de flux des monstres |
-| 3147–3270 | Son | Contexte WebAudio, `tone`, `hiss`, table `sfx` |
-| 3271–3530 | Musique | `THEMES` par biome, séquenceur chiptune |
-| 3531–3620 | Aptitudes et reliques | `PERKS`, rareté, grimoire, tirage `rollPerks` |
-| 3621–5231 | Joueur | Stats, équipement, déplacements, esquive, parade, attaques, combo, Transe, salle secrète, chambre forte, stèles, dégâts, mort, réanimation |
-| 5232–5373 | Fin de partie, pactes, grimoire | Victoire, `PACTS`, record, écran de mort |
-| 5374–5716 | Monstres : IA | Une fonction `ai*` par type, dont porte-bouclier, psalmodieur et artificier |
-| 5717–6950 | Gardiens | `BOSSES`, paquet d'attaques, phases, dangers de désespoir, attaques |
-| 6951–7301 | Pièges : comportement | Mise à jour des pièges, embuscades en deux vagues |
-| 7302–7543 | Objets, autel, escalier | Ramassage, coffres, clé d'os, chambre forte, stèles, descente |
-| 7544–7928 | Choix, autel, menus | Overlays d'aptitude, autel, marchand, pause |
-| 7929–8212 | HUD | Barres, minicarte, toasts, combo, recharges d'esquive et de parade |
-| 8213–8378 | Héros, lumière, caméra | Animation des héros, torches, caméra |
-| 8379–8712 | Commandes | Clavier, souris, tactile, garde maintenue |
-| 8713–8845 | Deux joueurs | Menu duo, attribution des appareils |
-| 8846–8924 | Mode test | Code Konami, choix du biome et de l'étage |
-| 8925–9230 | Manette | Gamepad API |
-| 9231–9277 | Fluidité | Qualité adaptative |
-| 9278–9457 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
+| 1622–1803 | Génération du donjon | BFS, `tryGenerate`, `generateDungeon`, salle secrète |
+| 1804–2071 | Niveau | Objet global `L`, `buildLevel`, escalier, `populate` (escouades, élites, chambre forte, stèle) |
+| 2072–2326 | Pièges : placement | Plaques, bouches de feu, lames, fléchettes, barils |
+| 2327–2996 | Biomes : placement et effets | Lave, glace, stalactites et rochers, sarcophages, champignons, nuages, affixes, `spawnEnemy`, butin |
+| 2997–3160 | Collisions, vision | Collisions par tuile, ligne de vue, brouillard (`reveal`), champ de flux des monstres |
+| 3161–3284 | Son | Contexte WebAudio, `tone`, `hiss`, table `sfx` |
+| 3285–3544 | Musique | `THEMES` par biome, séquenceur chiptune |
+| 3545–3634 | Aptitudes et reliques | `PERKS`, rareté, grimoire, tirage `rollPerks` |
+| 3635–5245 | Joueur | Stats, équipement, déplacements, esquive, parade, attaques, combo, Transe, salle secrète, chambre forte, stèles, dégâts, mort, réanimation |
+| 5246–5387 | Fin de partie, pactes, grimoire | Victoire, `PACTS`, record, écran de mort |
+| 5388–5730 | Monstres : IA | Une fonction `ai*` par type, dont porte-bouclier, psalmodieur et artificier |
+| 5731–6964 | Gardiens | `BOSSES`, paquet d'attaques, phases, dangers de désespoir, attaques |
+| 6965–7315 | Pièges : comportement | Mise à jour des pièges, embuscades en deux vagues |
+| 7316–7557 | Objets, autel, escalier | Ramassage, coffres, clé d'os, chambre forte, stèles, descente |
+| 7558–7942 | Choix, autel, menus | Overlays d'aptitude, autel, marchand, pause |
+| 7943–8226 | HUD | Barres, minicarte, toasts, combo, recharges d'esquive et de parade |
+| 8227–8392 | Héros, lumière, caméra | Animation des héros, torches, caméra |
+| 8393–8726 | Commandes | Clavier, souris, tactile, garde maintenue |
+| 8727–8859 | Deux joueurs | Menu duo, attribution des appareils |
+| 8860–8938 | Mode test | Code Konami, choix du biome et de l'étage |
+| 8939–9244 | Manette | Gamepad API |
+| 9245–9291 | Fluidité | Qualité adaptative |
+| 9292–9471 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
 
 ## Architecture technique
 
@@ -290,7 +290,7 @@ Une élite est plus grande (× 1,35) et entourée d'une aura de la couleur de so
 
 ### Gardiens
 
-Chaque gardien part de 340 PV, multipliés par l'étage et par son coefficient. Il attend dans une arène d'au moins 7 × 8 cases (14 × 16 unités), taillée exprès à la génération de l'étage. Il s'éveille et verrouille sa salle quand un héros y entre. Ses attaques sortent d'un paquet mélangé, jamais deux fois la même d'affilée, entrecoupées de poursuites de durée variable : deux combats contre le même gardien ne se ressemblent pas. Les pièges ne lui font que la moitié de leurs dégâts.
+Chaque gardien part de 340 PV, multipliés par l'étage et par son coefficient. Il attend dans une arène d'au moins 7 × 8 cases (14 × 16 unités), taillée exprès à la génération de l'étage sur l'emplacement libre le plus éloigné du départ. Il s'éveille et verrouille sa salle quand un héros y entre. Ses attaques sortent d'un paquet mélangé, jamais deux fois la même d'affilée, entrecoupées de poursuites de durée variable : deux combats contre le même gardien ne se ressemblent pas. Les pièges ne lui font que la moitié de leurs dégâts.
 
 - **Enragé** (sous 50 % de PV) : vitesse × 1,25, paquet plus agressif, actions 25 % plus rapides, moins de répit.
 - **Désespoir** (sous 30 % de PV) : actions 35 % plus rapides, presque plus de répit, et un danger continu dans l'arène, propre à chaque gardien (colonne dédiée ci-dessous).
@@ -310,7 +310,7 @@ Chaque biome change l'éclairage, la palette, la musique, la composition des mon
 
 | Biome | Dangers et particularités | Monstres favorisés | Pièges |
 | --- | --- | --- | --- |
-| Crypte | 2 ou 3 sarcophages par étage : vide (25 %), trésor (40 %) ou rôdeurs (35 %, de 1 à 4 selon le niveau). Un sarcophage habité tremble quand on approche | Rôdeurs × 1,5 | Tous, poids normal |
+| Crypte | 2 ou 3 sarcophages par étage : vide (25 %), trésor (40 %) ou rôdeurs (35 %, de 1 à 4 selon le niveau) qui gardent un trésor : chacun lâche un tas d'écus là où il tombe, le dernier un tas de plus et parfois une potion. Un sarcophage habité tremble quand on approche | Rôdeurs × 1,5 | Tous, poids normal |
 | Gouffre gelé | Verglas dans 60 % des salles (12 à 24 cases) : on glisse, les monstres aussi. Stalactites : une ombre au sol, puis la chute 1,1 s plus tard (12 dégâts de base, gel 1,5 s). Chaque coup porté gèle le monstre 2 s | Sorciers × 1,6, slimes × 0,8 | Pas de bouches de feu, barils × 0,6 |
 | Fournaise | Lave dans 50 % des salles (4 à 10 cases) : 6 dégâts de base toutes les 0,5 s, sauf pendant une esquive. Les monstres la contournent | Brutes × 1,8, rôdeurs × 1,2 | Bouches de feu × 1,8, barils × 1,6 |
 | Champignonnière | Pénombre : la torche éclaire 4 cases au lieu de 6, les monstres voient à 8,5. Vesses toxiques (0 à 2 par salle) qui éclatent en nuage de spores au contact (rayon 1,9, 4,5 s). Champignons lumineux (45 % des salles) qui rendent 10 PV quand on les frappe | Slimes × 1,8, sorciers × 0,8 | Fléchettes × 1,3, bouches de feu × 0,5 |
@@ -532,21 +532,21 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Biomes : vision, composition, pièges | `BIOMES` | 1228 | Table |
 | Escouades | `SQUADS`, `rollSquad` | 1258–1268 | Noyau + troupes, 30 % de tirage libre |
 | Tirage des monstres par étage | `rollEnemy` | 1280 | Poids |
-| Densité de monstres, élites, chambre forte, stèle | `populate` | 1919 | Voir « Ce qui change d'un étage à l'autre » |
-| Affixes d'élite | `AFFIXES` | 2765 | Table |
-| Aptitudes | `PERKS` | 3532 | Table |
-| Stats de départ du héros | `BASE_STATS`, `HERO_START` | 3622–3628 | Table |
-| Équipement et prix | `GEAR` | 3635 | Table |
-| Courbe d'XP | `xpNeed` | 3736 | 4 × niveau² + 4 |
-| Transe : seuil, durée, plafond | `TRANSE_AT`, `TRANSE_TIME`, `TRANSE_MAX` | 3741–3743 | × 8 · 10 s · 14 s |
-| Épreuves des stèles | `TRIALS`, `startTrial`, `updateTrial` | 4689–4751 | Table |
-| Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 4934 | 0,12 s (0,16 s tactile) |
-| Mémoire des commandes | `INPUT_BUFFER` | 4935 | 0,16 s |
-| Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 4936–4940 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
-| Pactes | `PACTS` | 5235 | Table |
-| Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 5718 | Table |
-| Durée des actions de gardien | `ACT_TIME` | 5740 | Table |
-| Cycle des bouches de feu | `VENT_PERIOD` | 6952 | 3,4 s |
-| Crans de qualité graphique | `DPR_STEPS` | 9234 | 1 → 0,5 × `DPR_MAX` |
+| Densité de monstres, élites, chambre forte, stèle | `populate` | 1930 | Voir « Ce qui change d'un étage à l'autre » |
+| Affixes d'élite | `AFFIXES` | 2779 | Table |
+| Aptitudes | `PERKS` | 3546 | Table |
+| Stats de départ du héros | `BASE_STATS`, `HERO_START` | 3636–3642 | Table |
+| Équipement et prix | `GEAR` | 3649 | Table |
+| Courbe d'XP | `xpNeed` | 3750 | 4 × niveau² + 4 |
+| Transe : seuil, durée, plafond | `TRANSE_AT`, `TRANSE_TIME`, `TRANSE_MAX` | 3755–3757 | × 8 · 10 s · 14 s |
+| Épreuves des stèles | `TRIALS`, `startTrial`, `updateTrial` | 4703–4765 | Table |
+| Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 4948 | 0,12 s (0,16 s tactile) |
+| Mémoire des commandes | `INPUT_BUFFER` | 4949 | 0,16 s |
+| Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 4950–4954 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
+| Pactes | `PACTS` | 5249 | Table |
+| Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 5732 | Table |
+| Durée des actions de gardien | `ACT_TIME` | 5754 | Table |
+| Cycle des bouches de feu | `VENT_PERIOD` | 6966 | 3,4 s |
+| Crans de qualité graphique | `DPR_STEPS` | 9248 | 1 → 0,5 × `DPR_MAX` |
 
 Une valeur de PV ou de dégâts se règle en interne, soit 10 fois plus petite qu'à l'écran : `heal(1)` rend 10 PV affichés.
