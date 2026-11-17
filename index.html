@@ -3517,11 +3517,11 @@ const PERKS = [
   { id: 'salve', rar: 'rare', cls: 'arbalete', cat: 'Attaque', name: 'Salve', max: 2, desc: (n) => (n === 0 ? 'Un tir sur trois part en éventail de trois carreaux.' : 'Un tir sur deux part en éventail.'), apply: () => {} },
   { id: 'ricochet', rar: 'rare', cls: 'arbalete', cat: 'Attaque', name: 'Ricochet', max: 1, desc: 'Un carreau qui touche rebondit vers un ennemi proche.', apply: () => {} },
   { id: 'foudre', rar: 'rare', cat: 'Attaque', name: 'Foudre', max: 2, desc: (n) => (n === 0 ? '15 % de chances qu’un coup lance un éclair vers deux ennemis proches.' : 'Éclairs : 30 % de chances.'), apply: () => {} },
-  { id: 'follet', rar: 'rare', cat: 'Attaque', name: 'Feu follet', max: 2, desc: (n) => (n === 0 ? 'Chaque ennemi vaincu libère un feu follet qui fond sur un ennemi proche.' : 'Deux feux follets par ennemi vaincu.'), apply: () => {} },
+  { id: 'follet', rar: 'rare', weight: 0.2, cat: 'Attaque', name: 'Feu follet', max: 2, desc: (n) => (n === 0 ? 'Chaque ennemi vaincu libère un feu follet qui fond sur un ennemi proche.' : 'Deux feux follets par ennemi vaincu.'), apply: () => {} },
   { id: 'givre', rar: 'rare', cat: 'Ruse', name: 'Givre', max: 1, desc: 'Tes coups ralentissent les ennemis touchés pendant 2 s.', apply: () => {} },
   { id: 'roulade', rar: 'rare', cat: 'Mobilité', name: 'Roulade tranchante', max: 2, desc: "L'esquive blesse tout ce qu'elle traverse.", apply: () => {} },
   { id: 'contre', rar: 'rare', cat: 'Mobilité', name: 'Contre-attaque', max: 1, desc: "Une esquive parfaite libère une onde de choc et recharge l'esquive.", apply: () => {} },
-  { id: 'egide', rar: 'commune', cat: 'Défense', name: 'Égide', max: 2, desc: (n) => (n === 0 ? 'Un bouclier bloque un coup, puis revient après 15 s.' : 'Le bouclier revient après 10 s.'), apply: (p) => { p.shieldCd = p.shieldCd ? 10 : 15; p.shieldReady = true; } },
+  { id: 'egide', rar: 'rare', cat: 'Défense', name: 'Égide', max: 2, desc: (n) => (n === 0 ? 'Un bouclier bloque un coup, puis revient après 15 s.' : 'Le bouclier revient après 10 s.'), apply: (p) => { p.shieldCd = p.shieldCd ? 10 : 15; p.shieldReady = true; } },
   { id: 'soif', rar: 'commune', cat: 'Défense', name: 'Soif de sang', max: 3, desc: '15 % de chances de reprendre 10 PV par ennemi vaincu.', apply: () => {} },
   { id: 'avarice', rar: 'commune', cat: 'Fortune', name: 'Avarice', max: 2, desc: '+50 % d’écus et un aimant deux fois plus large.', apply: (p) => { p.goldMul += 0.5; p.magnet *= 2; } },
   { id: 'saboteur', rar: 'rare', cat: 'Ruse', name: 'Saboteur', max: 1, desc: 'Pièges et barils frappent deux fois plus fort les monstres, et deux fois moins fort toi.', apply: () => {} },
@@ -3567,7 +3567,7 @@ function rollPerks(who, kind = 'level') {
     if (p.req && !p.req.every((id) => who.perks[id])) return false;
     return !p.unlock || grimoire.bosses.includes(p.unlock);
   };
-  const weight = (p) => (p.req ? 0.9 : p.rar === 'legendaire' ? 0.3 : p.rar === 'rare' ? 0.4 : 1);
+  const weight = (p) => p.weight ?? (p.req ? 0.9 : p.rar === 'legendaire' ? 0.3 : p.rar === 'rare' ? 0.4 : 1);
   const pool = PERKS.filter(fits);
   const take = (list) => {
     let r = Math.random() * list.reduce((n, p) => n + weight(p), 0);

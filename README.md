@@ -348,7 +348,7 @@ Les pièges blessent aussi les monstres, avec des dégâts qui suivent leurs PV 
 
 ### Aptitudes
 
-Chaque choix présente trois cartes, filtrées par classe, rang maximal, prérequis et reliques débloquées. Au passage de niveau, une commune pèse 1, une rare 0,4, une légendaire 0,3 et un duo 0,9. L'autel et le sanctuaire garantissent au moins une rare ou légendaire, le gardien au moins une légendaire. Quand il manque des cartes, « Festin » (rend tous les PV) complète. « Passer » rend 30 PV.
+Chaque choix présente trois cartes, filtrées par classe, rang maximal, prérequis et reliques débloquées. Au passage de niveau, une commune pèse 1, une rare 0,4 (Feu follet 0,2), une légendaire 0,3 et un duo 0,9. L'autel et le sanctuaire garantissent au moins une rare ou légendaire, le gardien au moins une légendaire. Quand il manque des cartes, « Festin » (rend tous les PV) complète. « Passer » rend 30 PV.
 
 | Aptitude | Rareté | Classe | Rangs | Effet (rang 1, puis rang 2) |
 | --- | --- | --- | --- | --- |
@@ -363,11 +363,11 @@ Chaque choix présente trois cartes, filtrées par classe, rang maximal, préreq
 | Onde de choc | Rare | Toutes | 2 | Les victimes explosent : rayon 2,2 et 70 %, puis 2,8 et 100 % des dégâts |
 | Torche ardente | Rare | Toutes | 2 | Brûle à moins de 2 m (puis 2,6 m) : 40 % (puis 55 %) des dégâts toutes les 0,5 s |
 | Foudre | Rare | Toutes | 2 | 15 %, puis 30 % de chances qu'un coup lance un éclair vers deux ennemis proches |
-| Feu follet | Rare | Toutes | 2 | Chaque victime libère 1, puis 2 feux follets qui fondent sur un ennemi |
+| Feu follet | Rare, tirée deux fois moins | Toutes | 2 | Chaque victime libère 1, puis 2 feux follets qui fondent sur un ennemi |
 | Givre | Rare | Toutes | 1 | Les coups ralentissent l'ennemi 2 s |
 | Roulade tranchante | Rare | Toutes | 2 | L'esquive blesse ce qu'elle traverse : 90 %, puis 130 % des dégâts |
 | Contre-attaque | Rare | Toutes | 1 | Esquive parfaite : onde de choc (rayon 2,6, 150 %) et esquive rechargée ; une parade parfaite libère la même onde |
-| Égide | Commune | Toutes | 2 | Un bouclier bloque un coup et revient après 15 s, puis 10 s |
+| Égide | Rare | Toutes | 2 | Un bouclier bloque un coup et revient après 15 s, puis 10 s |
 | Soif de sang | Commune | Toutes | 3 | 15 % de chances par rang de reprendre 10 PV par victime |
 | Avarice | Commune | Toutes | 2 | + 50 % d'écus et aimant × 2 par rang |
 | Saboteur | Rare | Toutes | 1 | Pièges et barils frappent × 2 les monstres et ÷ 2 le héros |
