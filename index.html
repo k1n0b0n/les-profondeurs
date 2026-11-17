@@ -445,11 +445,78 @@ details.more > :not(summary) { margin-top: 10px; }
 .perk[data-cat="Fortune"] .perk-cat { color: var(--gold); }
 .perk[data-cat="Ruse"] .perk-cat { color: var(--heal); }
 .perk strong { font: 400 23px/1.1 var(--font-display); }
-.perks.shop { grid-template-columns: 1fr; }
-@media (min-width: 760px) { .perks.shop { grid-template-columns: 1fr 1fr; } }
-.gear-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.gear-row.single { grid-template-columns: 1fr; }
-.perk .price { font-size: 14px; font-weight: 700; color: var(--gold); }
+.card.wide.shop { width: min(900px, 100%); gap: 10px; padding-top: 20px; }
+.shop-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.shop-keeper { width: 64px; height: 64px; overflow: visible; }
+.shop-keeper .flame { transform-box: fill-box; transform-origin: center; animation: flicker 1.7s ease-in-out infinite; }
+.shop-keeper .eye { animation: blink 5s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes flicker { 0%, 100% { opacity: 0.3; transform: scale(1); } 40% { opacity: 0.45; transform: scale(1.12); } 70% { opacity: 0.25; transform: scale(0.94); } }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+.shop-title { display: grid; gap: 6px; min-width: 0; }
+.card.shop h1 { font-size: 36px; }
+.purse { position: relative; display: grid; justify-items: end; gap: 2px; }
+.purse-amount { display: flex; align-items: center; gap: 7px; font: 400 36px/1 var(--font-display); color: var(--gold); font-variant-numeric: tabular-nums; }
+.purse-amount svg { width: 24px; height: 24px; }
+.purse-label { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.purse.short { animation: shake 0.4s; }
+.purse.short .purse-amount { color: var(--alert); }
+.purse-spent { position: absolute; right: 0; top: 100%; font-size: 17px; font-weight: 700; color: var(--gold); pointer-events: none; animation: spent 1s ease-out forwards; }
+@keyframes spent { to { opacity: 0; transform: translateY(16px); } }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.shop-say { position: relative; margin: 2px 0 0; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-solid); font-size: 16px; font-style: italic; line-height: 1.35; color: var(--ink); text-wrap: pretty; }
+.shop-say::before { content: ''; position: absolute; left: 22px; top: -7px; width: 12px; height: 12px; background: var(--panel-solid); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
+.shop-say.pop { animation: pop 0.35s ease-out; }
+@keyframes pop { from { opacity: 0.3; transform: translateY(4px); } }
+.shop-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.shop-stats li { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-solid); font-size: 13px; color: var(--ink-dim); }
+.shop-stats li b { color: var(--ink); font-weight: 700; }
+.shop-stats svg { width: 14px; height: 14px; }
+.shop-stats li.up { border-color: var(--heal); color: var(--heal); animation: pop 0.35s ease-out; }
+.shop-stats li.up b { color: var(--heal); }
+.stalls { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 700px) { .stalls { grid-template-columns: 1fr 1fr; } .stall.pair, .stall.wide { grid-column: 1 / -1; } }
+.stall { --cat: var(--ember); display: grid; align-content: start; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: rgba(11, 9, 16, 0.4); animation: rise 0.3s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+.stall[data-cat="Défense"] { --cat: var(--alert); }
+.stall[data-cat="Mobilité"] { --cat: var(--rune); }
+.stall[data-cat="Soins"] { --cat: var(--heal); }
+.stalls.settled .stall { animation: none; }
+.stall-head { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 2px; color: var(--cat); }
+.stall-head svg { flex: none; width: 20px; height: 20px; }
+.stall-name { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.stall-note { margin-left: auto; font-size: 13px; color: var(--ink-dim); text-align: right; }
+.pips { display: flex; gap: 4px; }
+.pips i { width: 9px; height: 9px; box-sizing: border-box; border: 1.5px solid currentColor; border-radius: 50%; opacity: 0.55; }
+.pips i.on { background: currentColor; opacity: 1; }
+.pips i.next { opacity: 1; animation: pip 1.2s ease-in-out infinite; }
+@keyframes pip { 50% { background: currentColor; } }
+.stall-wares { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.stall.pair .stall-wares { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.stall-or { align-self: center; font: 400 20px/1 var(--font-display); color: var(--ink-dim); }
+@media (max-width: 560px) {
+  .stall.pair .stall-wares { grid-template-columns: 1fr; }
+  .stall-or { justify-self: center; margin: -4px 0; }
+  .shop-head { gap: 10px; }
+  .shop-keeper { width: 50px; height: 50px; }
+  .card.shop h1 { font-size: 28px; }
+  .purse-amount { font-size: 28px; }
+  .purse-label { letter-spacing: 0.06em; }
+}
+.perk.ware { gap: 4px; padding: 9px 12px 10px; animation: none; }
+.ware-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.perk .ware-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font: 400 22px/1.1 var(--font-display); }
+.ware-rank { padding: 1px 6px; border: 1px solid currentColor; border-radius: 6px; font: 700 12px/1.3 var(--font-body); color: var(--cat); }
+.ware-price, .ware-done { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px; border: 1px solid rgba(242, 196, 80, 0.55); border-radius: 999px; font-size: 15px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; transition: background 0.15s, color 0.15s; }
+.ware-price svg { width: 14px; height: 14px; }
+.perk.ware:hover .ware-price, .perk.ware:focus-visible .ware-price, .perk.ware.pad-focus .ware-price { background: var(--gold); color: var(--ember-ink); }
+.ware-short { font-size: 13px; font-weight: 700; color: var(--alert); }
+.ware-done { border-color: var(--line); font-size: 13px; font-weight: 500; color: var(--ink-dim); }
+.perk.ware.short { border-style: dashed; background: rgba(23, 19, 28, 0.6); }
+.perk.ware.short strong, .perk.ware.short .perk-desc { opacity: 0.6; }
+.perk.ware.short .ware-price { border-color: var(--line); background: none; color: var(--ink-dim); }
+.perk.ware:disabled { opacity: 0.55; }
+.stalls .perk.ware.no { animation: shake 0.4s; }
+.stalls .perk.ware.bought { animation: bought 0.8s ease-out; }
+@keyframes bought { from { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(242, 196, 80, 0.8), inset 0 0 30px rgba(242, 196, 80, 0.35); } to { box-shadow: 0 0 0 16px rgba(242, 196, 80, 0), inset 0 0 0 rgba(242, 196, 80, 0); } }
 .perk:disabled { opacity: 0.45; cursor: not-allowed; }
 .perk[data-cat="Soins"] .perk-cat { color: var(--heal); }
 .chips li.gear { border-color: rgba(242, 196, 80, 0.45); }
@@ -623,11 +690,35 @@ details.more > :not(summary) { margin-top: 10px; }
 </div>
 
 <div class="overlay" id="menu-shop" hidden>
-  <div class="card wide">
-    <p class="kicker" id="shop-kicker">Marchand ambulant</p>
-    <h1>Équipement</h1>
-    <p class="lead" id="shop-lead"></p>
-    <div class="perks shop" id="shop-items"></div>
+  <div class="card wide shop">
+    <div class="shop-head">
+      <svg class="shop-keeper" viewBox="0 0 80 80" aria-hidden="true">
+        <ellipse cx="40" cy="76" rx="22" ry="3.5" fill="#000" opacity="0.45"/>
+        <rect x="45" y="34" width="20" height="26" rx="3" fill="#7a5230"/>
+        <rect x="52" y="27" width="9" height="9" rx="2" fill="#6a4628"/>
+        <path d="M20 76 29 41q11-9 22 0l9 35z" fill="#4a3a62"/>
+        <path d="M24 46q-2-30 16-32 18 2 16 32-7-7-16-7t-16 7z" fill="#3a2d50"/>
+        <ellipse cx="40" cy="33" rx="9" ry="10" fill="#120e18"/>
+        <circle class="eye" cx="36.5" cy="32" r="1.6" fill="#ffd27a"/>
+        <circle class="eye" cx="43.5" cy="32" r="1.6" fill="#ffd27a"/>
+        <path d="M51 48q6 4 9 9" stroke="#4a3a62" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <circle class="flame" cx="63" cy="63" r="13" fill="#ffc870" opacity="0.3"/>
+        <path d="M63 54v3" stroke="#8a7a60" stroke-width="1.5"/>
+        <rect x="58.5" y="57" width="9" height="12" rx="2" fill="#ffd27a"/>
+        <path d="M58.5 61h9M58.5 65h9" stroke="#b88a3a" stroke-width="1"/>
+      </svg>
+      <div class="shop-title">
+        <p class="kicker" id="shop-kicker">Marchand ambulant</p>
+        <h1>L’échoppe</h1>
+      </div>
+      <div class="purse" id="shop-purse">
+        <span class="purse-amount"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#f2c450"/><circle cx="12" cy="12" r="6" fill="none" stroke="#b88a3a" stroke-width="1.6"/></svg><b id="shop-gold">0</b></span>
+        <span class="purse-label">écus en poche</span>
+      </div>
+    </div>
+    <p class="shop-say" id="shop-say"></p>
+    <ul class="shop-stats" id="shop-stats"></ul>
+    <div class="stalls" id="shop-items"></div>
     <button class="secondary" id="shop-leave">Repartir</button>
   </div>
 </div>
@@ -3647,31 +3738,31 @@ for (const k of Object.keys(TEAM_START)) {
 }
 // Deux objets par emplacement : acheter l'un ferme l'autre pour la partie, les rangs suivants améliorent celui choisi.
 const GEAR = {
-  arme: { group: 'Attaque', price: [60, 140, 260, 420], kinds: {
+  arme: { slot: 'Arme', group: 'Attaque', price: [60, 140, 260, 420], kinds: {
     lourde: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète lourde' : 'Épée lourde'), desc: 'Dégâts +30 % par rang, mais attaques 8 % plus lentes.', apply: (h) => { h.dmgMul += 0.3; h.atkCdMul *= 1.08; } },
     vive: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète légère' : 'Épée vive'), desc: 'Attaques 10 % plus rapides et +5 % de critiques par rang.', apply: (h) => { h.atkCdMul *= 0.9; h.crit += 0.05; } },
   } },
-  armure: { group: 'Défense', price: [55, 130, 250], kinds: {
+  armure: { slot: 'Torse', group: 'Défense', price: [55, 130, 250], kinds: {
     plates: { name: () => 'Cuirasse', desc: 'Dégâts subis −10 % par rang.', apply: (h) => { h.armor += 0.1; } },
     epines: { name: () => 'Cotte d’épines', desc: 'Dégâts subis −5 % par rang, et chaque coup reçu blesse les monstres collés à toi.', apply: (h) => { h.armor += 0.05; h.thorns += 1; } },
   } },
-  heaume: { group: 'Défense', price: [45, 110, 210], kinds: {
+  heaume: { slot: 'Tête', group: 'Défense', price: [45, 110, 210], kinds: {
     heaume: { name: (h) => (h.cls === 'arbalete' ? 'Chaperon' : 'Heaume'), desc: '+20 PV max par rang, rendus tout de suite.', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
     lanterne: { name: () => 'Lanterne de mineur', desc: 'Tu vois une case plus loin par rang, et l’escalier apparaît sur la minicarte dès l’arrivée.', apply: (h) => { h.sight += 1; h.finder = true; } },
   } },
-  bouclier: { group: 'Défense', price: [90, 200], kinds: {
+  bouclier: { slot: 'Bras', group: 'Défense', price: [90, 200], kinds: {
     garde: { name: (h) => (h.cls === 'arbalete' ? 'Brassards' : 'Bouclier'), desc: '12 % de chances par rang de dévier un coup entier.', apply: (h) => { h.parry += 0.12; } },
     riposte: { name: () => 'Gantelets de riposte', desc: 'Après une esquive parfaite, ton critique frappe 60 % plus fort par rang.', apply: (h) => { h.riposte += 1; } },
   } },
-  bottes: { group: 'Mobilité', price: [40, 100, 190], kinds: {
+  bottes: { slot: 'Pieds', group: 'Mobilité', price: [40, 100, 190], kinds: {
     vent: { name: () => 'Bottes de vent', desc: '+8 % de vitesse et esquive rechargée 12 % plus vite par rang.', apply: (h) => { h.speedMul += 0.08; h.dashCdMul *= 0.88; } },
     braise: { name: () => 'Bottes de braise', desc: 'L’esquive laisse une traînée de braises qui brûle les monstres, plus fort à chaque rang.', apply: (h) => { h.emberDash += 1; } },
   } },
-  ceinture: { group: 'Soins', price: [50, 140], kinds: {
+  ceinture: { slot: 'Ceinture', group: 'Soins', price: [50, 140], kinds: {
     ceinturon: { name: () => 'Ceinturon', desc: '+1 place de potion par rang.', apply: (h) => { h.maxPotions += 1; } },
     bandouliere: { name: () => 'Bandoulière d’alchimiste', desc: 'Boire une potion libère une onde qui blesse et repousse les monstres proches.', apply: (h) => { h.potionBlast += 1; } },
   } },
-  fioles: { group: 'Soins', price: [40, 100, 190], kinds: {
+  fioles: { slot: 'Fioles', group: 'Soins', price: [40, 100, 190], kinds: {
     epaisses: { name: () => 'Fioles épaisses', desc: 'Chaque potion rend 20 PV de plus par rang.', apply: (h) => { h.potionHeal += 2; } },
     rage: { name: () => 'Fioles de rage', desc: 'Boire une potion déclenche la Transe pendant 3 s par rang.', apply: (h) => { h.potionTranse += 1; } },
   } },
@@ -7649,6 +7740,7 @@ function openAltar(who) {
 function openShop(who) {
   state = 'shop';
   shopHero = who;
+  shopPrev = null;
   resetInputs();
   renderShop();
   showOverlay('menu-shop');
@@ -7666,93 +7758,219 @@ function shopSlots(who) {
   return all.filter((k) => who.gear[k] || m.stock[who.index].includes(k));
 }
 
-function shopItems(who) {
-  const rows = shopSlots(who).map((slot) => {
+const SHOP_ICON = {
+  arme: '<path d="M20 4 9.5 14.5M20 4h-4.5M20 4v4.5M6.5 11.5l6 6M8 16l-4 4"/>',
+  arbalete: '<path d="M4 9c4-5 12-5 16 0M4 9l8 5 8-5M12 6v15M9 18h6"/>',
+  armure: '<path d="M8 3 4 5v6l2 1v8h12v-8l2-1V5l-4-2c-1 2-2.4 3-4 3S9 5 8 3Z"/>',
+  heaume: '<path d="M4 19v-6a8 8 0 0 1 16 0v6h-6v-6h-4v6Z"/>',
+  bouclier: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>',
+  bottes: '<path d="M7 3h6v9l5 2a3 3 0 0 1 2 2.8V20H4v-3.5l3-1.5ZM7 7h6M4 17h16"/>',
+  ceinture: '<path d="M3 10h18v4H3zM10 8h5v8h-5z"/>',
+  fioles: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M7 15h10"/>',
+  coeur: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
+};
+const shopIcon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SHOP_ICON[name]}</svg>`;
+const COIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#f2c450"/><circle cx="12" cy="12" r="6" fill="none" stroke="#b88a3a" stroke-width="1.6"/></svg>';
+const SHOP_SAY = {
+  hello: ['Approche, l’ami. Ici, personne ne se bat : on marchande.', 'Des lames, du cuir, des fioles… et pas de crédit.', 'Les Profondeurs coûtent cher. Mes marchandises, un peu moins.', 'Tout se paie, mais tout sert. Regarde donc.'],
+  buy: ['Vendu !', 'Excellent choix.', 'Ça te sauvera la peau.', 'Prends-en soin, je ne reprends rien.'],
+  pick: ['Bon choix. L’autre retourne au fond du sac.', 'Celui-là, donc. L’autre attendra ta prochaine descente.'],
+  max: ['Le meilleur que j’aie. Je n’ai rien au-dessus.', 'Plus solide que ça, ça n’existe pas.'],
+  potion: ['Bois-la avant qu’il ne soit trop tard.', 'Une gorgée, et tu repars.'],
+  full: ['Ta sacoche déborde déjà, l’ami.'],
+};
+let shopLine = '';
+let shopPrev = null;
+
+function shopSay(lines) {
+  const fresh = lines.filter((l) => l !== shopLine);
+  shopLine = pick(fresh.length ? fresh : lines);
+  const el = $('shop-say');
+  el.textContent = `« ${shopLine} »`;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+// Un étal par emplacement : le rang suivant d'une pièce portée, ou deux pièces au choix ; la sacoche ferme la marche.
+function shopStalls(who) {
+  const stalls = shopSlots(who).map((slot) => {
     const g = GEAR[slot];
     const level = who.gear[slot];
     const max = g.price.length;
     const price = level >= max ? null : g.price[level];
     const kinds = level ? [who.gearKind[slot]] : Object.keys(g.kinds);
-    return kinds.map((kind) => ({
-      key: `${slot}:${kind}`,
-      group: g.group,
-      cat: level ? `${g.group} · ${level >= max ? 'maximum' : `rang ${level + 1}/${max}`}` : `${g.group} · au choix`,
-      name: `${g.kinds[kind].name(who)} ${ROMAN[Math.min(level, max - 1)]}`,
-      desc: g.kinds[kind].desc,
-      price,
-      ok: price !== null && who.gold >= price,
-    }));
+    return {
+      name: g.slot, group: g.group, level, max,
+      icon: slot === 'arme' && who.cls === 'arbalete' ? 'arbalete' : slot,
+      note: level >= max ? 'maximum atteint' : level ? `rang ${level + 1} sur ${max}` : 'l’un ou l’autre',
+      wares: kinds.map((kind) => ({ key: `${slot}:${kind}`, name: g.kinds[kind].name(who), rank: ROMAN[Math.min(level, max - 1)], desc: g.kinds[kind].desc, price })),
+    };
   });
-  const price = potionPrice();
-  rows.push([{ key: 'potion', group: 'Soins', cat: 'Soins · consommable', name: 'Potion', desc: `Rend ${who.potionHeal * 10} PV · ${who.potions}/${who.maxPotions} dans la sacoche`, price, ok: who.gold >= price && who.potions < who.maxPotions }]);
-  return rows;
+  const full = who.potions >= who.maxPotions;
+  stalls.push({
+    name: 'Sacoche', group: 'Soins', level: who.potions, max: who.maxPotions, icon: 'fioles', pots: true,
+    note: full ? 'pleine' : `${who.potions} potion${who.potions > 1 ? 's' : ''} sur ${who.maxPotions}`,
+    wares: [{ key: 'potion', name: 'Potion', desc: `Rend ${who.potionHeal * 10} PV d’un trait.`, price: potionPrice(), full }],
+  });
+  return [...stalls.filter((s) => s.wares.length === 1), ...stalls.filter((s) => s.wares.length > 1)];
 }
 
-function renderShop(focusKey) {
+function renderShop(focusKey, fx) {
   const who = shopHero;
   const duo = heroes.length > 1;
   $('shop-kicker').textContent = duo ? `Marchand ambulant · ${tagOf(who)} · ${CLASSES[who.cls].name}` : 'Marchand ambulant';
   $('shop-kicker').style.color = duo ? P_COLOR[who.index] : '';
-  $('shop-lead').textContent = `Tu as ${who.gold} écus · ${who.maxHp * 10} PV max · défense ${Math.round(who.armor * 100)} %. Deux objets par emplacement : en prendre un ferme l’autre.`;
+  if (fx) shopSay(fx.line);
+  else shopSay(SHOP_SAY.hello);
+  if (fx) countGold(fx.from, who.gold);
+  else $('shop-gold').textContent = who.gold;
+
+  const stats = [
+    ['coeur', `<b>${who.maxHp * 10}</b> PV max`],
+    ['bouclier', `Défense <b>${Math.round(who.armor * 100)} %</b>`],
+    ['fioles', `Potions <b>${who.potions}/${who.maxPotions}</b> · ${who.potionHeal * 10} PV chacune`],
+  ];
+  $('shop-stats').replaceChildren(...stats.map(([ic, html], n) => {
+    const li = document.createElement('li');
+    li.innerHTML = `${shopIcon(ic)}<span>${html}</span>`;
+    if (fx && shopPrev && shopPrev[n] !== html) li.classList.add('up');
+    return li;
+  }));
+  shopPrev = stats.map((s) => s[1]);
+
   const box = $('shop-items');
+  box.classList.toggle('settled', !!fx);
   box.replaceChildren();
   let focus = null;
-  for (const row of shopItems(who)) {
-    const line = document.createElement('div');
-    line.className = row.length > 1 ? 'gear-row' : 'gear-row single';
-    for (const it of row) {
+  const stalls = shopStalls(who);
+  const singles = stalls.filter((s) => s.wares.length === 1).length;
+  stalls.forEach((st, n) => {
+    const sec = document.createElement('section');
+    sec.className = st.wares.length > 1 ? 'stall pair' : singles % 2 && n === singles - 1 ? 'stall wide' : 'stall';
+    sec.dataset.cat = st.group;
+    sec.style.setProperty('--i', n);
+    const head = document.createElement('div');
+    head.className = 'stall-head';
+    const pips = Array.from({ length: st.max }, (_, k) => `<i class="${k < st.level ? 'on' : k === st.level && !st.pots ? 'next' : ''}"></i>`).join('');
+    head.innerHTML = `${shopIcon(st.icon)}<span class="stall-name">${st.name}</span><span class="pips">${pips}</span><span class="stall-note">${st.note}</span>`;
+    const wares = document.createElement('div');
+    wares.className = 'stall-wares';
+    st.wares.forEach((it, k) => {
+      if (k) {
+        const or = document.createElement('span');
+        or.className = 'stall-or';
+        or.textContent = 'ou';
+        wares.append(or);
+      }
+      const done = it.price === null || it.full;
+      const missing = done ? 0 : Math.max(0, it.price - who.gold);
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'perk';
-      b.dataset.cat = it.group;
+      b.className = missing ? 'perk ware short' : 'perk ware';
       b.dataset.key = it.key;
-      b.disabled = !it.ok;
-      const cat = document.createElement('span');
-      cat.className = 'perk-cat';
-      cat.textContent = it.cat;
+      b.disabled = done;
+      if (missing) b.setAttribute('aria-disabled', 'true');
       const name = document.createElement('strong');
+      name.className = 'ware-name';
       name.textContent = it.name;
+      if (!st.pots) {
+        const rank = document.createElement('span');
+        rank.className = 'ware-rank';
+        rank.textContent = it.rank;
+        name.append(rank);
+      }
       const desc = document.createElement('span');
       desc.className = 'perk-desc';
       desc.textContent = it.desc;
-      const price = document.createElement('span');
-      price.className = 'price';
-      price.textContent = it.price === null ? 'Déjà au maximum' : `${it.price} écus`;
-      b.append(cat, name, desc, price);
+      const top = document.createElement('span');
+      top.className = 'ware-top';
+      const tag = document.createElement('span');
+      tag.className = done ? 'ware-done' : 'ware-price';
+      tag.innerHTML = done ? (it.full ? 'Pleine' : 'Au maximum') : `${COIN_SVG}${it.price}`;
+      top.append(name, tag);
+      b.append(top, desc);
+      if (missing) {
+        const short = document.createElement('span');
+        short.className = 'ware-short';
+        short.textContent = `Il te manque ${missing} écus`;
+        b.append(short);
+      }
       b.addEventListener('click', () => buy(it.key));
-      line.append(b);
-      if (it.key === focusKey || (focusKey && it.key.startsWith(`${focusKey.split(':')[0]}:`))) focus = b;
-    }
-    box.append(line);
+      wares.append(b);
+      if (focusKey && (it.key === focusKey || it.key.startsWith(`${focusKey.split(':')[0]}:`))) focus = b;
+    });
+    sec.append(head, wares);
+    box.append(sec);
+  });
+  if (!focus) return;
+  if (fx) focus.classList.add('bought');
+  padFocus(focus.disabled ? box.querySelector('button:not(:disabled)') ?? $('shop-leave') : focus);
+}
+
+function countGold(from, to) {
+  const el = $('shop-gold');
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 450);
+    el.textContent = Math.round(from + (to - from) * k);
+    if (k < 1 && state === 'shop') requestAnimationFrame(step);
+    else el.textContent = shopHero ? shopHero.gold : to;
+  };
+  requestAnimationFrame(step);
+  if (from <= to) return;
+  const spent = document.createElement('span');
+  spent.className = 'purse-spent';
+  spent.textContent = `−${from - to}`;
+  $('shop-purse').append(spent);
+  setTimeout(() => spent.remove(), 1000);
+}
+
+function shopRefuse(key, lines) {
+  const ware = $('shop-items').querySelector(`[data-key="${key}"]`);
+  const purse = $('shop-purse');
+  for (const [el, cls] of [[ware, 'no'], [purse, 'short']]) {
+    if (!el) continue;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 600);
   }
-  if (focus) padFocus(focus.disabled ? box.querySelector('button:not(:disabled)') ?? $('shop-leave') : focus);
+  shopSay(lines);
+  sfx.block();
 }
 
 function buy(key) {
   if (state !== 'shop') return;
   const who = shopHero;
+  const from = who.gold;
+  let line = SHOP_SAY.buy;
   if (key === 'potion') {
     const price = potionPrice();
-    if (who.gold < price || who.potions >= who.maxPotions) return;
+    if (who.potions >= who.maxPotions) return shopRefuse(key, SHOP_SAY.full);
+    if (who.gold < price) return shopRefuse(key, [`Il te manque ${price - who.gold} écus, l’ami.`]);
     who.gold -= price;
     who.potions++;
+    line = SHOP_SAY.potion;
   } else {
     const [slot, kind] = key.split(':');
     const g = GEAR[slot];
     const level = who.gear[slot];
     const price = g.price[level];
-    if (!g.kinds[kind] || (level && who.gearKind[slot] !== kind) || level >= g.price.length || who.gold < price) return;
+    if (!g.kinds[kind] || (level && who.gearKind[slot] !== kind) || level >= g.price.length) return;
+    if (who.gold < price) return shopRefuse(key, [`Il te manque ${price - who.gold} écus, l’ami.`]);
     who.gold -= price;
     who.gearKind[slot] = kind;
     who.gear[slot]++;
     g.kinds[kind].apply(who);
     who.hp = Math.min(who.hp, who.maxHp);
     floatText(who.x, 1.8, who.z, gearLabel(who, slot, level), 'gold');
+    line = level + 1 >= g.price.length ? SHOP_SAY.max : level === 0 ? SHOP_SAY.pick : SHOP_SAY.buy;
   }
   sfx.buy();
   burst(who.x, 0.8, who.z, 0xf2c450, 12, 2.5, -4, 0.6);
   updateHud();
-  renderShop(key);
+  renderShop(key, { from, line });
 }
 
 function leaveShop() {
