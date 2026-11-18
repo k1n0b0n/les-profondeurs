@@ -7101,7 +7101,7 @@ function spawnBomb(x, z, R, dmg, t = 0.9, from = null) {
     lob.add(part(G.sphere, M.boulder, 0.2, 0.2, 0.2, 0, 0, 0), spark);
     L.group.add(lob);
   }
-  L.bombs.push({ x, z, R, dmg, t, max: t, g, fill, lob, sx: from ? from.x : x, sz: from ? from.z : z });
+  L.bombs.push({ x, z, R, dmg, t, max: t, g, fill, lob, from, sx: from ? from.x : x, sz: from ? from.z : z });
   sfx.fuse();
 }
 
@@ -7120,7 +7120,7 @@ function updateBombs(dt) {
     if (b.lob) L.group.remove(b.lob);
     L.group.remove(b.g);
     L.bombs.splice(n, 1);
-    L.blasts.push({ x: b.x, z: b.z, t: 0, R: b.R, dmg: trapFoe(2.5), playerDmg: b.dmg, big: true, color: 0xff5a2a });
+    L.blasts.push({ x: b.x, z: b.z, t: 0, R: b.R, dmg: trapFoe(2.5), playerDmg: b.dmg, big: true, color: 0xff5a2a, foeBomb: !!b.lob, from: b.from });
   }
 }
 
@@ -7306,7 +7306,8 @@ function updateEnemies(dt) {
     const dx = player.x - e.x;
     const dz = player.z - e.z;
     const d = Math.hypot(dx, dz) || 1e-4;
-    e.seen = d < L.biome.see && los(e.x, e.z, player.x, player.z);
+    // Ligne de vue étalée sur 3 images par monstre : le plus gros poste de l'IA quand l'étage est peuplé.
+    e.seen = d < L.biome.see && ((e.losAt = (e.losAt ?? n) + 1) % 3 !== 0 && e.seenLast !== undefined ? e.seenLast : (e.seenLast = los(e.x, e.z, player.x, player.z)));
     const wasAware = e.aware > 0;
     const sheltered = inHaven(player.x, player.z);
     if (active && e.seen && d < 10 && !sheltered) e.aware = 4;
@@ -7687,6 +7688,7 @@ function updateBlasts(dt) {
         if (e.dying >= 0 || !b.dmg || (b.noBoss && e.type === 'boss')) continue;
         const d = Math.hypot(e.x - b.x, e.z - b.z);
         const mult = b.trap && e.type === 'boss' ? 0.5 : 1;
+        if (b.foeBomb && e === b.from) continue;
         if (d < b.R + e.r) hitEnemy(e, b.dmg * mult, (e.x - b.x) / (d || 1), (e.z - b.z) / (d || 1), { knock: b.big ? 1.6 : 1.2, fire: !COLD_BLASTS.includes(b.color) });
       }
     });
@@ -8085,7 +8087,8 @@ function unsealRoom(a) {
 }
 
 function updateAmbushes(dt) {
-  for (const a of L.trialRoom ? [...L.ambushes, L.trialRoom] : L.ambushes) {
+  const locks = [...L.ambushes, L.trialRoom, L.vault?.lock, L.bossLock].filter(Boolean);
+  for (const a of locks) {
     for (const gate of a.gates) {
       gate.g.visible = L.seen[idx(gate.i, gate.j)] === 1 || tileSeen(gate.ii * TILE, gate.jj * TILE);
       gate.g.position.y += (0 - gate.g.position.y) * damp(12, dt);
