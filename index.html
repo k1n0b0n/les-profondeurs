@@ -181,7 +181,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #hud.duo #trial { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); }
 #trial p { margin: 0; font: 400 18px/1.1 var(--font-display); color: var(--gold); }
 #trial small { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
-#key-chip { padding: 0 7px; border: 1px solid rgba(242, 196, 80, 0.6); border-radius: 999px; color: var(--gold); font-size: 12px; }
+#key-chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px 1px 6px; border: 1px solid rgba(242, 196, 80, 0.85); border-radius: 999px; background: rgba(242, 196, 80, 0.16); color: var(--gold); font-size: 13px; animation: keyglow 1.8s ease-in-out infinite; }
+#key-chip[hidden] { display: none; }
+#key-chip svg { width: 15px; height: 15px; }
+@keyframes keyglow { 50% { box-shadow: 0 0 12px rgba(242, 196, 80, 0.55); } }
 #boss p { margin: 0; font: 400 19px/1.1 var(--font-display); color: var(--ink); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9); }
 #boss .boss-bar { height: 9px; overflow: hidden; border-radius: 5px; background: var(--blood-dim); border: 1px solid rgba(241, 231, 212, 0.25); }
 #boss .boss-bar div { width: 100%; height: 100%; background: linear-gradient(90deg, var(--blood), var(--ember)); transition: width 0.15s ease-out; }
@@ -643,9 +646,9 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     </section>
     <div id="mid">
       <section id="run" aria-label="Expédition">
-        <div class="meta"><span class="floor" id="floor">Étage 1</span><span id="depth">−12 m</span></div>
+        <div class="meta"><span class="floor" id="floor">Étage 1</span></div>
         <div class="bar xp" title="Expérience"><div id="xp-fill"></div></div>
-        <div class="meta lvl"><span id="lvl">Niveau 1</span><span id="key-chip" hidden>Clé d’os</span><span id="perf" hidden></span></div>
+        <div class="meta lvl"><span id="lvl">Niveau 1</span><span id="key-chip" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="12" r="4"/><path d="M11.5 12H21M17 12v4M20 12v3"/></svg>Clé d’os</span><span id="perf" hidden></span></div>
       </section>
       <div id="combo" hidden><b id="combo-n">×2</b><span id="combo-label">combo</span><i id="combo-bar"></i></div>
     </div>
@@ -704,7 +707,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
         <button type="button" class="audio-btn" id="audio-start-sound" aria-pressed="true" aria-label="Son" title="Son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></button>
       </div>
     </div>
-    <p class="lead" id="start-lead">Atteins le fond du gouffre, à −144 m. Tous les trois étages, le gardien du biome scelle l’escalier : abats les quatre.</p>
+    <p class="lead" id="start-lead">Atteins le fond du gouffre, à l’étage 12. Tous les trois étages, le gardien du biome scelle l’escalier : abats les quatre.</p>
     <p class="best" id="best"></p>
     <p class="grimoire-line" id="grimoire-line"></p>
     <details class="more" id="pacts-box" hidden>
@@ -820,7 +823,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
 <div class="overlay" id="menu-pause" hidden>
   <div class="card pause">
     <div class="pause-head">
-      <p class="kicker" id="pause-where">Étage 1 · −12 m</p>
+      <p class="kicker" id="pause-where">Étage 1</p>
       <h1>Pause</h1>
     </div>
     <div class="track" id="pause-track"></div>
@@ -861,7 +864,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
 
 <div class="overlay" id="menu-win" hidden>
   <div class="card">
-    <p class="kicker">Le fond du gouffre · −144 m</p>
+    <p class="kicker">Le fond du gouffre · étage 12</p>
     <h1>Les quatre gardiens sont tombés</h1>
     <p class="record-badge" id="win-record" hidden>Nouveau record !</p>
     <p class="lead" id="win-lead"></p>
@@ -889,7 +892,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <div class="track" id="dead-track"></div>
     <p class="track-note" id="dead-note"></p>
     <dl class="stats">
-      <div><dt>Profondeur</dt><dd id="d-depth">−12 m</dd></div>
+      <div><dt>Étage</dt><dd id="d-depth">1</dd></div>
       <div><dt>Niveau</dt><dd id="d-level">1</dd></div>
       <div><dt>Écus</dt><dd id="d-gold">0</dd></div>
       <div><dt>Ennemis vaincus</dt><dd id="d-kills">0</dd></div>
@@ -937,6 +940,9 @@ const PLAYER_SPEED = 5.4;
 const REVEAL_R = 6;
 const ATTACK_RANGE = 1.9;
 const ATTACK_CD = 0.42;
+const CHARGE_MIN = 0.35;
+const CHARGE_MAX = 1;
+const SPRINT_MUL = 1.5;
 const DASH_TIME = 0.2;
 const DASH_SPEED = 15;
 const DASH_CD = 0.85;
@@ -945,7 +951,6 @@ const ELAN_WINDOW = 0.35;
 const COMBO_WINDOW = 5;
 const TRAP_PERIOD = 2.8;
 const BOSS_EVERY = 3;
-const METERS_PER_FLOOR = 12;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 const MUTE_KEY = 'profondeurs.muted';
@@ -1010,7 +1015,6 @@ const inside = (i, j) => i >= 0 && j >= 0 && i < MAP_W && j < MAP_H;
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const coarse = matchMedia('(pointer: coarse)').matches;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const meters = (depth) => `−${depth * METERS_PER_FLOOR} m`;
 const D = (v) => Math.max(1, Math.round(v * 10));
 const deep = (depth) => Math.max(0, depth - 6) ** 2;
 const hpScale = (depth) => 1 + (depth - 1) * 0.2 + deep(depth) * 0.05;
@@ -1058,7 +1062,8 @@ const LABEL_KEY = 'profondeurs.clavier';
 const BIND_SLOTS = 3;
 const KB_ACTIONS = ['up', 'down', 'left', 'right', 'attack', 'dash', 'parry', 'potion'];
 const PAD_ACTIONS = ['attack', 'dash', 'parry', 'potion', 'pause'];
-const PAD_DEFAULT = { attack: [0, 7], dash: [5, 3], parry: [1, 4, 6], potion: [2], pause: [9] };
+const PAD_DEFAULT = { attack: [2, 7], dash: [0, 5], parry: [1, 4, 6], potion: [3], pause: [9] };
+const PAD_LEGACY = { attack: [0, 7], dash: [5, 3], parry: [1, 4, 6], potion: [2], pause: [9] };
 const fromPreset = (map) => Object.fromEntries(KB_ACTIONS.map((a) => [a, map[a].slice(0, BIND_SLOTS)]));
 const bindDefaults = () => ({
   solo: fromPreset(KEYMAPS[store.get(LAYOUT_KEY, 'droitier')] ?? KEYMAPS.droitier),
@@ -1071,7 +1076,7 @@ function loadBinds() {
   const saved = store.get(BIND_KEY, null) || {};
   const valid = (m, acts, type) => !!m && acts.every((a) => Array.isArray(m[a]) && m[a].length <= BIND_SLOTS && m[a].every((v) => v === null || typeof v === type));
   for (const p of ['solo', 'left', 'right']) if (valid(saved[p], KB_ACTIONS, 'string')) out[p] = saved[p];
-  if (valid(saved.pad, PAD_ACTIONS, 'number')) out.pad = saved.pad;
+  if (valid(saved.pad, PAD_ACTIONS, 'number') && !PAD_ACTIONS.every((a) => saved.pad[a].join() === PAD_LEGACY[a].join())) out.pad = saved.pad;
   return out;
 }
 const binds = loadBinds();
@@ -2702,11 +2707,20 @@ function spawnBlade(i, j) {
   arm.add(part(G.box, M.iron, 5.0, 0.1, 0.14, 0, 0.6, 0));
   const discs = [-1, 1].map((sgn) => part(G.bladeDisc, M.blade, 1, 1, 1, sgn * 2.45, 0.6, 0));
   arm.add(...discs);
+  const cross = L.depth >= 7;
+  if (cross) {
+    const bar = part(G.box, M.iron, 5.0, 0.1, 0.14, 0, 0.6, 0);
+    const extra = [-1, 1].map((sgn) => part(G.bladeDisc, M.blade, 1, 1, 1, sgn * 2.45, 0.6, 0));
+    bar.add(...extra.map((d) => { d.position.set(d.position.x / 5, 0, 0); d.scale.set(1 / 5, 1 / 0.1, 1 / 0.14); return d; }));
+    bar.rotation.y = Math.PI / 2;
+    arm.add(bar);
+    discs.push(...extra);
+  }
   g.add(part(G.post, M.iron, 1, 1, 1, 0, 0.45, 0), arm, part(G.edge, M.teleFaint, 2.85, 1, 2.85, 0, 0.03, 0));
   g.visible = false;
   L.group.add(g);
   const speed = (1.4 + Math.min(L.depth - 4, 4) * 0.12) * (Math.random() < 0.5 ? -1 : 1);
-  L.traps.push({ kind: 'blade', i, j, x, z, g, arm, discs, angle: rand(0, Math.PI), speed, R: 2.6, last: new Map(), swish: 0 });
+  L.traps.push({ kind: 'blade', i, j, x, z, g, arm, discs, angle: rand(0, Math.PI), speed, R: 2.6, last: new Map(), swish: 0, cross, cycle: rand(0, BLADE_CYCLE), stage: 'calm' });
   L.props.push({ x, z, r: 0.3, g, kind: 'post', breakable: false, dead: false });
 }
 
@@ -3008,6 +3022,48 @@ function spawnCloud(x, z, friendly = false) {
   burst(x, 0.4, z, 0x9a5ae0, 14, 2, -2, 0.7);
 }
 
+const POISON_TIME = 5;
+function poisonPlayer(who = player) {
+  if (who.poisonT <= 0) {
+    floatText(who.x, 1.7, who.z, 'Empoisonné', 'burn');
+    if (!hints.poison) {
+      hints.poison = true;
+      toast('Poison', 'tu perds de la vie à intervalles réguliers · une potion le dissipe');
+    }
+    who.poisonTick = 0.9;
+  }
+  who.poisonT = POISON_TIME;
+}
+
+const FREEZE_TIME = 1.3;
+function thaw(e) {
+  if (!(e.freezeT > 0) && !(e.chill > 0)) return;
+  const wasFrozen = e.freezeT > 0;
+  e.freezeT = 0;
+  e.chill = 0;
+  burst(e.x, 0.9, e.z, 0xdff3ff, 8, 2.5, -2, 0.5);
+  if (wasFrozen) floatText(e.x, e.def.barY * e.size + 0.3, e.z, 'Dégel', 'block');
+}
+
+function freezeEnemy(e, time = FREEZE_TIME) {
+  if (e.dying >= 0 || e.type === 'boss' || e.hidden || e.spawnT > 0) return;
+  const fresh = !(e.freezeT > 0);
+  e.freezeT = Math.max(e.freezeT || 0, time);
+  e.chill = Math.max(e.chill || 0, time + 0.2);
+  if (e.mode === 'windup' || e.armT > 0) {
+    e.mode = 'chase';
+    e.armT = 0;
+    if (e.tele) e.tele.visible = false;
+  }
+  e.atkCd = Math.max(e.atkCd, time);
+  e.vx = e.vz = 0;
+  if (fresh) {
+    sfx.icicle();
+    ring(e.x, e.z, 0x9fdcff, 12, 2.2, 0.3);
+    floatText(e.x, e.def.barY * e.size + 0.3, e.z, 'Gelé !', 'block');
+  }
+}
+
 function chillPlayer(who = player) {
   if (who.chill <= 0) {
     floatText(who.x, 1.7, who.z, 'Gelé : ralenti', 'block');
@@ -3107,7 +3163,7 @@ function updateLava(dt) {
     e.lavaT = (e.lavaT ?? 0) - dt;
     if (e.lavaT > 0) continue;
     e.lavaT = 0.5;
-    if (trapHitEnemy(e, 0.6)) burst(e.x, 0.3, e.z, 0xff7a20, 4, 2);
+    if (trapHitEnemy(e, 0.6, 0, 0, 0, true)) burst(e.x, 0.3, e.z, 0xff7a20, 4, 2);
   }
   const p = pick(L.lavaPatches);
   if (p && p.halo.visible && Math.random() < 0.3) {
@@ -3181,7 +3237,13 @@ function updateClouds(dt) {
     for (const h of heroes) {
       if (c.friendly || state !== 'play' || h.down || Math.hypot(h.x - c.x, h.z - c.z) >= c.R) continue;
       h.slowT = 0.25;
-      if (h.dodge <= 0) hurtPlayer(trapMe(0.5, h), c.x, c.z, h);
+      if (h.dodge > 0) continue;
+      if (!c.poisoned) c.poisoned = new Set();
+      if (!c.poisoned.has(h)) {
+        c.poisoned.add(h);
+        hurtPlayer(trapMe(0.3, h), c.x, c.z, h);
+      }
+      poisonPlayer(h);
     }
     for (const e of L.enemies.slice()) {
       if (e.dying >= 0 || Math.hypot(e.x - c.x, e.z - c.z) > c.R) continue;
@@ -3211,9 +3273,9 @@ function withHero(who, fn) {
   }
 }
 
-function trapHitEnemy(e, base, nx = 0, nz = 0, knock = 0) {
+function trapHitEnemy(e, base, nx = 0, nz = 0, knock = 0, fire = false) {
   if (e.dying >= 0 || !e.seen || state !== 'play') return false;
-  withHero(nearestHero(e.x, e.z), () => hitEnemy(e, trapFoe(base) * (e.type === 'boss' ? 0.5 : 1), nx, nz, { knock }));
+  withHero(nearestHero(e.x, e.z), () => hitEnemy(e, trapFoe(base) * (e.type === 'boss' ? 0.5 : 1), nx, nz, { knock, fire }));
   return true;
 }
 
@@ -3346,13 +3408,14 @@ function spawnChest(x, z, rich = false) {
     lid,
     part(G.shadow, M.shadow, 0.55, 1, 0.45, 0, 0.02, 0),
   );
+  let halo = null;
   if (rich) {
-    const h = glow(0xf2c450, 1.8, 0.5);
-    h.position.y = 0.5;
-    g.add(h);
+    halo = glow(0xf2c450, 1.8, 0.5);
+    halo.position.y = 0.5;
+    g.add(halo);
   }
   L.group.add(g);
-  L.chests.push({ x, z, g, lid, rich, open: false, t: 0 });
+  L.chests.push({ x, z, g, lid, rich, halo, open: false, t: 0 });
 }
 
 function spawnProp(x, z, kind) {
@@ -3675,6 +3738,8 @@ const sfx = {
   hurt: () => tone(110, 0.28, { type: 'sawtooth', vol: 0.08, slide: 0.5 }),
   block: () => tone(880, 0.25, { type: 'sine', vol: 0.1, slide: 1.4 }),
   perfect: () => { tone(660, 0.12, { type: 'sine', vol: 0.1, slide: 2 }); tone(1320, 0.3, { type: 'sine', vol: 0.06, delay: 0.08, slide: 0.5 }); },
+  charge: (full) => { tone(full ? 880 : 520, 0.14, { type: 'triangle', vol: 0.05, slide: 1.3 }); },
+  heavy: () => { if (!throttled('heavy', 0.1)) return; hiss(0.3, 700, 0.14); tone(110, 0.28, { type: 'sawtooth', vol: 0.06, slide: 0.5 }); },
   dash: () => { hiss(0.22, 1400, 0.1); tone(220, 0.18, { type: 'sine', vol: 0.05, slide: 2 }); },
   coin: () => { if (!throttled('coin', 0.03)) return; tone(1046, 0.06, { vol: 0.035 }); tone(1568, 0.12, { vol: 0.035, delay: 0.06 }); },
   pickup: () => tone(660, 0.18, { type: 'triangle', vol: 0.08, slide: 1.5 }),
@@ -4135,8 +4200,8 @@ const bodyStart = () => ({
   x: 0, z: 0, face: 0, faceTarget: 0, hp: 10,
   atkCd: 0, swing: -1, swingCount: 0, spinning: false, inv: 0, dodge: 0, kvx: 0, kvz: 0,
   dashT: 0, dashCd: 0, dashDir: [0, 1], dashHits: new Set(), dashEndAt: -9, perfectDone: false, nextCrit: false, auraT: 0,
-  guardT: 0, guardAge: 0, parryCd: 0, parried: false, bufDash: 0, bufDashDir: null, bufAttack: 0, bufParry: 0, readyFlash: 0,
-  ivx: 0, ivz: 0, chill: 0, slowT: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
+  chargeT: 0, chargeStage: 0, sprinting: false, guardT: 0, guardAge: 0, parryCd: 0, parried: false, bufDash: 0, bufDashDir: null, bufAttack: 0, bufParry: 0, readyFlash: 0,
+  ivx: 0, ivz: 0, chill: 0, slowT: 0, poisonT: 0, poisonTick: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
   shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9, riposteT: 0, emberT: 0,
 });
 function makeHero(index, mesh, light, cls = 'lame') {
@@ -4168,6 +4233,14 @@ function autoTarget(p) {
   if (L.enemies.some((e) => e.dying < 0 && e.seen && e.spawnT <= 0 && !e.hidden && Math.hypot(e.x - p.x, e.z - p.z) < reach + e.r + 0.15 && los(p.x, p.z, e.x, e.z))) return true;
   return L.shots.some((s) => s.owner === 'foe' && Math.hypot(s.x - p.x, s.z - p.z) < 1.8 && (s.x - p.x) * s.vx + (s.z - p.z) * s.vz < 0);
 }
+const attackHeld = (h) => {
+  const km = heroKeymap(h);
+  return !!(km && held(km.attack)) || heroPads(h).some((st) => st.attack);
+};
+const dashHeld = (h) => {
+  const km = heroKeymap(h);
+  return !!(km && held(km.dash)) || heroPads(h).some((st) => st.dash);
+};
 const hasteMul = (h) => (h.hasteT > 0 ? 1 - 0.12 * (h.perks.frenesie || 0) : 1);
 const heroes = [makeHero(0, hero, torchLight)];
 let heroTwo = null;
@@ -4304,6 +4377,23 @@ function updatePlayer(dt) {
   player.riposteT -= dt;
   player.chill -= dt;
   player.slowT -= dt;
+  if (player.poisonT > 0) {
+    player.poisonT -= dt;
+    player.poisonTick -= dt;
+    if (Math.random() < 0.25) emit({ x: player.x + rand(-0.3, 0.3), y: rand(0.4, 1.4), z: player.z + rand(-0.3, 0.3), vx: 0, vy: 0.6, vz: 0, g: 0, life: 0.5, max: 0.5, color: 0x8ae06a, size: 0.4 });
+    if (player.poisonTick <= 0) {
+      player.poisonTick = 0.9;
+      if (player.dodge <= 0) {
+        const dmg = Math.min(trapMe(0.22, player), Math.max(0, player.hp - 0.1));
+        if (dmg > 0) {
+          player.hp -= dmg;
+          floatText(player.x, 1.6, player.z, `−${D(dmg)}`, 'burn');
+          sfx.sizzle();
+          updateHud();
+        }
+      }
+    }
+  }
   if (player.dashT > 0) {
     player.dashT -= dt;
     if (player.dashT <= 0) {
@@ -4347,10 +4437,13 @@ function updatePlayer(dt) {
       const nz = m.z / m.mag;
       const k = m.analog ? clamp((m.mag - 0.18) / 0.62, 0.3, 1) : 1;
       const swingSlow = player.cls === 'arbalete' ? 0.75 : 0.45;
-      const sp = PLAYER_SPEED * player.speedMul * (inTranse() ? 1.12 : 1) * k * (player.swing >= 0 ? swingSlow : 1) * (player.chill > 0 ? 0.7 : 1) * (player.slowT > 0 ? 0.6 : 1) * (player.guardT > 0 ? 0.3 : 1);
+      const sprint = player.swing < 0 && player.guardT <= 0 && dashHeld(player);
+      player.sprinting = sprint;
+      if (sprint && Math.random() < 0.5) emit({ x: player.x + rand(-0.2, 0.2), y: 0.1, z: player.z + rand(-0.2, 0.2), vx: -nx * 1.5, vy: 0.5, vz: -nz * 1.5, g: -1, life: 0.3, max: 0.3, color: 0xc8c0b0, size: 0.45 });
+      const sp = PLAYER_SPEED * player.speedMul * (inTranse() ? 1.12 : 1) * k * (player.swing >= 0 ? swingSlow : 1) * (player.chill > 0 ? 0.7 : 1) * (player.slowT > 0 ? 0.6 : 1) * (player.guardT > 0 ? 0.3 : 1) * (sprint ? SPRINT_MUL : 1);
       wx = nx * sp;
       wz = nz * sp;
-      if (player.swing < 0) player.faceTarget = Math.atan2(nx, nz);
+      if (player.swing < 0 && !attackHeld(player)) player.faceTarget = Math.atan2(nx, nz);
       player.moving = true;
       player.walk += dt * sp * 1.9;
     }
@@ -4403,7 +4496,7 @@ function updatePlayer(dt) {
         if (e.dying >= 0 || !e.seen || e.spawnT > 0 || e.hidden) continue;
         if (Math.hypot(e.x - player.x, e.z - player.z) < R + e.r) {
           const hp = e.hp;
-          hitEnemy(e, burn, 0, 0, { knock: 0, quiet: true });
+          hitEnemy(e, burn, 0, 0, { knock: 0, quiet: true, fire: true });
           burst(e.x, 0.7, e.z, 0xff7a2a, 5, 1.8, -2, 0.45);
           floatText(e.x, e.def.barY * e.size * 0.6, e.z, `${D(hp - Math.max(0, e.hp))}`, 'burn');
         }
@@ -4426,8 +4519,41 @@ function updatePlayer(dt) {
   const km = heroKeymap(player);
   const touchHeld = player.device.kind === 'any' && attackPointers.size > 0;
   const auto = autoAttack && player.device.kind === 'any' && player.atkCd <= 0 && autoTarget(player);
-  if (touchHeld || auto || (km && held(km.attack)) || heroPads(player).some((st) => st.attack)) tryAttack();
+  if (touchHeld || auto) tryAttack();
+  updateCharge(dt, touchHeld || auto);
+  if (!player.moving || player.dashT > 0) player.sprinting = false;
   updatePlayerTile();
+}
+
+// Garder l'attaque appuyée charge le coup suivant : relâché, il frappe bien plus fort.
+function updateCharge(dt, assisted) {
+  const p = player;
+  const holding = !assisted && attackHeld(p) && !p.down && state === 'play' && p.dashT <= 0 && p.guardT <= 0;
+  if (holding) {
+    if (p.atkCd > 0) return;
+    p.chargeT = Math.min(CHARGE_MAX, p.chargeT + dt);
+    if (p.chargeT > 0.12 && Math.random() < 0.7) {
+      const a = rand(0, Math.PI * 2);
+      const r = 1.1 - 0.7 * (p.chargeT / CHARGE_MAX);
+      emit({ x: p.x + Math.cos(a) * r, y: rand(0.3, 1.3), z: p.z + Math.sin(a) * r, vx: -Math.cos(a) * 2.5, vy: 0.2, vz: -Math.sin(a) * 2.5, g: 0, life: 0.3, max: 0.3, color: p.chargeT >= CHARGE_MAX ? 0xffe27a : 0xbfe0ff, size: 0.45 });
+    }
+    if (p.chargeStage < 1 && p.chargeT >= CHARGE_MIN) {
+      p.chargeStage = 1;
+      sfx.charge(0);
+      ring(p.x, p.z, 0xbfe0ff, 10, 2, 0.25);
+    }
+    if (p.chargeStage < 2 && p.chargeT >= CHARGE_MAX) {
+      p.chargeStage = 2;
+      sfx.charge(1);
+      ring(p.x, p.z, 0xffe27a, 16, 3.4, 0.3);
+      floatText(p.x, 1.9, p.z, 'Pleine puissance', 'crit');
+    }
+    return;
+  }
+  const t = p.chargeT;
+  p.chargeT = 0;
+  p.chargeStage = 0;
+  if (t >= CHARGE_MIN && !p.down && state === 'play' && p.atkCd <= 0 && p.dashT <= 0 && p.guardT <= 0) tryAttack(t / CHARGE_MAX);
 }
 
 // Une commande arrivée un peu trop tôt est gardée en mémoire au lieu d'être perdue.
@@ -4461,7 +4587,7 @@ function tryDash(toward) {
   player.face = player.faceTarget = Math.atan2(dir[0], dir[1]);
   sfx.dash();
   if (player.perks.coeurgivre) {
-    for (const e of L.enemies) if (e.dying < 0 && Math.hypot(e.x - player.x, e.z - player.z) < 2.6 + e.r) e.chill = 2.5;
+    for (const e of L.enemies) if (e.dying < 0 && Math.hypot(e.x - player.x, e.z - player.z) < 2.6 + e.r) freezeEnemy(e, 1.1);
     ring(player.x, player.z, 0x9fdcff, 18, 6, 0.35);
   }
 }
@@ -4489,38 +4615,45 @@ function tryParry() {
   sfx.swish();
 }
 
-function tryAttack() {
+function tryAttack(charge = 0) {
   if (state !== 'play' || player.down) return;
   if (player.atkCd > 0 || player.dashT > 0 || player.guardT > 0) {
     if (player.dashT > 0 || player.guardT > 0 || player.atkCd < INPUT_BUFFER) player.bufAttack = INPUT_BUFFER;
     return;
   }
   player.bufAttack = 0;
-  if (inHaven(player.x, player.z)) {
-    player.atkCd = 0.4;
-    if (elapsed - player.truceAt > 1.5) {
-      player.truceAt = elapsed;
-      floatText(player.x, 1.7, player.z, 'Trêve du marchand', 'block');
-    }
-    return;
-  }
+  const haven = inHaven(player.x, player.z);
   if (player.cls === 'arbalete') {
-    shoot();
+    if (haven) {
+      player.atkCd = 0.4;
+      if (elapsed - player.truceAt > 1.5) {
+        player.truceAt = elapsed;
+        floatText(player.x, 1.7, player.z, 'Trêve du marchand', 'block');
+      }
+      return;
+    }
+    shoot(charge);
     return;
   }
-  player.atkCd = ATTACK_CD * player.atkCdMul * (inTranse() ? 0.7 : 1) * hasteMul(player);
+  const heavy = charge > 0;
+  player.atkCd = ATTACK_CD * player.atkCdMul * (inTranse() ? 0.7 : 1) * hasteMul(player) * (heavy ? 1.5 : 1);
   player.swing = 0;
-  player.swingCount++;
-  const spin = player.spinEvery > 0 && player.swingCount % player.spinEvery === 0;
+  if (!heavy) player.swingCount++;
+  const spin = heavy || (player.spinEvery > 0 && player.swingCount % player.spinEvery === 0);
   player.spinning = spin;
-  const range = ATTACK_RANGE * player.rangeMul * (spin ? 1.1 : 1);
+  const range = ATTACK_RANGE * player.rangeMul * (heavy ? 1.3 : spin ? 1.1 : 1);
+  const power = heavy ? 1.5 + 1.5 * charge : 1;
   const arcCos = Math.cos(THREE.MathUtils.degToRad(player.arcDeg));
-  const sure = player.nextCrit || elapsed - player.dashEndAt < ELAN_WINDOW;
+  const sure = player.nextCrit || elapsed - player.dashEndAt < ELAN_WINDOW || charge >= 1;
   player.nextCrit = false;
-  if (spin) sfx.spin();
+  if (heavy) {
+    sfx.heavy();
+    addShake(0.2);
+    ring(player.x, player.z, 0xffe27a, 18, range * 2.2, 0.3);
+  } else if (spin) sfx.spin();
   else sfx.swing();
 
-  if (!spin) {
+  if (!spin && autoAttack && player.device.kind === 'any') {
     let target = null;
     let best = 3.4 * player.rangeMul;
     for (const e of L.enemies) {
@@ -4535,7 +4668,7 @@ function tryAttack() {
   const reach = (dx, dz, d, extra) => d <= range + extra && (spin || d < 0.5 || (dx * fx + dz * fz) / d >= arcCos);
 
   let crits = 0;
-  for (const e of L.enemies.slice()) {
+  for (const e of haven ? [] : L.enemies.slice()) {
     if (e.dying >= 0) continue;
     const dx = e.x - player.x;
     const dz = e.z - player.z;
@@ -4546,7 +4679,7 @@ function tryAttack() {
     if (crit) crits++;
     if (marked) detonate(e);
     e.staggerT = STAGGER_TIME;
-    hitEnemy(e, dmgOf() * (crit ? 2 : 1), d > 0.01 ? dx / d : fx, d > 0.01 ? dz / d : fz, { crit, direct: true });
+    hitEnemy(e, dmgOf() * (crit ? 2 : 1) * power, d > 0.01 ? dx / d : fx, d > 0.01 ? dz / d : fz, { crit, direct: true, knock: heavy ? 2.2 : 1 });
   }
   for (const p of L.props) {
     if (p.dead) continue;
@@ -4554,6 +4687,10 @@ function tryAttack() {
     const dz = p.z - player.z;
     if (p.kind === 'stele') {
       if (reach(dx, dz, Math.hypot(dx, dz), p.r)) startTrial(p);
+      continue;
+    }
+    if (p.kind === 'merchant') {
+      if (reach(dx, dz, Math.hypot(dx, dz), p.r + 0.3)) hitMerchant(p);
       continue;
     }
     if (!p.breakable) continue;
@@ -4565,7 +4702,7 @@ function tryAttack() {
     const dz = sc.door.j * TILE - player.z;
     if (reach(dx, dz, Math.hypot(dx, dz), TILE * 0.5)) hitSecret(1);
   }
-  for (const s of L.shots.slice()) {
+  for (const s of haven ? [] : L.shots.slice()) {
     if (s.owner !== 'foe' && s.owner !== 'trap') continue;
     const dx = s.x - player.x;
     const dz = s.z - player.z;
@@ -4623,7 +4760,7 @@ function chainLightning(from, amount) {
       emit({ x: from.x + (o.x - from.x) * t + rand(-0.15, 0.15), y: 0.9 + rand(-0.2, 0.2), z: from.z + (o.z - from.z) * t + rand(-0.15, 0.15), vx: 0, vy: 0, vz: 0, g: 0, life: 0.18, max: 0.18, color: 0xbfe0ff, size: 0.5 });
     }
     hitEnemy(o, amount * 0.6, 0, 0, { chain: true, knock: 0.2 });
-    if (player.perks.orage) o.chill = 2.5;
+    if (player.perks.orage && Math.random() < 0.4) freezeEnemy(o, 1);
   }
   if (near.length) sfx.zap();
 }
@@ -4652,7 +4789,10 @@ function spawnWisp(x, z, by) {
   L.shots.push({ x, z, y: 1, vx: Math.cos(a) * 4, vz: Math.sin(a) * 4, owner: 'wisp', from: by, by, target, g, core, halo: g.children[1], life: 3, dmg: dmgOf(by) * 0.9 });
 }
 
-function boltAim(p) {
+const AIM_CONE = THREE.MathUtils.degToRad(24);
+const angGap = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+// Tir assisté (tactile, attaque auto, à terre) : vise seul. Sinon, un simple coup de pouce vers un ennemi presque dans l'axe.
+function boltAim(p, assist = true) {
   let orb = null;
   let bd = 5;
   for (const s of L.shots) {
@@ -4660,32 +4800,60 @@ function boltAim(p) {
     const dx = s.x - p.x;
     const dz = s.z - p.z;
     const d = Math.hypot(dx, dz);
+    if (!assist && angGap(Math.atan2(dx, dz), p.face) > AIM_CONE) continue;
     if (d < bd && dx * s.vx + dz * s.vz < 0) { bd = d; orb = s; }
   }
   if (orb) {
     const t = bd / BOLT_SPEED;
     return [orb.x + orb.vx * t, orb.z + orb.vz * t];
   }
-  const target = seekFoe(p.x, p.z, BOLT_RANGE);
-  return target ? [target.x, target.z] : null;
+  if (assist) {
+    const target = seekFoe(p.x, p.z, BOLT_RANGE);
+    return target ? [target.x, target.z] : null;
+  }
+  let best = null;
+  let ba = AIM_CONE;
+  for (const o of L.enemies) {
+    if (o.dying >= 0 || o.spawnT > 0 || o.hidden || !o.seen) continue;
+    const dx = o.x - p.x;
+    const dz = o.z - p.z;
+    const d = Math.hypot(dx, dz);
+    if (d > BOLT_RANGE) continue;
+    const a = angGap(Math.atan2(dx, dz), p.face);
+    if (a < ba && (d < 1.5 || los(p.x, p.z, o.x, o.z))) { ba = a; best = o; }
+  }
+  return best ? [best.x, best.z] : null;
 }
 
-function shoot() {
+function shoot(charge = 0) {
   const p = player;
-  p.atkCd = BOLT_CD * p.atkCdMul * (inTranse() ? 0.7 : 1) * hasteMul(p);
+  const heavy = charge > 0;
+  p.atkCd = BOLT_CD * p.atkCdMul * (inTranse() ? 0.7 : 1) * hasteMul(p) * (heavy ? 1.4 : 1);
   p.swing = 0;
-  p.swingCount++;
+  if (!heavy) p.swingCount++;
   const every = [0, 3, 2][p.perks.salve || 0];
-  const fan = every > 0 && p.swingCount % every === 0;
-  const sure = p.nextCrit || elapsed - p.dashEndAt < ELAN_WINDOW;
+  const fan = !heavy && every > 0 && p.swingCount % every === 0;
+  const sure = p.nextCrit || elapsed - p.dashEndAt < ELAN_WINDOW || charge >= 1;
   p.nextCrit = false;
-  const aim = boltAim(p);
+  const assist = autoAttack && p.device.kind === 'any';
+  const aim = boltAim(p, assist);
   const ang = aim ? Math.atan2(aim[0] - p.x, aim[1] - p.z) : p.face;
   p.face = p.faceTarget = ang;
-  const dmg = dmgOf() * BOLT_DMG;
+  const dmg = dmgOf() * BOLT_DMG * (heavy ? 1.6 + 1.6 * charge : 1);
   const spread = !fan ? [0] : p.perks.pluie ? [-0.32, -0.16, 0, 0.16, 0.32] : [-0.2, 0, 0.2];
-  for (const a of spread) spawnBolt(p, ang + a, dmg, sure && a === 0);
-  sfx.bolt();
+  for (const a of spread) {
+    spawnBolt(p, ang + a, dmg, sure && a === 0);
+    if (heavy) {
+      const b = L.shots[L.shots.length - 1];
+      b.pierce += 2;
+      b.g.scale.setScalar(1.8);
+    }
+  }
+  if (heavy) {
+    sfx.heavy();
+    addShake(0.12);
+    ring(p.x, p.z, 0xffe27a, 12, 3, 0.25);
+  } else sfx.bolt();
 }
 
 function spawnBolt(p, ang, dmg, sure) {
@@ -4766,6 +4934,7 @@ function detonate(e) {
 
 function hitEnemy(e, amount, nx, nz, opts = {}) {
   if (e.dying >= 0 || e.spawnT > 0) return false;
+  if (opts.fire) thaw(e);
   if (e.ward > 0) {
     if (opts.quiet) return false;
     e.ward--;
@@ -4814,13 +4983,13 @@ function hitEnemy(e, amount, nx, nz, opts = {}) {
     floatText(e.x, e.def.barY * e.size + 0.4, e.z, 'Riposte !', 'crit');
   }
   if (!opts.quiet && !opts.chain && player.perks.foudre && Math.random() < 0.15 * player.perks.foudre + (player.perks.orage ? 0.1 : 0)) chainLightning(e, amount);
-  if (!opts.quiet && player.perks.givre) e.chill = 2;
+  if (opts.direct && player.perks.givre && Math.random() < 0.14 + 0.08 * player.perks.givre) freezeEnemy(e, 0.9 + 0.3 * player.perks.givre);
   const exposed = ((e.type === 'rodeur' || e.type === 'brute' || e.type === 'garde') && e.mode === 'recover') || e.mode === 'stun';
   amount *= exposed ? 1.5 : 1 - e.armor;
   e.hp -= amount;
   e.flash = 0.12;
   e.aware = 5;
-  if (L.biome.id === 'glace' && !opts.quiet) e.chill = 2;
+  if (L.biome.id === 'glace' && opts.direct) e.chill = 2;
   if (e.type === 'boss' && !e.awake) wakeBoss(e);
   const kb = (e.type === 'boss' ? 0.4 : e.type === 'brute' || e.type === 'garde' || e.elite ? 1.5 : 4.5) * (opts.knock ?? 1);
   if (kb) {
@@ -5638,6 +5807,7 @@ function drinkPotion() {
   if (player.potions <= 0) { toast('Aucune potion'); return; }
   if (player.hp >= player.maxHp) { toast('PV au maximum'); return; }
   player.potions--;
+  player.poisonT = 0;
   sfx.potion();
   burst(player.x, 0.6, player.z, 0xff5a70, 12, 2, -4, 0.8);
   heal(player.potionHeal);
@@ -5688,7 +5858,7 @@ function bestLine() {
   const b = store.get(BEST_KEY, null);
   if (!b) return '';
   const pacts = b.heat ? `, ${b.heat} pacte${b.heat > 1 ? 's' : ''}` : '';
-  return b.won ? `Record : victoire${pacts}, étage ${b.depth}, ${b.gold} écus` : `Record : étage ${b.depth}, ${meters(b.depth)}, ${b.gold} écus`;
+  return b.won ? `Record : victoire${pacts}, étage ${b.depth}, ${b.gold} écus` : `Record : étage ${b.depth}, ${b.gold} écus`;
 }
 
 // ---------- Fin de partie, pactes, grimoire
@@ -5824,14 +5994,14 @@ function die() {
   pendingChoices.length = 0;
   $('boss').hidden = true;
   const record = recordBest();
-  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}, à ${L.depth * METERS_PER_FLOOR} mètres sous la surface.`;
+  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}.`;
   $('dead-record').hidden = !record;
   renderTrack($('dead-track'), L.depth);
   const left = Math.max(0, VICTORY_DEPTH - L.depth);
   const guards = Math.max(0, 4 - team.bosses);
   $('dead-note').textContent = L.depth > VICTORY_DEPTH ? 'Au-delà du fond : chaque étage de plus compte pour le record.'
     : `Encore ${left} étage${left > 1 ? 's' : ''} et ${guards} gardien${guards > 1 ? 's' : ''} avant le fond du gouffre.`;
-  $('d-depth').textContent = meters(L.depth);
+  $('d-depth').textContent = String(L.depth);
   const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
   $('d-level').textContent = team.level;
   $('d-gold').textContent = split('gold');
@@ -6321,7 +6491,10 @@ function updateBossMarks(e, dt) {
       for (const h of heroes) {
         const hd = Math.hypot(h.x - m.x, h.z - m.z);
         if (h.down || hd >= m.R + PLAYER_R) graze(h, hd, m.R);
-        else if (hurtPlayer(e.dmg * 0.9, m.x, m.z, h)) h.slowT = 1.2;
+        else if (hurtPlayer(e.dmg * 0.9, m.x, m.z, h)) {
+          h.slowT = 1.2;
+          poisonPlayer(h);
+        }
       }
       splashFoes(m.x, m.z, m.R, e.dmg / dmgScale(L.depth), e);
     } else if (m.kind === 'erupt') {
@@ -6874,7 +7047,7 @@ function updateEmbers(dt) {
     m.tick = 0.45;
     if (m.by) {
       withHero(m.by, () => {
-        for (const e of L.enemies.slice()) if (e.dying < 0 && !e.hidden && Math.hypot(e.x - m.x, e.z - m.z) < m.R + e.r) hitEnemy(e, m.dmg, 0, 0, { knock: 0, quiet: true });
+        for (const e of L.enemies.slice()) if (e.dying < 0 && !e.hidden && Math.hypot(e.x - m.x, e.z - m.z) < m.R + e.r) hitEnemy(e, m.dmg, 0, 0, { knock: 0, quiet: true, fire: true });
       });
       continue;
     }
@@ -7055,7 +7228,12 @@ function updateEnemies(dt) {
       e.shootCd -= dt * 0.4;
       e.slamCd -= dt * 0.4;
     }
-    if (e.mode === 'stun' && e.type !== 'boss') {
+    if (e.freezeT > 0 && e.type !== 'boss') {
+      e.freezeT -= dt;
+      e.chill = Math.max(e.chill || 0, e.freezeT + 0.1);
+      mv.sp = 0;
+      e.atkCd = Math.max(e.atkCd, 0.2);
+    } else if (e.mode === 'stun' && e.type !== 'boss') {
       e.modeT -= dt;
       if (e.seen && Math.random() < 0.3) emit({ x: e.x + rand(-0.4, 0.4), y: e.def.barY * e.size, z: e.z + rand(-0.4, 0.4), vx: 0, vy: 0.5, vz: 0, g: 0, life: 0.5, max: 0.5, color: 0xffe08a, size: 0.4 });
       if (e.modeT <= 0) e.mode = 'chase';
@@ -7169,11 +7347,11 @@ function updateEnemies(dt) {
 
     e.atkCd -= dt;
     const reachBonus = e.mode === 'dash' ? 0.3 : 0.16;
-    const canHit = active && e.def.contact && !e.hidden && !sheltered && e.mode !== 'stun' && (e.type !== 'boss' || e.awake);
+    const canHit = active && !e.hidden && !sheltered && !(e.freezeT > 0) && e.mode !== 'stun' && (e.type !== 'boss' || e.awake);
     const strike = () => {
       e.atkCd = hasAffix(e, 'veloce') ? 0.5 : 0.65;
       e.lunge = 0.18;
-      if (hurtPlayer(e.dmg * rallyMul(e), e.x, e.z, player, { kind: 'melee', from: e }) && hasAffix(e, 'glacial')) chillPlayer(player);
+      if (hurtPlayer(e.dmg * rallyMul(e) * (e.def.contact ? 1 : 0.45), e.x, e.z, player, { kind: 'melee', from: e }) && hasAffix(e, 'glacial')) chillPlayer(player);
     };
     if (e.armT > 0) {
       e.armT -= dt;
@@ -7285,7 +7463,12 @@ function updateShots(dt) {
     if (dead && (s.owner === 'bolt' || s.owner === 'mine') && L.secret && !L.secret.open && idx(tileOf(s.x), tileOf(s.z)) === L.secret.k) hitSecret(1);
     if (!dead && s.owner !== 'mine' && s.owner !== 'bolt' && s.owner !== 'wisp') {
       for (const h of heroes) {
-        if (h.down || Math.hypot(h.x - s.x, h.z - s.z) >= PLAYER_R + 0.2) continue;
+        if (h.down) continue;
+        const sd = Math.hypot(h.x - s.x, h.z - s.z);
+        if (sd >= PLAYER_R + 0.2) {
+          if ((s.owner === 'trap' || s.owner === 'foe') && sd < PLAYER_R + 1) graze(h, 0, 0);
+          continue;
+        }
         if (h.guardT > 0 && h.dodge <= 0) {
           if ((s.owner === 'foe' || s.owner === 'trap') && h.guardAge <= PARRY_PERFECT) {
             withHero(h, () => {
@@ -7379,6 +7562,7 @@ function updateShots(dt) {
   }
 }
 
+const COLD_BLASTS = [0x9cc8ff, 0x6ab0ff, 0x9af0ff, 0x8ee09a, 0xf2d27a];
 function updateBlasts(dt) {
   for (let n = L.blasts.length - 1; n >= 0; n--) {
     const b = L.blasts[n];
@@ -7401,7 +7585,7 @@ function updateBlasts(dt) {
         if (e.dying >= 0 || !b.dmg || (b.noBoss && e.type === 'boss')) continue;
         const d = Math.hypot(e.x - b.x, e.z - b.z);
         const mult = b.trap && e.type === 'boss' ? 0.5 : 1;
-        if (d < b.R + e.r) hitEnemy(e, b.dmg * mult, (e.x - b.x) / (d || 1), (e.z - b.z) / (d || 1), { knock: b.big ? 1.6 : 1.2 });
+        if (d < b.R + e.r) hitEnemy(e, b.dmg * mult, (e.x - b.x) / (d || 1), (e.z - b.z) / (d || 1), { knock: b.big ? 1.6 : 1.2, fire: !COLD_BLASTS.includes(b.color) });
       }
     });
     if (b.playerDmg && state === 'play') {
@@ -7427,7 +7611,7 @@ const TRAP_HINTS = {
   barrel: ['Baril de poudre', 'frappe-le, puis éloigne-toi'],
   darts: ['Dalle à fléchettes', 'un déclic, puis les murs tirent'],
   fire: ['Bouche de feu', 'elle crache par intervalles'],
-  blade: ['Lame tournoyante', 'passe derrière elle ou esquive à travers'],
+  blade: ['Lame tournoyante', 'elle ralentit, puis s’emballe : attends l’accalmie ou esquive pile à travers'],
   boulder: ['Dalle du rocher', 'un rocher dévale le couloir'],
   ice: ['Verglas', 'les plaques bleues glissent, pour toi comme pour les monstres'],
   lava: ['Lave', 'elle brûle, sauf pendant une esquive'],
@@ -7435,7 +7619,7 @@ const TRAP_HINTS = {
   sarco: ['Sarcophage', 'vide, trésor ou occupants · s’il tremble, il est habité'],
   merchant: ['Refuge du marchand', 'trêve : ni monstre ni combat dans sa salle'],
   icicle: ['Stalactite', 'une ombre au sol, puis elle tombe'],
-  shroomToxic: ['Vesse toxique', 'éclate en nuage au moindre contact'],
+  shroomToxic: ['Vesse toxique', 'éclate en nuage : le poison te ronge un moment'],
   shroomHeal: ['Champignon lumineux', 'frappe-le pour reprendre 10 PV'],
   garde: ['Porte-bouclier', 'son bouclier arrête tout de face : contourne-le ou pare son coup'],
   chaman: ['Psalmodieur', 'il protège et relève ses alliés : frappe-le pour couper son chant'],
@@ -7482,7 +7666,11 @@ function updateSpikes(t, dt) {
   if (stage !== 'up') return;
   const onTile = (x, z) => Math.abs(x - t.x) < 0.8 && Math.abs(z - t.z) < 0.8;
   for (const h of heroes) {
-    if (state !== 'play' || h.down || t.hit.has(h) || !onTile(h.x, h.z)) continue;
+    if (state !== 'play' || h.down || t.hit.has(h)) continue;
+    if (!onTile(h.x, h.z)) {
+      graze(h, Math.max(Math.abs(h.x - t.x), Math.abs(h.z - t.z)), 0.8);
+      continue;
+    }
     t.hit.add(h);
     hurtPlayer(trapMe(1, h), t.x, t.z, h);
   }
@@ -7561,7 +7749,12 @@ function updateBoulders(dt) {
     b.g.visible = tileSeen(b.x, b.z);
     if (Math.random() < 0.5) emit({ x: b.x + rand(-0.5, 0.5), y: 0.1, z: b.z + rand(-0.5, 0.5), vx: rand(-1, 1), vy: rand(0.5, 1.5), vz: rand(-1, 1), g: -4, life: 0.5, max: 0.5, color: 0x9a8a70, size: 0.8 });
     for (const h of heroes) {
-      if (state !== 'play' || h.down || b.hit.has(h) || Math.hypot(h.x - b.x, h.z - b.z) >= 0.8 + PLAYER_R) continue;
+      if (state !== 'play' || h.down || b.hit.has(h)) continue;
+      const bd = Math.hypot(h.x - b.x, h.z - b.z);
+      if (bd >= 0.8 + PLAYER_R) {
+        graze(h, bd, 0.8 + PLAYER_R);
+        continue;
+      }
       b.hit.add(h);
       hurtPlayer(trapMe(3, h), b.x - b.vx, b.z - b.vz, h);
     }
@@ -7615,22 +7808,46 @@ function updateVent(t, dt) {
     return along > -r && along < t.len + r && Math.abs(rx * dj - rz * di) < 0.55 + r;
   };
   for (const h of heroes) {
-    if (state !== 'play' || h.down || t.hit.has(h) || !inJet(h.x, h.z, PLAYER_R)) continue;
+    if (state !== 'play' || h.down || t.hit.has(h)) continue;
+    if (!inJet(h.x, h.z, PLAYER_R)) {
+      if (h.dodge > 0 && inJet(h.x, h.z, PLAYER_R + 0.9)) graze(h, 0, 0);
+      continue;
+    }
     t.hit.add(h);
     hurtPlayer(trapMe(1.5, h), t.x, t.z, h);
   }
   for (const e of L.enemies.slice()) {
     if (t.hit.has(e) || !inJet(e.x, e.z, e.r)) continue;
     t.hit.add(e);
-    trapHitEnemy(e, 2, di, dj, 1);
+    trapHitEnemy(e, 2, di, dj, 1, true);
   }
   for (const p of L.props) {
     if (!p.dead && p.kind === 'barrel' && inJet(p.x, p.z, p.r)) breakProp(p, 0.25);
   }
 }
 
+const BLADE_CYCLE = 5;
 function updateBlade(t, dt) {
-  t.angle += t.speed * dt;
+  t.cycle += dt;
+  if (t.cycle >= BLADE_CYCLE) {
+    t.cycle -= BLADE_CYCLE;
+    if (Math.random() < 0.5) t.speed = -t.speed;
+  }
+  const c = t.cycle;
+  const stage = c < 2.4 ? 'calm' : c < 3.2 ? 'warn' : c < 4.4 ? 'surge' : 'brake';
+  if (stage !== t.stage) {
+    t.stage = stage;
+    if (stage === 'surge' && t.g.visible && nearAnyHero(t.x, t.z, 9)) sfx.swish();
+  }
+  const mult = stage === 'calm' ? 1 : stage === 'warn' ? 0.3 : stage === 'surge' ? 3.1 : 0.7;
+  const hot = stage === 'warn' || stage === 'surge';
+  if (t.g.visible && hot && Math.random() < (stage === 'surge' ? 0.7 : 0.25)) {
+    const a = t.angle + (Math.random() < 0.5 ? 0 : Math.PI);
+    emit({ x: t.x + Math.cos(a) * 2.4, y: 0.6, z: t.z - Math.sin(a) * 2.4, vx: rand(-1, 1), vy: rand(0.3, 1.2), vz: rand(-1, 1), g: -2, life: 0.3, max: 0.3, color: stage === 'surge' ? 0xff5a30 : 0xffd27a, size: 0.4 });
+  }
+  const pulse = hot ? 1 + Math.sin(elapsed * 30) * 0.12 : 1;
+  for (const d of t.discs) d.scale.setScalar(pulse);
+  t.angle += t.speed * mult * dt;
   t.arm.rotation.y = t.angle;
   for (const d of t.discs) d.rotation.y += dt * 20;
   const ux = Math.cos(t.angle);
@@ -7638,9 +7855,13 @@ function updateBlade(t, dt) {
   const side = (x, z, r) => {
     const rx = x - t.x;
     const rz = z - t.z;
-    const along = Math.abs(rx * ux + rz * uz);
     const lat = rx * -uz + rz * ux;
-    return along > 0.3 && along < t.R + r && Math.abs(lat) < 0.22 + r ? Math.sign(lat) || 1 : 0;
+    const along = Math.abs(rx * ux + rz * uz);
+    if (along > 0.3 && along < t.R + r && Math.abs(lat) < 0.22 + r) return Math.sign(lat) || 1;
+    if (!t.cross) return 0;
+    const lat2 = rx * ux + rz * uz;
+    const along2 = Math.abs(lat);
+    return along2 > 0.3 && along2 < t.R + r && Math.abs(lat2) < 0.22 + r ? Math.sign(lat2) || 1 : 0;
   };
   const ready = (who) => elapsed - (t.last.get(who) ?? -9) > 0.7;
   t.swish += Math.abs(t.speed) * dt;
@@ -7651,20 +7872,44 @@ function updateBlade(t, dt) {
   for (const h of heroes) {
     if (state !== 'play' || h.down || !ready(h)) continue;
     const s = side(h.x, h.z, PLAYER_R);
-    if (!s) continue;
+    if (!s) {
+      if (h.dodge > 0 && side(h.x, h.z, PLAYER_R + 0.5)) graze(h, 0, 0);
+      continue;
+    }
     t.last.set(h, elapsed);
-    hurtPlayer(trapMe(1.5, h), h.x + uz * s, h.z - ux * s, h);
+    hurtPlayer(trapMe(stage === 'surge' ? 2 : 1.5, h), h.x + uz * s, h.z - ux * s, h);
   }
   for (const e of L.enemies.slice()) {
     if (e.dying >= 0 || !ready(e)) continue;
     const s = side(e.x, e.z, e.r);
     if (!s) continue;
     t.last.set(e, elapsed);
-    trapHitEnemy(e, 2, -uz * s, ux * s, 1.5);
+    trapHitEnemy(e, 0.8, -uz * s, ux * s, 0.8);
   }
   for (const p of L.props) {
     if (!p.dead && p.breakable && side(p.x, p.z, p.r)) breakProp(p, 0.3);
   }
+}
+
+const MERCHANT_YELPS = ['Aïe !', 'Mes lunettes !', 'Doucement, l’ami !', 'Je suis un commerçant !', 'Tu fais fuir la clientèle !'];
+function hitMerchant(m) {
+  if (elapsed - (m.hitAt ?? -9) < 0.35) return;
+  m.hitAt = elapsed;
+  m.hits = (m.hits || 0) + 1;
+  sfx.hurt();
+  addShake(0.1);
+  burst(m.x, 1, m.z, 0xf2c450, 8, 2.5);
+  if (m.closed) {
+    floatText(m.x, 2.2, m.z, 'Boutique fermée !', 'block');
+    return;
+  }
+  if (m.hits >= 5) {
+    m.closed = true;
+    floatText(m.x, 2.3, m.z, 'Je ferme !', 'hurt');
+    toast('Le marchand ferme boutique', 'il ne te servira plus sur cet étage');
+    return;
+  }
+  floatText(m.x, 2.2, m.z, MERCHANT_YELPS[(m.hits - 1) % MERCHANT_YELPS.length], 'block');
 }
 
 function lightBarrel(p, fuse) {
@@ -7845,6 +8090,7 @@ function updateItems(dt) {
     if (c.open) {
       c.t = Math.min(1, c.t + dt * 4);
       c.lid.rotation.x = -1.9 * (1 - (1 - c.t) ** 3);
+      if (c.halo) c.halo.visible = false;
     } else if (active) {
       const who = heroes.find((h) => !h.down && Math.hypot(h.x - c.x, h.z - c.z) < 0.95);
       if (who) openChest(c, who);
@@ -7948,7 +8194,7 @@ function updateItems(dt) {
     mc.lantern.scale.setScalar(1.3 + Math.sin(elapsed * 6) * 0.08);
     for (const h of heroes) {
       const near = !h.down && Math.hypot(h.x - mc.x, h.z - mc.z) < 1.4;
-      if (active && near && !mc.close.has(h) && state === 'play') openShop(h);
+      if (active && near && !mc.close.has(h) && !mc.closed && state === 'play') openShop(h);
       if (near) mc.close.add(h);
       else mc.close.delete(h);
     }
@@ -8441,7 +8687,7 @@ function startFloor(depth) {
   updateHud();
   const b = L.biome;
   if (depth === 1 || biomeFor(depth - 1) !== b.id) toast(b.name, `Étage ${depth} · ${b.desc}`, 3.2);
-  else toast(`Étage ${depth}`, isBossFloor(depth) ? `${meters(depth)}, ${BOSSES[b.id].name.replace(/^L[ae] /, (m) => m.toLowerCase())} garde l’escalier` : meters(depth));
+  else toast(`Étage ${depth}`, isBossFloor(depth) ? `${BOSSES[b.id].name.replace(/^L[ae] /, (m) => m.toLowerCase())} garde l’escalier` : '');
 }
 
 function newRun(saved) {
@@ -8537,7 +8783,7 @@ function pauseGame() {
   state = 'paused';
   resetInputs();
   disarmAbandon();
-  $('pause-where').textContent = `${L.biome.name} · étage ${L.depth} · ${meters(L.depth)}${debugRun ? ' · mode test' : ''}`;
+  $('pause-where').textContent = `${L.biome.name} · étage ${L.depth}${debugRun ? ' · mode test' : ''}`;
   renderRelics($('pause-relics'));
   renderTrack($('pause-track'), L.depth);
   renderRunChips($('pause-run'));
@@ -8574,7 +8820,6 @@ function updateHud() {
   const lead = heroes[0];
   $('xp-fill').style.width = `${(team.xp / xpNeed()) * 100}%`;
   $('floor').textContent = `Étage ${L.depth}`;
-  $('depth').textContent = meters(L.depth);
   $('lvl').textContent = `Niveau ${team.level}`;
   $('potion-count').textContent = `${lead.potions}/${lead.maxPotions}`;
   $('potion').classList.toggle('empty', lead.potions === 0);
@@ -8810,7 +9055,7 @@ function updateOverlays(dt, running) {
     parryBtn.style.setProperty('--cd', String(pcd));
   }
   heroes.forEach((h, n) => {
-    const status = h.down ? '' : h.chill > 0 ? 'Gelé' : h.slowT > 0 ? 'Spores' : '';
+    const status = h.down ? '' : h.chill > 0 ? 'Gelé' : h.poisonT > 0 ? 'Poison' : h.slowT > 0 ? 'Spores' : '';
     if (status !== lastStatus[n]) {
       lastStatus[n] = status;
       const el = $(`status-${n + 1}`);
@@ -9723,6 +9968,7 @@ function updatePad(dt) {
     st.y = ay;
     st.attack = binds.pad.attack.some((b) => now[b]);
     st.parry = binds.pad.parry.some((b) => now[b]);
+    st.dash = binds.pad.dash.some((b) => now[b]);
     st.fresh = now.some((v, i) => v && !prev[i]);
     if (st.fresh) initAudio();
     if (!pad.active && (now.some(Boolean) || ax || ay)) {
