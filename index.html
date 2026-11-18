@@ -527,6 +527,63 @@ details.more > :not(summary) { margin-top: 10px; }
 .perk.legendaire .perk-cat { color: var(--gold); }
 .perk-duo { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--gold); }
 
+.start-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.link-tile { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-solid); color: var(--ink); text-align: left; touch-action: manipulation; transition: border-color 0.15s; }
+.link-tile svg { flex: none; width: 22px; height: 22px; color: var(--ember); }
+.link-tile b { display: block; font-size: 15px; }
+.link-tile small { display: block; font-size: 12px; color: var(--ink-dim); }
+.link-tile:hover, .link-tile:focus-visible, .link-tile[aria-expanded="true"] { border-color: var(--ember); outline: none; }
+.start-panel { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(11, 9, 16, 0.4); animation: pop 0.25s ease-out; }
+.track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.track-biome { display: grid; gap: 4px; min-width: 0; }
+.track-cells { display: flex; align-items: center; gap: 4px; }
+.track-cells i { flex: 1; height: 10px; border: 1px solid rgba(241, 231, 212, 0.25); border-radius: 3px; }
+.track-cells i.boss { flex: none; width: 14px; height: 14px; border-radius: 2px; transform: rotate(45deg); margin: 0 3px; }
+.track-cells i.past { background: var(--biome, var(--ember)); border-color: transparent; }
+.track-cells i.here { border-color: var(--ember); background: rgba(240, 160, 75, 0.35); box-shadow: 0 0 10px rgba(240, 160, 75, 0.7); animation: pip 1.2s ease-in-out infinite; }
+.track-biome span { overflow: hidden; font-size: 11px; letter-spacing: 0.06em; white-space: nowrap; text-overflow: ellipsis; color: var(--ink-dim); }
+.track-biome.cur span { color: var(--ink); }
+.track-note { margin: -4px 0 0; font-size: 14px; color: var(--ink-dim); }
+.run-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.run-chips li { padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-solid); font-size: 13px; color: var(--ink-dim); }
+.run-chips li b { color: var(--ink); }
+.card.pause .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.card.pause .quick-btn { min-height: 76px; }
+.keycaps { display: grid; gap: 6px; }
+.keycaps .who { margin: 4px 0 0; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.keycaps ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.keycaps li { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink-dim); }
+.keycaps kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border: 1px solid rgba(241, 231, 212, 0.22); border-bottom-width: 2px; border-radius: 5px; background: #262030; font: 700 12px/1 var(--font-body); color: var(--ink); }
+.choice-hint { margin: -6px 0 0; font-size: 13px; color: var(--ink-dim); }
+.perk { position: relative; }
+.perk-key { position: absolute; top: 10px; right: 10px; display: none; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border: 1px solid rgba(241, 231, 212, 0.22); border-bottom-width: 2px; border-radius: 5px; background: #262030; font: 700 12px/1 var(--font-body); color: var(--ink); }
+body.kb .perk-key { display: grid; }
+.perk-head { display: flex; align-items: center; gap: 8px; padding-right: 26px; }
+.perk-head svg { flex: none; width: 18px; height: 18px; color: var(--ember); }
+.perk[data-cat="Défense"] .perk-head svg { color: var(--alert); }
+.perk[data-cat="Mobilité"] .perk-head svg { color: var(--rune); }
+.perk[data-cat="Fortune"] .perk-head svg { color: var(--gold); }
+.perk[data-cat="Ruse"] .perk-head svg { color: var(--heal); }
+.perk .pips { color: var(--ember); }
+.perk-rank { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-dim); }
+.card.altar { width: min(470px, 100%); }
+.card.altar h1 { font-size: 38px; white-space: nowrap; }
+.altar-head { display: flex; align-items: center; gap: 14px; }
+.altar-ico { flex: none; width: 56px; height: 56px; }
+.altar-drop { animation: drip 1.8s ease-in infinite; }
+@keyframes drip { 0%, 60% { transform: translateY(0); opacity: 1; } 90% { transform: translateY(10px); opacity: 0; } 100% { opacity: 0; } }
+.altar-hp { display: grid; gap: 6px; }
+.altar-bar { display: flex; height: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-solid); }
+.altar-bar i:first-child { background: linear-gradient(90deg, #b02a35, var(--blood)); }
+.altar-bar i:last-child { background: repeating-linear-gradient(-45deg, rgba(217, 67, 77, 0.55) 0 4px, rgba(217, 67, 77, 0.15) 4px 8px); animation: pip 1.1s ease-in-out infinite; }
+.altar-hp p { margin: 0; font-size: 14px; color: var(--ink-dim); }
+.altar-hp p b { color: var(--ink); }
+.record-badge { justify-self: start; margin: 0; padding: 4px 12px; border: 1px solid rgba(242, 196, 80, 0.7); border-radius: 999px; background: rgba(242, 196, 80, 0.14); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; color: var(--gold); animation: pop 0.5s ease-out; }
+#menu-win .card, #menu-dead .card { width: min(480px, 100%); }
+.end-btns { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .card.altar h1 { font-size: 30px; white-space: normal; } .altar-ico { width: 44px; height: 44px; } }
+@media (max-width: 420px) { .card.pause .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } .start-links { grid-template-columns: 1fr; } }
+
 .card.wide.keys { width: min(820px, 100%); gap: 12px; }
 .keys-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .keys-tabs button { display: inline-flex; align-items: center; gap: 7px; }
@@ -663,16 +720,15 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <button class="primary" id="play" disabled>Chargement du donjon…</button>
     <button class="secondary" id="play-duo" hidden>Jouer à deux sur cet écran</button>
     <p class="boot-error" id="boot-error" role="alert" hidden></p>
-    <details class="more">
-      <summary>Commandes</summary>
-      <ul class="controls" id="controls"></ul>
-    </details>
-    <details class="more" id="settings-start">
-      <summary>Réglages</summary>
+    <div class="start-links">
+      <button type="button" class="link-tile" id="keys-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg><span><b id="keys-start-label">Touches</b><small id="keys-start-sub">clavier et manette</small></span></button>
+      <button type="button" class="link-tile" id="settings-toggle" aria-expanded="false" aria-controls="settings-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span><b>Réglages</b><small>attaque auto, manette</small></span></button>
+    </div>
+    <div class="start-panel" id="controls-box" hidden><ul class="controls" id="controls"></ul></div>
+    <div class="start-panel" id="settings-start" hidden>
       <div class="layout" id="auto-start"><span>Attaque auto</span><div class="seg"><button type="button" id="auto-start-on" aria-pressed="false">Oui</button><button type="button" id="auto-start-off" aria-pressed="true">Non</button></div></div>
-      <button type="button" class="secondary" id="keys-start">Touches clavier et manette</button>
       <p class="keys-hint" id="pad-status-start" aria-live="polite" hidden></p>
-    </details>
+    </div>
   </div>
 </div>
 
@@ -708,16 +764,20 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   <div class="card wide">
     <p class="kicker" id="choice-kicker">Niveau 2</p>
     <h1 id="choice-title">Choisis une aptitude</h1>
+    <p class="choice-hint" id="choice-hint"></p>
     <div class="perks" id="perks"></div>
     <button class="secondary" id="choice-skip">Passer</button>
   </div>
 </div>
 
 <div class="overlay" id="menu-altar" hidden>
-  <div class="card">
-    <p class="kicker" id="altar-kicker">Autel des profondeurs</p>
-    <h1>Une offrande ?</h1>
+  <div class="card altar">
+    <div class="altar-head">
+      <svg class="altar-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 40h28l-3-8H13z" fill="#3a3040"/><path d="M14 32h20v-6H14z" fill="#4e4258"/><path d="M12 26h24l-2-4H14z" fill="#5e5068"/><path class="altar-drop" d="M24 6c-3 5-6 8-6 11a6 6 0 0 0 12 0c0-3-3-6-6-11z" fill="#d9434d"/></svg>
+      <div><p class="kicker" id="altar-kicker">Autel des profondeurs</p><h1>Une offrande ?</h1></div>
+    </div>
     <p class="lead" id="altar-lead"></p>
+    <div class="altar-hp"><div class="altar-bar"><i id="altar-keep"></i><i id="altar-cost"></i></div><p id="altar-hp-text"></p></div>
     <button class="secondary blood" id="altar-blood">Pacte de sang : −20 PV max</button>
     <button class="secondary" id="altar-leave">Passer mon chemin</button>
   </div>
@@ -763,6 +823,8 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
       <p class="kicker" id="pause-where">Étage 1 · −12 m</p>
       <h1>Pause</h1>
     </div>
+    <div class="track" id="pause-track"></div>
+    <ul class="run-chips" id="pause-run"></ul>
     <button class="primary" id="resume">Reprendre<kbd>Échap</kbd></button>
     <div class="quick" role="group" aria-label="Réglages">
       <button type="button" class="quick-btn" id="audio-pause-music" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>Musique</span><small></small></button>
@@ -772,7 +834,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
       <button type="button" class="quick-btn" id="auto-pause" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Attaque auto</span><small></small></button>
     </div>
     <div class="pause-info">
-      <p class="keys-hint" id="pause-keys"></p>
+      <div class="keycaps" id="pause-keys"></div>
       <p class="keys-hint" id="pad-status-pause" aria-live="polite" hidden></p>
       <div class="relics"><p class="relics-title">Pouvoirs et équipement</p><ul class="chips" id="pause-relics"></ul></div>
     </div>
@@ -801,7 +863,9 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   <div class="card">
     <p class="kicker">Le fond du gouffre · −144 m</p>
     <h1>Les quatre gardiens sont tombés</h1>
+    <p class="record-badge" id="win-record" hidden>Nouveau record !</p>
     <p class="lead" id="win-lead"></p>
+    <div class="track" id="win-track"></div>
     <dl class="stats">
       <div><dt>Niveau</dt><dd id="w-level">1</dd></div>
       <div><dt>Écus</dt><dd id="w-gold">0</dd></div>
@@ -820,7 +884,10 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   <div class="card">
     <p class="kicker">Fin de l'expédition</p>
     <h1>La torche s'éteint</h1>
+    <p class="record-badge" id="dead-record" hidden>Nouveau record !</p>
     <p class="lead" id="dead-lead"></p>
+    <div class="track" id="dead-track"></div>
+    <p class="track-note" id="dead-note"></p>
     <dl class="stats">
       <div><dt>Profondeur</dt><dd id="d-depth">−12 m</dd></div>
       <div><dt>Niveau</dt><dd id="d-level">1</dd></div>
@@ -830,7 +897,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
       <div><dt>Gardiens</dt><dd id="d-bosses">0</dd></div>
     </dl>
     <div class="relics"><p class="relics-title">Ton équipement</p><ul class="chips" id="dead-relics"></ul></div>
-    <button class="primary" id="restart">Redescendre</button>
+    <div class="end-btns"><button class="primary" id="restart">Redescendre</button><button class="secondary" id="dead-home">Accueil</button></div>
     <p class="best" id="dead-best"></p>
   </div>
 </div>
@@ -3956,6 +4023,13 @@ const FEAST = { id: 'festin', cat: 'Défense', name: 'Festin', max: Infinity, de
 const perkById = (id) => PERKS.find((p) => p.id === id) ?? FEAST;
 
 const RARITY = { commune: 'Commune', rare: 'Rare', legendaire: 'Légendaire' };
+const CAT_ICON = {
+  Attaque: '<path d="M20 4 9.5 14.5M20 4h-4.5M20 4v4.5M6.5 11.5l6 6M8 16l-4 4"/>',
+  Défense: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>',
+  Mobilité: '<path d="M3 8h10a3 3 0 1 0-3-3M3 16h13a3 3 0 1 1-3 3M3 12h7"/>',
+  Fortune: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
+  Ruse: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+};
 const BOSS_RELIC = { crypte: 'veilleur', glace: 'coeurgivre', forge: 'coeurforge', fongus: 'coeurspores' };
 // Ce qui survit d'une partie à l'autre : gardiens déjà vaincus (leurs reliques), victoires, pacte le plus lourd remporté.
 const GRIMOIRE_KEY = 'profondeurs.grimoire';
@@ -5687,7 +5761,9 @@ function openWin() {
   resetInputs();
   const record = recordBest();
   const heat = run.pacts.length;
-  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${record ? ' Nouveau record.' : ''}${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence.`;
+  $('win-record').hidden = !record;
+  renderTrack($('win-track'), VICTORY_DEPTH, true);
+  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence.`;
   const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
   $('w-level').textContent = team.level;
   $('w-gold').textContent = split('gold');
@@ -5696,6 +5772,7 @@ function openWin() {
   $('w-heat').textContent = heat;
   $('w-bosses').textContent = team.bosses;
   $('win-best').textContent = bestLine();
+  countUp($('menu-win'));
   sfx.level();
   showOverlay('menu-win');
   armOverlay('menu-win');
@@ -5747,7 +5824,13 @@ function die() {
   pendingChoices.length = 0;
   $('boss').hidden = true;
   const record = recordBest();
-  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}, à ${L.depth * METERS_PER_FLOOR} mètres sous la surface.${record ? ' Nouveau record.' : ''}`;
+  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}, à ${L.depth * METERS_PER_FLOOR} mètres sous la surface.`;
+  $('dead-record').hidden = !record;
+  renderTrack($('dead-track'), L.depth);
+  const left = Math.max(0, VICTORY_DEPTH - L.depth);
+  const guards = Math.max(0, 4 - team.bosses);
+  $('dead-note').textContent = L.depth > VICTORY_DEPTH ? 'Au-delà du fond : chaque étage de plus compte pour le record.'
+    : `Encore ${left} étage${left > 1 ? 's' : ''} et ${guards} gardien${guards > 1 ? 's' : ''} avant le fond du gouffre.`;
   $('d-depth').textContent = meters(L.depth);
   const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
   $('d-level').textContent = team.level;
@@ -5757,6 +5840,7 @@ function die() {
   $('d-bosses').textContent = player.bosses;
   renderRelics($('dead-relics'));
   $('dead-best').textContent = bestLine();
+  countUp($('menu-dead'));
 }
 
 // ---------- Monstres : IA
@@ -7957,22 +8041,34 @@ function openChoice({ kind, hero: who }) {
   $('choice-title').textContent = title;
   const box = $('perks');
   box.replaceChildren();
-  for (const perk of rollPerks(choiceHero, kind)) {
+  rollPerks(choiceHero, kind).forEach((perk, k) => {
     const n = choiceHero.perks[perk.id] || 0;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = `perk ${perk.rar ?? ''}`;
     b.dataset.cat = perk.cat;
+    const key = document.createElement('span');
+    key.className = 'perk-key';
+    key.textContent = String(k + 1);
+    const head = document.createElement('span');
+    head.className = 'perk-head';
+    head.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT_ICON[perk.cat] ?? CAT_ICON.Attaque}</svg>`;
     const cat = document.createElement('span');
     cat.className = 'perk-cat';
-    const rank = perk.max > 1 && perk.max !== Infinity ? ` · rang ${n + 1}/${perk.max}` : '';
-    cat.textContent = perk.rar ? `${RARITY[perk.rar]}${perk.req ? ' · Duo' : ''} · ${perk.cat}${rank}` : perk.cat;
+    cat.textContent = perk.rar ? `${RARITY[perk.rar]}${perk.req ? ' · Duo' : ''} · ${perk.cat}` : perk.cat;
+    head.append(cat);
     const name = document.createElement('strong');
     name.textContent = perk.name;
     const desc = document.createElement('span');
     desc.className = 'perk-desc';
     desc.textContent = typeof perk.desc === 'function' ? perk.desc(n) : perk.desc;
-    b.append(cat, name, desc);
+    b.append(key, head, name, desc);
+    if (perk.max > 1 && perk.max !== Infinity) {
+      const rank = document.createElement('span');
+      rank.className = 'perk-rank';
+      rank.innerHTML = `<span class="pips">${Array.from({ length: perk.max }, (_, r) => `<i class="${r < n ? 'on' : r === n ? 'next' : ''}"></i>`).join('')}</span>rang ${n + 1} sur ${perk.max}`;
+      b.append(rank);
+    }
     const duo = perk.req ? `${perk.req.map((id) => perkById(id).name).join(' + ')}` : duosOpenedBy(choiceHero, perk).map((d) => `Ouvre le duo ${d.name}`).join(' · ');
     if (duo) {
       const tag = document.createElement('span');
@@ -7982,7 +8078,11 @@ function openChoice({ kind, hero: who }) {
     }
     b.addEventListener('click', () => choosePerk(perk));
     box.append(b);
-  }
+  });
+  const dev = choiceHero.device;
+  $('choice-hint').textContent = dev.kind === 'pad' || (dev.kind === 'any' && pad.active)
+    ? `Croix ou stick pour viser, ${padLabel(0)} pour choisir`
+    : keyboardSeen ? '1, 2 ou 3 pour choisir, ou les flèches puis Entrée' : 'Touche la carte de ton choix';
   $('choice-skip').textContent = choiceHero.hp < choiceHero.maxHp ? `Passer et reprendre ${SKIP_HEAL * 10} PV` : 'Passer';
   sfx.relic();
   showOverlay('menu-choice');
@@ -8016,8 +8116,13 @@ function openAltar(who) {
   const duo = heroes.length > 1;
   $('altar-kicker').textContent = duo ? `Autel des profondeurs · ${tagOf(who)}` : 'Autel des profondeurs';
   $('altar-kicker').style.color = duo ? P_COLOR[who.index] : '';
-  $('altar-lead').textContent = `L’autel ne veut pas d’or : offre une part de ton sang et choisis un pouvoir parmi trois. Tu as ${who.maxHp * 10} PV max.${duo ? ' L’autel exauce chaque joueur une fois.' : ''}`;
-  $('altar-blood').disabled = who.maxHp <= 4;
+  $('altar-lead').textContent = `L’autel ne veut pas d’or, il veut ton sang : un pouvoir au choix parmi trois, dont au moins un rare.${duo ? ' Il exauce chaque joueur une fois.' : ''}`;
+  const weak = who.maxHp <= 4;
+  const after = who.maxHp - 2;
+  $('altar-keep').style.width = `${(weak ? 1 : after / who.maxHp) * 100}%`;
+  $('altar-cost').style.width = `${weak ? 0 : (2 / who.maxHp) * 100}%`;
+  $('altar-hp-text').innerHTML = weak ? 'Trop affaibli pour une offrande : il te faut plus de <b>40</b> PV max.' : `<b>${who.maxHp * 10}</b> → <b>${after * 10}</b> PV max`;
+  $('altar-blood').disabled = weak;
   showOverlay('menu-altar');
   armOverlay('menu-altar');
 }
@@ -8434,6 +8539,8 @@ function pauseGame() {
   disarmAbandon();
   $('pause-where').textContent = `${L.biome.name} · étage ${L.depth} · ${meters(L.depth)}${debugRun ? ' · mode test' : ''}`;
   renderRelics($('pause-relics'));
+  renderTrack($('pause-track'), L.depth);
+  renderRunChips($('pause-run'));
   showOverlay('menu-pause');
 }
 
@@ -9076,8 +9183,8 @@ window.addEventListener('keydown', (e) => {
     keyboardSeen = true;
     renderControls();
   }
-  if (state === 'shop' && e.code === 'Escape') {
-    leaveShop();
+  if ((state === 'shop' || state === 'altar') && e.code === 'Escape') {
+    MENU_BACK[state]();
     return;
   }
   if ((state === 'choice' || state === 'altar' || state === 'shop') && !e.repeat) {
@@ -9242,8 +9349,7 @@ $('win-deeper').addEventListener('click', () => {
   showOverlay(null);
   toast('Au-delà du fond', 'le gouffre recommence, le record continue', 2.6);
 });
-$('win-surface').addEventListener('click', () => {
-  if (state !== 'victory') return;
+function goHome() {
   newRun();
   state = 'menu';
   showOverlay('menu-start');
@@ -9251,6 +9357,13 @@ $('win-surface').addEventListener('click', () => {
   toastT = 0;
   $('best').textContent = bestLine();
   renderGrimoire();
+  if (pad.active) padFocus($('play'));
+}
+$('win-surface').addEventListener('click', () => {
+  if (state === 'victory') goHome();
+});
+$('dead-home').addEventListener('click', () => {
+  if (state === 'dead') goHome();
 });
 
 $('restart').addEventListener('click', () => {
@@ -9266,13 +9379,12 @@ $('restart').addEventListener('click', () => {
 
 // ---------- Deux joueurs
 const lobby = { slots: [null, null], classes: ['lame', 'arbalete'] };
-const DEVICE_LABEL = {
-  'kb-left': 'Clavier gauche : ZQSD, Espace frappe, Maj gauche esquive, A boit',
-  'kb-right': 'Clavier droit : flèches, Entrée ou Alt droite frappe, Maj droite esquive',
-};
 
 function deviceLabel(dev) {
-  if (DEVICE_LABEL[dev]) return DEVICE_LABEL[dev];
+  if (dev === 'kb-left' || dev === 'kb-right') {
+    const m = binds[dev === 'kb-left' ? 'left' : 'right'];
+    return `${dev === 'kb-left' ? 'Clavier gauche' : 'Clavier droit'} : ${moveLabel(m)}, ${orList(keyList(m.attack))} frappe, ${orList(keyList(m.dash))} esquive`;
+  }
   const gp = readPads().find((g) => `pad-${g.index}` === dev);
   return `Manette ${gp ? gp.index + 1 : ''} : ${gp ? gp.id.replace(/\s*\(.*$/, '').slice(0, 32) : 'branchée'}`;
 }
@@ -9302,6 +9414,7 @@ function cycleHero(n, dir) {
 function openLobby() {
   initAudio();
   if (state !== 'menu') return;
+  $('duo-hint').textContent = `Chaque joueur appuie sur ${keyList(binds.left.attack)[0] ?? 'une touche de la moitié gauche'} (clavier gauche), ${keyList(binds.right.attack)[0] ?? 'une touche de la moitié droite'} (clavier droit) ou ${padLabel(0)} de sa manette.`;
   lobby.slots = [null, null];
   state = 'lobby';
   renderLobby();
@@ -9371,12 +9484,13 @@ $('altar-blood').addEventListener('click', () => {
   acceptAltar();
 });
 $('choice-skip').addEventListener('click', () => choosePerk(null));
-$('altar-leave').addEventListener('click', () => {
+function leaveAltar() {
   if (state !== 'altar') return;
   altarHero = null;
   state = 'play';
   showOverlay(null);
-});
+}
+$('altar-leave').addEventListener('click', leaveAltar);
 
 let abandonArmed = false;
 function disarmAbandon() {
@@ -9570,7 +9684,7 @@ function padMenu(pressed, ax, ay, dt) {
   }
   if (overlay.classList.contains('arming')) return;
   if (pressed(PAD.A)) pad.focusEl.click();
-  else if (pressed(PAD.B) && state === 'keys') closeKeys();
+  else if (pressed(PAD.B)) MENU_BACK[state]?.();
 }
 
 function updatePad(dt) {
@@ -9750,11 +9864,6 @@ function controlRows() {
     ['Échap ou P', 'Pause'],
   ];
 }
-const kbHint = (m) => `${moveLabel(m)} pour marcher, ${orList(keyList(m.attack))} pour frapper, ${orList(keyList(m.dash))} pour esquiver, ${orList(keyList(m.parry))} pour parer, ${orList(keyList(m.potion))} pour boire.`;
-const padHint = () => {
-  const p = binds.pad;
-  return `Stick pour marcher, ${orList(padList(p.attack))} pour frapper, ${orList(padList(p.dash))} pour esquiver, ${orList(padList(p.parry))} pour parer, ${orList(padList(p.potion))} pour boire, ${padLabel(9)} pour la pause.`;
-};
 function detectPadFamily() {
   const id = (readPad()?.id ?? '').toLowerCase();
   if (/054c|playstation|dualsense|dualshock|wireless controller/.test(id)) return 'ps';
@@ -9776,12 +9885,112 @@ function renderControls() {
     li.append(kbd, span);
     list.append(li);
   }
-  const devHint = (h) => (h.device.kind === 'pad' ? `manette : ${padHint()}` : h.device.map === 'left' || h.device.map === 'right' ? kbHint(binds[h.device.map]) : kbHint(binds.solo));
-  $('pause-keys').textContent = heroes.length > 1 ? heroes.map((h, n) => `J${n + 1} : ${devHint(h)}`).join(' · ') : pad.active ? padHint() : kbHint(binds.solo);
+  renderKeycaps($('pause-keys'));
+  const touchOnly = !keyboardSeen && !pad.active;
+  $('keys-start-label').textContent = touchOnly ? 'Commandes' : 'Touches';
+  $('keys-start-sub').textContent = touchOnly ? 'gestes tactiles' : keyboardSeen ? 'clavier et manette' : 'manette';
   document.body.classList.toggle('kb', keyboardSeen);
   $('pause-keys').hidden = !keyboardSeen && !pad.active && heroes.length < 2;
   $('play-duo').hidden = !keyboardSeen && !pad.active;
   if (state === 'keys') renderKeys();
+}
+
+// Touches de la pause dessinées en touches : la disposition réelle de chaque héros.
+const kbCaps = (m) => [
+  ['marcher', [m.up[0], m.left[0], m.down[0], m.right[0]].filter(Boolean).map(keyLabel)],
+  ['frapper', keyList(m.attack).slice(0, 2)], ['esquiver', keyList(m.dash).slice(0, 2)],
+  ['parer', keyList(m.parry).slice(0, 2)], ['boire', keyList(m.potion).slice(0, 2)],
+];
+const padCaps = () => [
+  ['marcher', ['Stick']], ['frapper', padList(binds.pad.attack).slice(0, 2)], ['esquiver', padList(binds.pad.dash).slice(0, 2)],
+  ['parer', padList(binds.pad.parry).slice(0, 2)], ['boire', padList(binds.pad.potion).slice(0, 2)],
+];
+function renderKeycaps(box) {
+  box.replaceChildren();
+  const capsFor = (h) => (h.device.kind === 'pad' || (h.device.kind === 'any' && pad.active) ? padCaps()
+    : kbCaps(h.device.kind === 'kb' && h.device.map !== 'full' ? binds[h.device.map] : binds.solo));
+  for (const h of heroes) {
+    if (heroes.length > 1) {
+      const who = document.createElement('p');
+      who.className = 'who';
+      who.style.color = P_COLOR[h.index];
+      who.textContent = `${tagOf(h)} · ${CLASSES[h.cls].short}`;
+      box.append(who);
+    }
+    const ul = document.createElement('ul');
+    for (const [label, caps] of capsFor(h)) {
+      const li = document.createElement('li');
+      for (const c of caps) {
+        const k = document.createElement('kbd');
+        k.textContent = c;
+        li.append(k);
+      }
+      li.append(label);
+      ul.append(li);
+    }
+    box.append(ul);
+  }
+}
+
+function toggleStartPanel(id) {
+  for (const [panel, btn] of [['settings-start', 'settings-toggle'], ['controls-box', 'keys-start']]) {
+    const open = panel === id && $(panel).hidden;
+    $(panel).hidden = !open;
+    $(btn).setAttribute('aria-expanded', String(open));
+  }
+}
+
+// B à la manette, Échap au clavier : revenir d'un écran sans rien choisir.
+const MENU_BACK = { keys: () => closeKeys(), debug: () => closeDebug(), shop: () => leaveShop(), altar: () => leaveAltar(), paused: () => resumeGame() };
+
+// Frise de la descente : les quatre biomes de la partie, trois étages chacun, le troisième gardé.
+function renderTrack(el, depth, done = false) {
+  const at = done ? VICTORY_DEPTH + 1 : ((depth - 1) % VICTORY_DEPTH) + 1;
+  el.replaceChildren();
+  runBiomes.forEach((id, b) => {
+    const biome = BIOMES[id];
+    const grp = document.createElement('div');
+    grp.className = Math.ceil(at / BOSS_EVERY) - 1 === b ? 'track-biome cur' : 'track-biome';
+    grp.style.setProperty('--biome', biome.mini[0]);
+    const cells = document.createElement('div');
+    cells.className = 'track-cells';
+    for (let k = 1; k <= BOSS_EVERY; k++) {
+      const d = b * BOSS_EVERY + k;
+      const i = document.createElement('i');
+      i.className = `${k === BOSS_EVERY ? 'boss ' : ''}${d < at ? 'past' : d === at ? 'here' : ''}`.trim();
+      i.title = `Étage ${d}${k === BOSS_EVERY ? ' · gardien' : ''}`;
+      cells.append(i);
+    }
+    const name = document.createElement('span');
+    name.textContent = biome.name;
+    grp.append(cells, name);
+    el.append(grp);
+  });
+}
+
+function renderRunChips(el) {
+  const kills = heroes.reduce((n, h) => n + h.kills, 0);
+  el.replaceChildren(...[['Niveau', team.level], ['Écus', teamGold()], ['Ennemis', kills], ['Combo max', combo.best], ['Gardiens', team.bosses]].map(([k, v]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `${k} <b>${v}</b>`;
+    return li;
+  }));
+}
+
+// Les nombres du bilan défilent jusqu'à leur valeur.
+function countUp(root) {
+  for (const dd of root.querySelectorAll('dd')) {
+    const to = Number(dd.textContent);
+    if (!Number.isFinite(to) || to <= 0 || reducedMotion) continue;
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / 900);
+      dd.textContent = String(Math.round(to * (1 - (1 - k) ** 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    dd.textContent = '0';
+    requestAnimationFrame(step);
+  }
 }
 
 function setLayout(name) {
@@ -9981,7 +10190,8 @@ for (const b of $('keys-profiles').querySelectorAll('button')) b.addEventListene
 for (const name of ['droitier', 'gaucher']) $(`preset-${name}`).addEventListener('click', () => { setLayout(name); keysNote = `Préréglage ${name} appliqué.`; renderKeys(); });
 $('keys-reset').addEventListener('click', resetKeys);
 $('keys-done').addEventListener('click', closeKeys);
-$('keys-start').addEventListener('click', openKeys);
+$('keys-start').addEventListener('click', () => (keyboardSeen || pad.active ? openKeys() : toggleStartPanel('controls-box')));
+$('settings-toggle').addEventListener('click', () => toggleStartPanel('settings-start'));
 $('keys-pause').addEventListener('click', openKeys);
 navigator.keyboard?.getLayoutMap?.().then((m) => {
   for (const [code, key] of m) layoutLabels[code] = key.toUpperCase();

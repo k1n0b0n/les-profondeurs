@@ -4,7 +4,7 @@ Dungeon crawler 3D en navigateur, solo ou à deux sur le même écran. [Jouer su
 
 ## Vue d'ensemble
 
-Les Profondeurs est un dungeon crawler 3D en vue plongeante, solo ou à deux sur le même écran, tenu dans un seul fichier `index.html` d'environ 10 200 lignes (420 Ko). Le but : descendre jusqu'à −144 m, soit 12 étages, en abattant les quatre gardiens qui scellent l'escalier tous les trois étages.
+Les Profondeurs est un dungeon crawler 3D en vue plongeante, solo ou à deux sur le même écran, tenu dans un seul fichier `index.html` d'environ 10 400 lignes (430 Ko). Le but : descendre jusqu'à −144 m, soit 12 étages, en abattant les quatre gardiens qui scellent l'escalier tous les trois étages.
 
 - **Moteur** : three.js 0.170.0, importé en module ES depuis jsDelivr. Aucune autre dépendance, aucun build, aucun fichier d'asset.
 - **Tout est procédural** : textures dessinées sur `<canvas>`, modèles assemblés à partir de primitives (cylindres, sphères, cônes), bruitages synthétisés en WebAudio, musique chiptune composée note à note dans le code.
@@ -22,45 +22,45 @@ Le dépôt tient en trois fichiers : `index.html`, ce `README.md` et un `.gitign
 
 | Lignes | Bloc | Contenu |
 | --- | --- | --- |
-| 1–575 | `<head>` + `<style>` | Métas mobiles (viewport-fit cover), polices Google (Alegreya Sans, IM Fell English SC), tout le CSS du HUD et des menus |
-| 577–836 | HTML | Canevas 3D `#scene`, HUD `#hud` (bandeau de gardien, bandeau d'épreuve, clé d'os), contrôles tactiles, et 10 overlays : accueil, mode test, duo, choix d'aptitude, autel, marchand, pause, victoire, mort |
-| 838–858 | Script classique | Filet de démarrage : affiche une erreur si three.js ne charge pas ou si le jeu n'a pas signalé `window.__profondeursReady` après 15 s |
-| 859–10232 | `<script type="module">` | Tout le jeu, découpé en sections `// ---------- Nom` |
+| 1–632 | `<head>` + `<style>` | Métas mobiles (viewport-fit cover), polices Google (Alegreya Sans, IM Fell English SC), tout le CSS du HUD et des menus |
+| 634–903 | HTML | Canevas 3D `#scene`, HUD `#hud` (bandeau de gardien, bandeau d'épreuve, clé d'os), contrôles tactiles, et 11 overlays : accueil, mode test, duo, choix d'aptitude, autel, marchand, pause, touches, victoire, mort |
+| 905–925 | Script classique | Filet de démarrage : affiche une erreur si three.js ne charge pas ou si le jeu n'a pas signalé `window.__profondeursReady` après 15 s |
+| 926–10442 | `<script type="module">` | Tout le jeu, découpé en sections `// ---------- Nom` |
 
 Les sections du module, dans l'ordre du fichier :
 
 | Lignes | Section | Rôle |
 | --- | --- | --- |
-| 859–986 | Constantes | Tuile, vitesses, cadences, keymaps, classes, helpers (`rand`, `clamp`, `hpScale`, `dmgScale`), wrapper `store` sur localStorage |
-| 987–1059 | Touches personnalisées | `binds` (solo, duo gauche et droite, manette) chargés depuis `profondeurs.touches`, noms de touches (`keyLabel`, AZERTY deviné, apprentissage), noms de boutons par famille de manette |
-| 1060–1344 | Rendu | Renderer, scène, lumières, textures canvas, géométries `G` et matériaux `M` partagés |
-| 1345–1436 | Héros | Modèle 3D des héros (`buildHero`), anneaux de garde et d'esquive prête |
-| 1437–1781 | Monstres | `ENEMIES`, `BIOMES`, escouades (`SQUADS`, `rollSquad`), `rollEnemy`, modèles 3D des monstres et gardiens |
-| 1782–1842 | Particules | Pool `InstancedMesh` de 420 particules (`burst`, `ring`) |
-| 1843–2033 | Génération du donjon | BFS, `tryGenerate`, `generateDungeon`, salle secrète |
-| 2034–2445 | Niveau | Objet global `L`, `buildLevel`, escalier, `populate` (escouades, élites, chambre forte, stèle), portails runiques (`placePortals`, `updatePortals`, `travelPortal`) |
-| 2446–2700 | Pièges : placement | Plaques, bouches de feu, lames, fléchettes, barils |
-| 2701–3370 | Biomes : placement et effets | Lave, glace, stalactites et rochers, sarcophages, champignons, nuages, affixes, `spawnEnemy`, butin |
-| 3371–3534 | Collisions, vision | Collisions par tuile, ligne de vue, brouillard (`reveal`), champ de flux des monstres |
-| 3535–3659 | Son | Contexte WebAudio, `tone`, `hiss`, table `sfx` |
-| 3660–3919 | Musique | `THEMES` par biome, séquenceur chiptune |
-| 3920–4009 | Aptitudes et reliques | `PERKS`, rareté, grimoire, tirage `rollPerks` |
-| 4010–5619 | Joueur | Stats, équipement, déplacements, esquive, parade, attaques, combo, Transe, salle secrète, chambre forte, stèles, dégâts, mort, réanimation |
-| 5620–5761 | Fin de partie, pactes, grimoire | Victoire, `PACTS`, record, écran de mort |
-| 5762–6104 | Monstres : IA | Une fonction `ai*` par type, dont porte-bouclier, psalmodieur et artificier |
-| 6105–7338 | Gardiens | `BOSSES`, paquet d'attaques, phases, dangers de désespoir, attaques |
-| 7339–7689 | Pièges : comportement | Mise à jour des pièges, embuscades en deux vagues |
-| 7690–7933 | Objets, autel, escalier | Ramassage, coffres, clé d'os, chambre forte, stèles, descente |
-| 7934–8445 | Choix, autel, menus | Overlays d'aptitude, autel, marchand, pause |
-| 8446–8736 | HUD | Barres, minicarte, toasts, combo, recharges d'esquive et de parade |
-| 8737–8902 | Héros, lumière, caméra | Animation des héros, torches, caméra |
-| 8903–9266 | Commandes | Clavier, souris, tactile, garde maintenue |
-| 9267–9399 | Deux joueurs | Menu duo, attribution des appareils |
-| 9400–9478 | Mode test | Code Konami, choix du biome et de l'étage |
-| 9479–9794 | Manette | Gamepad API, navigation directionnelle des menus (`navFrom`), aide aux commandes générée depuis les touches |
-| 9795–10005 | Écran des touches | Onglets clavier et manette, profils, capture d'une touche ou d'un bouton, conflits, préréglages, réinitialisation |
-| 10006–10052 | Fluidité | Qualité adaptative |
-| 10053–10232 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
+| 926–1053 | Constantes | Tuile, vitesses, cadences, keymaps, classes, helpers (`rand`, `clamp`, `hpScale`, `dmgScale`), wrapper `store` sur localStorage |
+| 1054–1126 | Touches personnalisées | `binds` (solo, duo gauche et droite, manette) chargés depuis `profondeurs.touches`, noms de touches (`keyLabel`, AZERTY deviné, apprentissage), noms de boutons par famille de manette |
+| 1127–1411 | Rendu | Renderer, scène, lumières, textures canvas, géométries `G` et matériaux `M` partagés |
+| 1412–1503 | Héros | Modèle 3D des héros (`buildHero`), anneaux de garde et d'esquive prête |
+| 1504–1848 | Monstres | `ENEMIES`, `BIOMES`, escouades (`SQUADS`, `rollSquad`), `rollEnemy`, modèles 3D des monstres et gardiens |
+| 1849–1909 | Particules | Pool `InstancedMesh` de 420 particules (`burst`, `ring`) |
+| 1910–2100 | Génération du donjon | BFS, `tryGenerate`, `generateDungeon`, salle secrète |
+| 2101–2512 | Niveau | Objet global `L`, `buildLevel`, escalier, `populate` (escouades, élites, chambre forte, stèle), portails runiques (`placePortals`, `updatePortals`, `travelPortal`) |
+| 2513–2767 | Pièges : placement | Plaques, bouches de feu, lames, fléchettes, barils |
+| 2768–3437 | Biomes : placement et effets | Lave, glace, stalactites et rochers, sarcophages, champignons, nuages, affixes, `spawnEnemy`, butin |
+| 3438–3601 | Collisions, vision | Collisions par tuile, ligne de vue, brouillard (`reveal`), champ de flux des monstres |
+| 3602–3726 | Son | Contexte WebAudio, `tone`, `hiss`, table `sfx` |
+| 3727–3986 | Musique | `THEMES` par biome, séquenceur chiptune |
+| 3987–4083 | Aptitudes et reliques | `PERKS`, rareté, grimoire, tirage `rollPerks` |
+| 4084–5693 | Joueur | Stats, équipement, déplacements, esquive, parade, attaques, combo, Transe, salle secrète, chambre forte, stèles, dégâts, mort, réanimation |
+| 5694–5845 | Fin de partie, pactes, grimoire | Victoire, `PACTS`, record, écran de mort |
+| 5846–6188 | Monstres : IA | Une fonction `ai*` par type, dont porte-bouclier, psalmodieur et artificier |
+| 6189–7422 | Gardiens | `BOSSES`, paquet d'attaques, phases, dangers de désespoir, attaques |
+| 7423–7773 | Pièges : comportement | Mise à jour des pièges, embuscades en deux vagues |
+| 7774–8017 | Objets, autel, escalier | Ramassage, coffres, clé d'os, chambre forte, stèles, descente |
+| 8018–8552 | Choix, autel, menus | Overlays d'aptitude, autel, marchand, pause |
+| 8553–8843 | HUD | Barres, minicarte, toasts, combo, recharges d'esquive et de parade |
+| 8844–9009 | Héros, lumière, caméra | Animation des héros, torches, caméra |
+| 9010–9379 | Commandes | Clavier, souris, tactile, garde maintenue |
+| 9380–9513 | Deux joueurs | Menu duo, attribution des appareils |
+| 9514–9592 | Mode test | Code Konami, choix du biome et de l'étage |
+| 9593–10003 | Manette | Gamepad API, navigation directionnelle des menus (`navFrom`, `MENU_BACK`), aides et touches dessinées générées depuis les touches, tuiles de l'accueil, frise de la descente (`renderTrack`), bilan et compteurs (`countUp`) |
+| 10004–10215 | Écran des touches | Onglets clavier et manette, profils, capture d'une touche ou d'un bouton, conflits, préréglages, réinitialisation |
+| 10216–10262 | Fluidité | Qualité adaptative |
+| 10263–10442 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
 
 ## Architecture technique
 
@@ -169,9 +169,14 @@ stateDiagram-v2
     victory --> menu : Remonter à la surface
     play --> dead : tous les héros à terre
     dead --> play : Redescendre
+    dead --> menu : Accueil
+    menu --> keys : Touches
+    paused --> keys : Touches
+    keys --> menu
+    keys --> paused
 ```
 
-Pause, choix, autel, marchand, lobby et victoire gèlent le monde (`FROZEN`). À l'accueil, en mode test et après la mort, le donjon continue de vivre sans le joueur. Depuis la victoire, « Descendre plus loin » revient à `play` ; depuis la mort, « Redescendre » relance une partie.
+Pause, choix, autel, marchand, lobby, touches et victoire gèlent le monde (`FROZEN`). À l'accueil, en mode test et après la mort, le donjon continue de vivre sans le joueur. Depuis la victoire, « Descendre plus loin » revient à `play` ; depuis la mort, « Redescendre » relance une partie.
 
 Le record classe les parties dans cet ordre : une victoire bat toute défaite, puis le nombre de pactes d'une victoire, puis la profondeur, puis les écus. Les parties du mode test ne comptent pas.
 
@@ -446,6 +451,20 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 - **Écran Touches** : onglets Clavier et Manette ; au clavier, trois profils (Solo, Duo · joueur 1, Duo · joueur 2) et, en solo, les préréglages Droitier et Gaucher. Choisir une case puis appuyer sur la touche ou le bouton voulu : jusqu'à trois par action. Une touche déjà prise quitte son ancienne action (en duo, les deux moitiés du clavier ne partagent aucune touche). Échap annule, Retour arrière vide la case ; à la manette, le bouton Select / Share vide la case et une capture sans réponse s'annule au bout de 6 s. Échap et Tab restent réservés, ainsi que P en solo. Les noms affichés suivent le clavier réel (appris à la première frappe, déduits AZERTY pour un navigateur en français de France) et la famille de manette (Xbox, PlayStation, Nintendo). Les aides de l'accueil et de la pause se recalculent depuis ces touches.
 - **Menus** : flèches, stick ou croix déplacent le focus vers le bouton le plus proche dans la direction choisie ; A valide, B referme l'écran Touches.
 - **Réglages** (accueil et pause) : touches, attaque auto, musique, son, plein écran. Tous sont mémorisés.
+
+### Écrans
+
+| Écran | Ce qu'il montre |
+| --- | --- |
+| Accueil | Héros à choisir (← →), « Descendre » (Entrée), duo, puis deux tuiles : **Touches** (ouvre l'écran des touches ; « Commandes » et les gestes tactiles sur un écran tactile sans clavier) et **Réglages** (attaque auto, état de la manette) |
+| Pause | Frise de la descente (4 biomes × 3 étages, losange = gardien, étage en cours qui pulse), bilan (niveau, écus, ennemis, combo max, gardiens), tuiles Musique, Son, Plein écran, Touches, Attaque auto, touches du héros dessinées en touches de clavier ou en boutons de manette (une rangée par joueur en duo) |
+| Aptitude | Trois cartes avec icône de catégorie, rareté, raccourci 1 / 2 / 3 visible au clavier, pastilles de rang ; l'astuce sous le titre suit l'appareil du joueur ; « Passer » indique les PV rendus |
+| Autel | Jauge des PV max avant et après l'offrande (− 20), rareté promise |
+| Marchand | Voir Équipement et marchand |
+| Mort | « Nouveau record ! », frise jusqu'à l'étage atteint, ce qu'il restait (étages et gardiens), compteurs qui défilent, « Redescendre » ou « Accueil » |
+| Victoire | « Nouveau record ! », frise complète, compteurs, « Descendre plus loin » ou « Remonter à la surface » |
+
+Dans tous les menus, flèches, stick et croix déplacent le focus vers le bouton le plus proche dans la direction choisie. B à la manette et Échap au clavier reviennent en arrière : fermer les touches ou le mode test, quitter le marchand ou l'autel, reprendre après la pause.
 - **Manette** : zone morte de 0,22, la croix prime sur le stick, vibrations si la manette les gère. Une ligne de diagnostic dans les réglages indique la manette vue, son mapping et les boutons enfoncés. Sur Mac, Firefox ne voit pas les manettes Xbox ni la Switch Pro : le jeu conseille Safari.
 - **Pause automatique** : quand l'onglet passe en arrière-plan, quand le contexte WebGL est perdu, ou quand la manette d'un héros se déconnecte.
 
@@ -529,34 +548,34 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 
 | Ce qu'on règle | Symbole | Ligne | Valeur actuelle |
 | --- | --- | --- | --- |
-| Vitesse du héros | `PLAYER_SPEED` | 869 | 5,4 |
-| Portée et cadence de l'épée | `ATTACK_RANGE`, `ATTACK_CD` | 871–872 | 1,9 · 0,42 s |
-| Esquive : durée, vitesse, recharge | `DASH_TIME`, `DASH_SPEED`, `DASH_CD` | 873–875 | 0,2 s · 15 · 0,85 s |
-| Fenêtre d'élan | `ELAN_WINDOW` | 877 | 0,35 s |
-| Fenêtre de combo | `COMBO_WINDOW` | 878 | 5 s |
-| Étages par biome | `BOSS_EVERY` | 880 | 3 |
-| Carreaux : cadence, vitesse, portée, dégâts | `BOLT_CD`, `BOLT_SPEED`, `BOLT_RANGE`, `BOLT_DMG` | 921–924 | 0,5 s · 19 · 11 · 80 % |
-| Durée de la marque, de l'étourdissement à l'épée | `MARK_TIME`, `STAGGER_TIME` | 926–927 | 4 s · 0,9 s |
-| Courbes de PV et de dégâts des monstres | `deep`, `hpScale`, `dmgScale` | 948–950 | + 20 % / étage + 5 % × (étage − 6)² · 1,25 + 12 % / étage + 3,5 % × (étage − 6)² |
-| Stats des monstres | `ENEMIES` | 1438 | Table |
-| Biomes : vision, composition, pièges | `BIOMES` | 1449 | Table |
-| Escouades | `SQUADS`, `rollSquad` | 1479–1489 | Noyau + troupes, 30 % de tirage libre |
-| Tirage des monstres par étage | `rollEnemy` | 1501 | Poids |
-| Densité de monstres, élites, chambre forte, stèle | `populate` | 2160 | Voir « Ce qui change d'un étage à l'autre » |
-| Affixes d'élite | `AFFIXES` | 3153 | Table |
-| Aptitudes | `PERKS` | 3921 | Table |
-| Stats de départ du héros | `BASE_STATS`, `HERO_START` | 4011–4017 | Table |
-| Équipement et prix | `GEAR` | 4024 | Table |
-| Courbe d'XP | `xpNeed` | 4125 | 4 × niveau² + 4 |
-| Transe : seuil, durée, plafond | `TRANSE_AT`, `TRANSE_TIME`, `TRANSE_MAX` | 4130–4132 | × 8 · 10 s · 14 s |
-| Épreuves des stèles | `TRIALS`, `startTrial`, `updateTrial` | 5077–5139 | Table |
-| Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 5322 | 0,12 s (0,16 s tactile) |
-| Mémoire des commandes | `INPUT_BUFFER` | 5323 | 0,16 s |
-| Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5324–5328 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
-| Pactes | `PACTS` | 5623 | Table |
-| Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6106 | Table |
-| Durée des actions de gardien | `ACT_TIME` | 6128 | Table |
-| Cycle des bouches de feu | `VENT_PERIOD` | 7340 | 3,4 s |
+| Vitesse du héros | `PLAYER_SPEED` | 936 | 5,4 |
+| Portée et cadence de l'épée | `ATTACK_RANGE`, `ATTACK_CD` | 938–939 | 1,9 · 0,42 s |
+| Esquive : durée, vitesse, recharge | `DASH_TIME`, `DASH_SPEED`, `DASH_CD` | 940–942 | 0,2 s · 15 · 0,85 s |
+| Fenêtre d'élan | `ELAN_WINDOW` | 944 | 0,35 s |
+| Fenêtre de combo | `COMBO_WINDOW` | 945 | 5 s |
+| Étages par biome | `BOSS_EVERY` | 947 | 3 |
+| Carreaux : cadence, vitesse, portée, dégâts | `BOLT_CD`, `BOLT_SPEED`, `BOLT_RANGE`, `BOLT_DMG` | 988–991 | 0,5 s · 19 · 11 · 80 % |
+| Durée de la marque, de l'étourdissement à l'épée | `MARK_TIME`, `STAGGER_TIME` | 993–994 | 4 s · 0,9 s |
+| Courbes de PV et de dégâts des monstres | `deep`, `hpScale`, `dmgScale` | 1015–1017 | + 20 % / étage + 5 % × (étage − 6)² · 1,25 + 12 % / étage + 3,5 % × (étage − 6)² |
+| Stats des monstres | `ENEMIES` | 1505 | Table |
+| Biomes : vision, composition, pièges | `BIOMES` | 1516 | Table |
+| Escouades | `SQUADS`, `rollSquad` | 1546–1556 | Noyau + troupes, 30 % de tirage libre |
+| Tirage des monstres par étage | `rollEnemy` | 1568 | Poids |
+| Densité de monstres, élites, chambre forte, stèle | `populate` | 2227 | Voir « Ce qui change d'un étage à l'autre » |
+| Affixes d'élite | `AFFIXES` | 3220 | Table |
+| Aptitudes | `PERKS` | 3988 | Table |
+| Stats de départ du héros | `BASE_STATS`, `HERO_START` | 4085–4091 | Table |
+| Équipement et prix | `GEAR` | 4098 | Table |
+| Courbe d'XP | `xpNeed` | 4199 | 4 × niveau² + 4 |
+| Transe : seuil, durée, plafond | `TRANSE_AT`, `TRANSE_TIME`, `TRANSE_MAX` | 4204–4206 | × 8 · 10 s · 14 s |
+| Épreuves des stèles | `TRIALS`, `startTrial`, `updateTrial` | 5151–5213 | Table |
+| Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 5396 | 0,12 s (0,16 s tactile) |
+| Mémoire des commandes | `INPUT_BUFFER` | 5397 | 0,16 s |
+| Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5398–5402 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
+| Pactes | `PACTS` | 5697 | Table |
+| Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6190 | Table |
+| Durée des actions de gardien | `ACT_TIME` | 6212 | Table |
+| Cycle des bouches de feu | `VENT_PERIOD` | 7424 | 3,4 s |
 | Crans de qualité graphique | `DPR_STEPS` | 10008 | 1 → 0,5 × `DPR_MAX` |
 
 Une valeur de PV ou de dégâts se règle en interne, soit 10 fois plus petite qu'à l'écran : `heal(1)` rend 10 PV affichés.
