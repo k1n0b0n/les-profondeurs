@@ -4,7 +4,7 @@ Dungeon crawler 3D en navigateur, solo ou à deux sur le même écran. [Jouer su
 
 ## Vue d'ensemble
 
-Les Profondeurs est un dungeon crawler 3D en vue plongeante, solo ou à deux sur le même écran, tenu dans un seul fichier `index.html` d'environ 10 400 lignes (430 Ko). Le but : descendre jusqu'à −144 m, soit 12 étages, en abattant les quatre gardiens qui scellent l'escalier tous les trois étages.
+Les Profondeurs est un dungeon crawler 3D en vue plongeante, solo ou à deux sur le même écran, tenu dans un seul fichier `index.html` d'environ 10 400 lignes (430 Ko). Le but : descendre jusqu'à l'étage 12, en abattant les quatre gardiens qui scellent l'escalier tous les trois étages.
 
 - **Moteur** : three.js 0.170.0, importé en module ES depuis jsDelivr. Aucune autre dépendance, aucun build, aucun fichier d'asset.
 - **Tout est procédural** : textures dessinées sur `<canvas>`, modèles assemblés à partir de primitives (cylindres, sphères, cônes), bruitages synthétisés en WebAudio, musique chiptune composée note à note dans le code.
@@ -136,7 +136,7 @@ Une partie gagnée traverse 12 étages répartis en 4 biomes de 3 étages ; le t
 3. **Rencontres** : marchand dans un refuge où personne ne se bat, autel qui échange des PV max contre un pouvoir, salle d'embuscade qui se referme sur le joueur, salle secrète derrière un mur fissuré, chambre forte fermée par une grille dorée dont il faut trouver la clé d'os, stèle d'épreuve qui lance un défi.
 4. **Montée de niveau** : l'XP est commune. À chaque niveau, chaque héros choisit une aptitude parmi trois, ou passe et reprend 30 PV.
 5. **Étage du gardien** (3, 6, 9, 12) : l'escalier est scellé, le gardien attend dans sa salle, une fontaine soigne dans la salle voisine. Le gardien tombé rouvre l'escalier, achève les monstres restants et offre une relique légendaire à chaque héros.
-6. **Fin** : abattre le gardien de l'étage 12 (−144 m) gagne la partie. On peut alors « Descendre plus loin » (les biomes recommencent leur cycle, sans fin) ou « Remonter à la surface ». Si tous les héros tombent, la partie s'arrête sur un bilan.
+6. **Fin** : abattre le gardien de l'étage 12 gagne la partie. On peut alors « Descendre plus loin » (les biomes recommencent leur cycle, sans fin) ou « Remonter à la surface ». Si tous les héros tombent, la partie s'arrête sur un bilan.
 
 ```mermaid
 stateDiagram-v2
@@ -185,7 +185,7 @@ Le record classe les parties dans cet ordre : une victoire bat toute défaite, p
 | Paramètre | Formule (`depth` = n° d'étage) |
 | --- | --- |
 | Taille | En dents de scie par biome (`floorShape`) : 1er étage ramassé, 2e (marchand) le plus vaste, gardien entre les deux ; + 4 cases de côté et + 2 salles par biome. Étages 1 à 3 : 36 × 36 / 8 salles, 44 × 44 / 12, 40 × 40 / 10 ; étages 10 à 12 : 48 × 48 / 14, 56 × 56 / 18, 52 × 52 / 16 |
-| Portails | 1 paire dès 10 salles, 2 dès 14, 3 dès 16 |
+| Portails | seulement dans les grands étages : 1 paire dès 14 salles, 2 dès 16, 3 dès 18 |
 | Monstres par étage | min(40, 13 + 2 × (depth − 1)) × (salles ÷ min(8 + depth, 14), borné à 0,8–1,25), × 0,6 sur l'étage du gardien |
 | Types de monstres | slime dès l'étage 1, rôdeur et sorcier dès 2, brute, porte-bouclier et artificier dès 3, psalmodieur dès 4 |
 | Composition | 7 salles sur 10 reçoivent une escouade (un noyau + des troupes), les autres un tirage libre |
@@ -349,7 +349,7 @@ Les pièges blessent aussi les monstres, avec des dégâts qui suivent leurs PV 
 - **Portails runiques** : des arches de pierre reliées par paires (cyan, violet, vert). Chaque paire relie les deux salles les plus éloignées une fois les raccourcis précédents comptés, avec une préférence pour la salle du marchand ; jamais dans l'arène, la chambre forte ou une salle d'embuscade. Une arche s'éveille quand un héros est passé à moins de 3 de ses deux bouts ; se tenir dessous 0,5 s emporte toute l'équipe de l'autre côté. Les portails approchés apparaissent sur la minicarte (pâles tant que la paire dort). Mesure sur 20 tirages : trajet moyen − 10 à − 25 %, plus long trajet − 20 à − 30 %, retour au marchand − 20 à − 33 %.
 - **Chambre forte** : une salle fermée par des grilles dorées, sans monstres, qui contient un coffre riche, 3 tas d'écus, un sanctuaire (un choix rare ou légendaire) et une potion une fois sur deux. Ses grilles apparaissent en or sur la minicarte une fois vues. Elle s'ouvre quand un héros arrive à la grille avec la **clé d'os** de l'étage, cachée : portée par une élite (45 %), dans la salle secrète, dans une jarre ou une caisse, ou posée dans une salle éloignée. Une pastille « Clé d'os » s'affiche dans le HUD tant qu'on la porte.
 - **Fontaine** : sur l'étage du gardien, dans la salle voisine de la sienne. Une fois par héros, elle rend la moitié des PV max.
-- **Stèle d'épreuve** : un obélisque à runes au centre d'une salle. La frapper lance une épreuve tirée au hasard. Réussie, elle donne un coffre riche et un choix rare ou légendaire à chaque héros ; ratée, la stèle s'éteint et les monstres restent.
+- **Stèle d'épreuve** : un obélisque à runes au centre d'une salle. Entrer dans sa salle verrouille les issues (comme une embuscade) et lance une épreuve tirée au hasard ; les bombes de la pluie de feu cessent dès la fin. Réussie, elle donne un coffre riche et un choix rare ou légendaire à chaque héros ; ratée, la stèle s'éteint et les monstres restent.
 
 | Épreuve | Règle | Échec |
 | --- | --- | --- |
@@ -580,3 +580,17 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Crans de qualité graphique | `DPR_STEPS` | 10008 | 1 → 0,5 × `DPR_MAX` |
 
 Une valeur de PV ou de dégâts se règle en interne, soit 10 fois plus petite qu'à l'écran : `heal(1)` rend 10 PV affichés.
+
+## Retours de playtest intégrés (18/11/2026)
+
+- **Coups chargés** : attaque maintenue après un coup = charge (0,35 s mini, 1 s au plein) ; relâché, le coup frappe ×2 à ×3 (épée : cercle plus large, arbalète : carreau perforant). Plus de répétition au maintien (sauf tactile / attaque auto). L'orientation reste verrouillée tant que l'attaque est tenue.
+- **Visée** : plus de visée automatique au clavier et à la manette ; l'arbalète ne se corrige que vers un ennemi dans un cône de 24°.
+- **Course** : maintenir Esquiver accélère la marche de 50 %.
+- **Gel** : `freezeEnemy` immobilise 0,9–1,3 s (Givre : environ 1 coup sur 5 ; Cœur de givre ; Orage glacé). Le feu (`opts.fire`) dégèle. Le ralentissement `chill` ne vient plus que des coups directs en biome gelé.
+- **Poison** : les vesses empoisonnent 5 s (perte de vie toutes les 0,9 s, jamais mortelle) ; une potion le dissipe.
+- **Lames** : cycle de 5 s (calme, ralentie, emballement ×3), croix dès l'étage 7, faibles contre les monstres.
+- **Esquive parfaite** aussi contre pointes, feu, rochers, fléchettes et lames (`graze`).
+- **Marchand** : on peut le frapper ; 5 coups et il ferme boutique.
+- **Escalier** : confirmation avec rappel des salles inexplorées.
+- **Manette** : A esquive, X frappe, B pare, Y boit ; une disposition par manette (`pad0`, `pad1`…) dans l'écran des touches.
+- **Musique** : 4 variantes par boucle, thème « mystère » pour pause et menus, fanfare après un gardien.

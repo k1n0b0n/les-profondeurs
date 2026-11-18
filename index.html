@@ -593,6 +593,7 @@ body.kb .perk-key { display: grid; }
 .keys-tabs svg { width: 18px; height: 18px; }
 .keys-profiles { justify-self: start; max-width: 100%; }
 .keys-profiles button { padding: 0 12px; font-size: 14px; }
+.keys-now { margin: 0; font-size: 14px; color: var(--ember); }
 .keys-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .keys-presets > span { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
 .chip-btn { min-height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-solid); color: var(--ink); font-size: 14px; touch-action: manipulation; }
@@ -631,6 +632,14 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+/* Sélection toujours lisible : anneau net + halo, même sur les cartes qui ont déjà une bordure. */
+.pad-focus, button:focus-visible, .perk:focus-visible, .link-tile:focus-visible, .chip-btn:focus-visible, .bind-slot:focus-visible, .hero-card:focus-visible {
+  outline: 3px solid #fff !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(106, 176, 255, 0.55), 0 0 26px 6px rgba(106, 176, 255, 0.55) !important;
+  position: relative;
+  z-index: 2;
 }
 </style>
 
@@ -786,6 +795,16 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   </div>
 </div>
 
+<div class="overlay" id="menu-stairs" hidden>
+  <div class="card">
+    <p class="kicker" id="stairs-kicker">L’escalier</p>
+    <h1 id="stairs-title">Descendre ?</h1>
+    <p class="lead" id="stairs-lead"></p>
+    <button class="primary" id="stairs-go">Descendre</button>
+    <button class="secondary" id="stairs-stay">Fouiller encore</button>
+  </div>
+</div>
+
 <div class="overlay" id="menu-shop" hidden>
   <div class="card wide shop">
     <div class="shop-head">
@@ -856,6 +875,8 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     </div>
     <div class="seg keys-profiles" id="keys-profiles"><button type="button" data-profile="solo">Solo</button><button type="button" data-profile="left">Duo · joueur 1</button><button type="button" data-profile="right">Duo · joueur 2</button></div>
     <div class="keys-presets" id="keys-presets"><span>Préréglages</span><button type="button" class="chip-btn" id="preset-droitier">Droitier</button><button type="button" class="chip-btn" id="preset-gaucher">Gaucher</button></div>
+    <div class="seg keys-profiles" id="keys-pads" hidden></div>
+    <p class="keys-now" id="keys-now"></p>
     <p class="keys-status" id="keys-status" aria-live="polite"></p>
     <div class="bind-list" id="bind-list"></div>
     <div class="keys-foot"><button type="button" class="secondary" id="keys-reset">Réinitialiser</button><button type="button" class="primary" id="keys-done">Terminé</button></div>
@@ -1077,10 +1098,13 @@ function loadBinds() {
   const valid = (m, acts, type) => !!m && acts.every((a) => Array.isArray(m[a]) && m[a].length <= BIND_SLOTS && m[a].every((v) => v === null || typeof v === type));
   for (const p of ['solo', 'left', 'right']) if (valid(saved[p], KB_ACTIONS, 'string')) out[p] = saved[p];
   if (valid(saved.pad, PAD_ACTIONS, 'number') && !PAD_ACTIONS.every((a) => saved.pad[a].join() === PAD_LEGACY[a].join())) out.pad = saved.pad;
+  for (const k of Object.keys(saved)) if (/^pad\d+$/.test(k) && valid(saved[k], PAD_ACTIONS, 'number')) out[k] = saved[k];
   return out;
 }
 const binds = loadBinds();
 const saveBinds = () => store.set(BIND_KEY, binds);
+// Chaque manette a sa disposition (`pad0`, `pad1`…) ; sans réglage propre, elle suit la disposition commune `pad`.
+const padBinds = (index) => binds[`pad${index}`] ?? binds.pad;
 let keysFrom = null;
 let bindCapture = null;
 
@@ -2172,7 +2196,7 @@ function buildLevel(depth) {
     seen: new Uint8Array(cells),
     mini, miniCtx: mini.getContext('2d'),
     enemies: [], coins: [], potions: [], chests: [], props: [], traps: [], shots: [], blasts: [], waves: [],
-    spawnQueue: [], pendingSpawns: [], ambushes: [], disposables: [], boulders: [], fx: [], icePatches: [], embers: [], bombs: [],
+    rooms: dun.rooms, spawnQueue: [], pendingSpawns: [], ambushes: [], disposables: [], boulders: [], fx: [], icePatches: [], embers: [], bombs: [],
     ice: new Uint8Array(cells), iceId: new Int32Array(cells).fill(-1), iceMesh: null,
     biome: BIOMES[biomeFor(depth)], walk: null, lava: new Uint8Array(cells), lavaId: new Int32Array(cells).fill(-1), lavaMesh: null, lavaPatches: [],
     icicles: [], clouds: [], icicleT: 3, moteAcc: 0, corpses: [],
@@ -2228,6 +2252,10 @@ function setSealed(sealed) {
   st.halo.material = glowMat(sealed ? 0xff4a3a : 0x5aa8ff, 0.5);
   runeLight.color.setHex(sealed ? 0xff4a3a : 0x5aa8ff);
 }
+
+// Sorciers et psalmodieurs ne valent rien seuls : ils vivent toujours avec un autre monstre.
+const SUPPORT = new Set(['sorcier', 'chaman']);
+const companion = (depth) => pick(depth >= 3 ? ['rodeur', 'rodeur', 'garde', 'brute', 'slime'] : ['rodeur', 'slime']);
 
 function populate(dun) {
   const depth = L.depth;
@@ -2297,17 +2325,25 @@ function populate(dun) {
   }
   let steleRoom = null;
   if (!boss && depth >= 2 && Math.random() < 0.45) {
-    const pool = normal.filter((r) => !ambushRooms.includes(r) && r !== L.haven && r !== L.vault?.room && r.w * r.h >= 20);
+    const pool = normal.filter((r) => !ambushRooms.includes(r) && r !== L.haven && r !== L.vault?.room && r.w * r.h >= 20 && !sealCuts(grid, dun.start, r));
     if (pool.length) steleRoom = pick(pool);
   }
   const fighting = others.filter((r) => r !== L.bossRoom && r !== L.haven && !ambushRooms.includes(r) && r !== L.vault?.room);
   const area = fighting.reduce((sum, r) => sum + r.w * r.h, 0) || 1;
   const roomy = clamp(dun.rooms.length / Math.min(8 + depth, 14), 0.8, 1.25);
-  const total = Math.min(40, 13 + (depth - 1) * 2) * roomy * (boss ? 0.6 : 1) * (hasPact('hordes') ? 1.3 : 1);
+  const total = Math.min(40, 13 + (depth - 1) * 2) * roomy * (boss ? 0.9 : 1) * (hasPact('hordes') ? 1.3 : 1);
+  let spawned = 0;
   for (const r of others) {
     if (r === L.bossRoom || ambushRooms.includes(r) || r === L.vault?.room) continue;
-    const count = fighting.includes(r) ? clamp(Math.round((total * r.w * r.h) / area + rand(-1, 1)), 0, 6) : 0;
+    let count = fighting.includes(r) ? clamp(Math.round((total * r.w * r.h) / area + rand(-1, 1)), 0, 6) : 0;
     const squad = rollSquad(depth, count);
+    if (count > 0 && squad.every((t) => SUPPORT.has(t))) {
+      if (count === 1) {
+        count = 2;
+        squad.push(companion(depth));
+      } else squad[0] = companion(depth);
+    }
+    spawned += count;
     for (let c = 0; c < count; c++) {
       const t = tileIn(r, false);
       if (!t) continue;
@@ -2323,6 +2359,13 @@ function populate(dun) {
       const t = tileIn(r, false);
       if (t) spawnCoins(t.x + rand(-0.4, 0.4), t.z + rand(-0.4, 0.4), randi(2, 4) + Math.floor(depth / 2));
     }
+  }
+
+  for (let n = 0; spawned < total * 0.8 && fighting.length && n < 40; n++, spawned++) {
+    const t = tileIn(pick(fighting), false);
+    let type = rollEnemy(depth);
+    for (let k = 0; k < 6 && SUPPORT.has(type); k++) type = rollEnemy(depth);
+    if (t && !SUPPORT.has(type)) spawnEnemy(type, t.x, t.z);
   }
 
   const eliteList = [];
@@ -2365,6 +2408,7 @@ function populate(dun) {
     if (!occupied.has(k)) {
       occupied.add(k);
       spawnStele(steleRoom.cx * TILE, steleRoom.cy * TILE);
+      L.trialRoom = { room: steleRoom, triggered: false, gates: [] };
     }
   }
   if (L.vault) fillVault(L.vault, tileIn, eliteList, others.filter((r) => r !== L.vault.room && !ambushRooms.includes(r)));
@@ -2379,7 +2423,7 @@ const PORTAL_COLORS = [0x5ae0ff, 0xc080ff, 0x8af07a];
 const PORTAL_CSS = ['#5ae0ff', '#c080ff', '#8af07a'];
 const PORTAL_CHARGE = 0.5;
 function placePortals(dun, occupied, ambushRooms) {
-  const pairs = dun.rooms.length >= 16 ? 3 : dun.rooms.length >= 14 ? 2 : dun.rooms.length >= 10 ? 1 : 0;
+  const pairs = dun.rooms.length >= 18 ? 3 : dun.rooms.length >= 16 ? 2 : dun.rooms.length >= 14 ? 1 : 0;
   const pool = dun.rooms.filter((r) => r !== L.bossRoom && r !== L.vault?.room && !ambushRooms.includes(r));
   if (!pairs || pool.length < 4) return;
   const D = pool.map((r) => {
@@ -3746,6 +3790,11 @@ const sfx = {
   potion: () => tone(330, 0.35, { type: 'sine', vol: 0.12, slide: 2.2 }),
   chest: () => [392, 523, 784].forEach((f, n) => tone(f, 0.14, { type: 'triangle', vol: 0.08, delay: n * 0.08 })),
   level: () => [523, 659, 784, 1046].forEach((f, n) => tone(f, 0.16, { type: 'triangle', vol: 0.08, delay: n * 0.08 })),
+  fanfare: () => {
+    [523, 659, 784, 1047].forEach((f, n) => tone(f, 0.2, { type: 'square', vol: 0.06, delay: 0.7 + n * 0.14 }));
+    [523, 659, 784, 1047].forEach((f, n) => tone(f, 1.1, { type: 'triangle', vol: 0.07, delay: 1.3 + n * 0.02 }));
+    [2093, 2637, 3136].forEach((f, n) => tone(f, 0.5, { type: 'sine', vol: 0.03, delay: 1.5 + n * 0.12 }));
+  },
   relic: () => [659, 880, 1175].forEach((f, n) => tone(f, 0.22, { type: 'sine', vol: 0.07, delay: n * 0.07 })),
   combo: (n) => tone(420 + Math.min(n, 14) * 55, 0.09, { type: 'square', vol: 0.035 }),
   stairs: () => tone(300, 0.7, { type: 'triangle', vol: 0.1, slide: 0.35 }),
@@ -3850,6 +3899,20 @@ const THEMES = {
       ['A', [73, 4], [76, 4], [81, 8]],
     ]),
   },
+  mystere: {
+    bpm: 66, bossBpm: 66, steps: 16, lead: 'sine', leadVol: 0.06, echo: true, bass: 'pad', arp: 'bells', drums: 'none',
+    chords: { Dm: [38, 3], Bb: [34, 4], Gm: [43, 3], A: [33, 4] },
+    bars: compose([
+      ['Dm', [74, 6], [0, 2], [72, 2], [69, 6]],
+      ['Bb', [70, 8], [69, 4], [65, 4]],
+      ['Gm', [67, 6], [70, 2], [74, 8]],
+      ['A', [73, 6], [69, 2], [76, 4], [73, 4]],
+      ['Dm', [77, 8], [76, 4], [74, 4]],
+      ['Bb', [74, 4], [72, 4], [70, 8]],
+      ['A', [73, 8], [69, 4], [64, 4]],
+      ['A', [0, 4], [69, 2], [73, 2], [76, 4], [0, 4]],
+    ]),
+  },
   fongus: {
     bpm: 84, bossBpm: 104, steps: 16, swing: 0.33, lead: 'vibrato', leadVol: 0.08, bass: 'pluck', arp: 'wobble', drums: 'wood',
     chords: { Dm: [38, 3], G: [43, 4], Am: [45, 3], Bb: [34, 4], C: [36, 4], E: [40, 4] },
@@ -3866,6 +3929,7 @@ const THEMES = {
   },
 };
 const music = { on: store.get(MUSIC_KEY, true), bus: null, echo: null, wave: null, timer: 0, step: 0, t: 0, boss: false, hype: false, theme: 'crypte', level: -1 };
+const MYSTIC_STATES = new Set(['paused', 'menu', 'keys', 'debug', 'lobby']);
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
 function pulseWave(duty) {
@@ -3958,6 +4022,7 @@ const BASS = {
   octaves: (i, root) => (i % 2 === 0 ? [root + (i % 4 ? 12 : 0), 1.7, 0.2] : null),
   waltz: (i, root) => (i === 0 ? [root, 3, 0.18] : i === 4 ? [root + 7, 2, 0.12] : i === 8 ? [root + 12, 2, 0.12] : null),
   gallop: (i, root) => ([0, 2, 3].includes(i % 4) ? [root + (i === 6 || i === 14 ? 12 : 0), 0.8, 0.2] : null),
+  pad: (i, root) => (i === 0 ? [root, 15, 0.14] : i === 8 ? [root + 7, 7, 0.07] : null),
   pluck: (i, root) => ({ 0: [root, 1.4, 0.2], 3: [root + 12, 1, 0.14], 6: [root + 7, 1.2, 0.16], 10: [root, 1.2, 0.18], 12: [root + 10, 1, 0.12] }[i] ?? null),
 };
 const ARP = {
@@ -3966,6 +4031,7 @@ const ARP = {
   wobble: (i, root, third) => (i % 4 === 2 ? [root + 12 + [0, 7, third + 12, 7][(i >> 2) % 4], 2, 0.05, 'triangle'] : null),
 };
 const DRUMS = {
+  none: () => [],
   march: (i, hot) => (hot ? [i % 8 === 0 || i === 6 || i === 14 ? 'kick' : null, i === 4 || i === 12 ? 'snare' : null, i % 2 ? 'hat' : null]
     : [i === 0 || i === 8 ? 'kick' : null, i === 4 || i === 12 ? 'hat' : null]),
   light: (i, hot) => (hot ? [i === 0 ? 'kick' : null, i === 4 || i === 8 ? 'snare' : null, i % 2 ? 'hat' : null]
@@ -3976,18 +4042,29 @@ const DRUMS = {
     : [i === 0 || i === 10 ? 'kick' : null, i === 4 || i === 12 || i === 7 ? 'click' : null]),
 };
 
-function musicStep(th, s, t, dur) {
-  const bar = th.bars[Math.floor(s / th.steps)];
+// Chaque passage de la boucle change : doublure, octave grave, réponse en cloches, puis montée d'un ton avec batterie pleine.
+function musicStep(th, s, t, dur, loop = 0) {
+  const barN = Math.floor(s / th.steps);
+  const bar = th.bars[barN];
   const i = s % th.steps;
   const [root, third] = th.chords[bar.chord];
-  const hot = music.boss || music.hype;
+  const v = loop % 4;
+  const tr = v === 3 ? 2 : 0;
+  const hot = music.boss || music.hype || (v === 3 && th.drums !== 'none');
   const lead = bar.notes.get(i);
-  if (lead) musicNote(lead[0] + (th.leadOct ?? 0), t, lead[1] * dur * 0.92, th.leadVol * (hot ? 1.1 : 1), th.lead, th.echo);
+  if (lead) {
+    const m = lead[0] + (th.leadOct ?? 0) + tr + (v === 2 ? -12 : 0);
+    musicNote(m, t, lead[1] * dur * 0.92, th.leadVol * (hot ? 1.1 : 1), th.lead, th.echo);
+    if (v === 1) musicNote(m + 12, t + dur * 0.5, lead[1] * dur * 0.8, th.leadVol * 0.4, 'sine', th.echo);
+  }
   const b = BASS[th.bass](i, root);
-  if (b) musicNote(b[0], t, b[1] * dur, b[2], 'triangle');
-  const arp = th.arp && ARP[th.arp](i, root, third);
-  if (arp) musicNote(arp[0], t, arp[1] * dur, arp[2], arp[3], th.echo);
+  if (b) musicNote(b[0] + tr, t, b[1] * dur, b[2], 'triangle');
+  if (v === 2 && th.drums !== 'none' && i % 4 === 2) musicNote(root + 7 + tr, t, dur * 1.2, 0.1, 'triangle');
+  const arpKind = th.arp ?? (v === 1 ? 'square' : null);
+  const arp = arpKind && ARP[v === 2 ? 'bells' : arpKind](i, root, third);
+  if (arp) musicNote(arp[0] + tr, t, arp[1] * dur, arp[2], arp[3], th.echo);
   for (const kind of DRUMS[th.drums](i, hot)) if (kind) musicDrum(kind, t);
+  if (th.drums !== 'none' && barN % 4 === 3 && i >= th.steps - 4 && i % 2 === 0) musicDrum('snare', t);
 }
 
 function musicTick() {
@@ -3996,13 +4073,14 @@ function musicTick() {
   if (music.t < a.currentTime) music.t = a.currentTime + 0.05;
   while (music.t < a.currentTime + 0.15) {
     let th = THEMES[music.theme];
+    const mystic = MYSTIC_STATES.has(state);
+    const want = mystic ? 'mystere' : L && THEMES[L.biome.id] ? L.biome.id : 'crypte';
+    if (want !== music.theme && (mystic || music.theme === 'mystere' || music.step % th.steps === 0)) {
+      music.theme = want;
+      music.step = 0;
+      th = THEMES[want];
+    }
     if (music.step % th.steps === 0) {
-      const want = L && THEMES[L.biome.id] ? L.biome.id : 'crypte';
-      if (want !== music.theme) {
-        music.theme = want;
-        music.step = 0;
-        th = THEMES[want];
-      }
       music.boss = !!(L && L.boss && L.boss.awake && L.boss.dying < 0);
       music.hype = inTranse();
       music.echo.delayTime.setValueAtTime((60 / (music.boss ? th.bossBpm : th.bpm) / 4) * 3, music.t);
@@ -4010,7 +4088,7 @@ function musicTick() {
     const s = music.step % (th.bars.length * th.steps);
     const dur = 60 / (music.boss ? th.bossBpm : th.bpm) / 4;
     const swing = th.swing && s % 2 === 1 ? dur * th.swing : 0;
-    musicStep(th, s, music.t + swing, dur);
+    musicStep(th, s, music.t + swing, dur, Math.floor(music.step / (th.bars.length * th.steps)));
     music.t += dur;
     music.step++;
   }
@@ -4037,7 +4115,8 @@ function updateMusic() {
   }
   const target = !music.on || state === 'dead' ? 0
     : state === 'play' ? 0.55
-    : state === 'choice' || state === 'altar' || state === 'shop' ? 0.35 : 0.25;
+    : MYSTIC_STATES.has(state) ? 0.4
+    : state === 'choice' || state === 'altar' || state === 'shop' || state === 'stairs' ? 0.35 : 0.25;
   if (target === music.level) return;
   music.level = target;
   music.bus.gain.setTargetAtTime(target, audio.ctx.currentTime, target ? 0.4 : music.on ? 0.8 : 0.1);
@@ -4063,7 +4142,7 @@ const PERKS = [
   { id: 'ricochet', rar: 'rare', cls: 'arbalete', cat: 'Attaque', name: 'Ricochet', max: 1, desc: 'Un carreau qui touche rebondit vers un ennemi proche.', apply: () => {} },
   { id: 'foudre', rar: 'rare', cat: 'Attaque', name: 'Foudre', max: 2, desc: (n) => (n === 0 ? '15 % de chances qu’un coup lance un éclair vers deux ennemis proches.' : 'Éclairs : 30 % de chances.'), apply: () => {} },
   { id: 'follet', rar: 'rare', weight: 0.2, cat: 'Attaque', name: 'Feu follet', max: 2, desc: (n) => (n === 0 ? 'Chaque ennemi vaincu libère un feu follet qui fond sur un ennemi proche.' : 'Deux feux follets par ennemi vaincu.'), apply: () => {} },
-  { id: 'givre', rar: 'rare', cat: 'Ruse', name: 'Givre', max: 1, desc: 'Tes coups ralentissent les ennemis touchés pendant 2 s.', apply: () => {} },
+  { id: 'givre', rar: 'rare', cat: 'Ruse', name: 'Givre', max: 1, desc: 'Environ un coup sur cinq fige l’ennemi sur place un instant.', apply: () => {} },
   { id: 'roulade', rar: 'rare', cat: 'Mobilité', name: 'Roulade tranchante', max: 2, desc: "L'esquive blesse tout ce qu'elle traverse.", apply: () => {} },
   { id: 'contre', rar: 'rare', cat: 'Mobilité', name: 'Contre-attaque', max: 1, desc: "Une esquive parfaite libère une onde de choc et recharge l'esquive.", apply: () => {} },
   { id: 'egide', rar: 'rare', cat: 'Défense', name: 'Égide', max: 2, desc: (n) => (n === 0 ? 'Un bouclier bloque un coup, puis revient après 15 s.' : 'Le bouclier revient après 10 s.'), apply: (p) => { p.shieldCd = p.shieldCd ? 10 : 15; p.shieldReady = true; } },
@@ -4071,7 +4150,7 @@ const PERKS = [
   { id: 'avarice', rar: 'commune', cat: 'Fortune', name: 'Avarice', max: 2, desc: '+50 % d’écus et un aimant deux fois plus large.', apply: (p) => { p.goldMul += 0.5; p.magnet *= 2; } },
   { id: 'saboteur', rar: 'rare', cat: 'Ruse', name: 'Saboteur', max: 1, desc: 'Pièges et barils frappent deux fois plus fort les monstres, et deux fois moins fort toi.', apply: () => {} },
   // Duos : n'apparaissent qu'une fois les deux aptitudes requises acquises.
-  { id: 'orage', rar: 'legendaire', req: ['foudre', 'givre'], cat: 'Attaque', name: 'Orage glacé', max: 1, desc: 'Tes éclairs gèlent leurs cibles et partent 10 % plus souvent.', apply: () => {} },
+  { id: 'orage', rar: 'legendaire', req: ['foudre', 'givre'], cat: 'Attaque', name: 'Orage glacé', max: 1, desc: 'Tes éclairs figent parfois leurs cibles et partent 10 % plus souvent.', apply: () => {} },
   { id: 'elme', rar: 'legendaire', req: ['follet', 'onde'], cat: 'Attaque', name: 'Feux de Saint-Elme', max: 1, desc: 'Les feux follets explosent à l’impact et blessent les monstres autour.', apply: () => {} },
   { id: 'danse', rar: 'legendaire', req: ['roulade', 'contre'], cat: 'Mobilité', name: 'Danse des lames', max: 1, desc: 'Chaque ennemi traversé par l’esquive la recharge de 0,35 s.', apply: () => {} },
   { id: 'brasier', rar: 'legendaire', req: ['braise', 'frenesie'], cat: 'Attaque', name: 'Brasier', max: 1, desc: 'Pendant la Frénésie, la torche brûle deux fois plus fort et plus loin.', apply: () => {} },
@@ -4080,7 +4159,7 @@ const PERKS = [
   { id: 'pluie', rar: 'legendaire', req: ['salve', 'ricochet'], cat: 'Attaque', name: 'Pluie de carreaux', max: 1, desc: 'La salve tire cinq carreaux et chaque carreau ricoche deux fois.', apply: () => {} },
   // Reliques de gardien : rejoignent le gouffre à la première victoire contre leur gardien.
   { id: 'veilleur', rar: 'legendaire', unlock: 'crypte', cat: 'Attaque', name: 'Œil du Veilleur', max: 1, desc: 'Élites et gardiens subissent 30 % de dégâts en plus.', apply: () => {} },
-  { id: 'coeurgivre', rar: 'legendaire', unlock: 'glace', cat: 'Ruse', name: 'Cœur de givre', max: 1, desc: 'Chaque esquive libère une nova de givre qui ralentit les monstres proches.', apply: () => {} },
+  { id: 'coeurgivre', rar: 'legendaire', unlock: 'glace', cat: 'Ruse', name: 'Cœur de givre', max: 1, desc: 'Chaque esquive libère une nova de givre qui fige les monstres proches un instant.', apply: () => {} },
   { id: 'coeurforge', rar: 'legendaire', unlock: 'forge', cat: 'Attaque', name: 'Cœur de forge', max: 1, desc: 'La Transe dure 4 s de plus et chaque ennemi vaincu en Transe explose.', apply: () => {} },
   { id: 'coeurspores', rar: 'legendaire', unlock: 'fongus', cat: 'Ruse', name: 'Cœur de spores', max: 1, desc: 'Un ennemi vaincu sur trois éclate en nuage de spores qui ronge les autres monstres.', apply: () => {} },
 ];
@@ -4685,10 +4764,7 @@ function tryAttack(charge = 0) {
     if (p.dead) continue;
     const dx = p.x - player.x;
     const dz = p.z - player.z;
-    if (p.kind === 'stele') {
-      if (reach(dx, dz, Math.hypot(dx, dz), p.r)) startTrial(p);
-      continue;
-    }
+    if (p.kind === 'stele') continue;
     if (p.kind === 'merchant') {
       if (reach(dx, dz, Math.hypot(dx, dz), p.r + 0.3)) hitMerchant(p);
       continue;
@@ -5045,6 +5121,7 @@ function killEnemy(e) {
     rumble(1, 500);
     addShake(0.5);
     sfx.roar();
+    sfx.fanfare();
     for (let k = 0; k < 4; k++) burst(e.x + rand(-1, 1), 1 + rand(0, 1.5), e.z + rand(-1, 1), k % 2 ? 0xffa040 : 0x8f86a8, 18, 5);
     for (let k = 0; k < 4; k++) spawnCoins(e.x + rand(-1, 1), e.z + rand(-1, 1), randi(6, 10) + L.depth, true);
     spawnPotion(e.x + 0.9, e.z);
@@ -5137,7 +5214,7 @@ const crackTex = canvasTexture(128, (g, s) => {
   };
   for (let n = 0; n < 4; n++) crack(s * rand(0.3, 0.7), s * rand(0.05, 0.3), Math.PI / 2 + rand(-0.5, 0.5), s * 0.3, 7);
 });
-M.crack = basic(0xffffff, { map: crackTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+M.crack = basic(0xffffff, { map: crackTex, transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
 M.gemSecret = basic(0x7af0ff);
 
 function fillSecret(sc) {
@@ -5320,29 +5397,35 @@ function spawnStele(x, z) {
 const TRIALS = {
   intact: { name: 'Épreuve · Sans une égratignure', sub: 'abats-les tous sans perdre un PV' },
   chrono: { name: 'Épreuve · Contre la montre', sub: 'abats-les tous avant la fin du sablier' },
-  pluie: { name: 'Épreuve · Pluie de feu', sub: 'tiens 14 s sous les bombes, deux coups au plus' },
+  pluie: { name: 'Épreuve · Pluie de feu', sub: 'tiens 16 s sous les bombes, un seul coup au plus' },
 };
 
-function startTrial(st) {
-  if (st.used || L.trial) return;
+// L'épreuve se déclenche à l'entrée dans la salle de la stèle, qui se verrouille comme une embuscade.
+function startTrial(st, trig) {
+  const tr = L.trialRoom;
+  if (st.used || L.trial || !tr) return;
   st.used = true;
+  tr.triggered = true;
   const kind = pick(Object.keys(TRIALS));
   const n = Math.min(8, 4 + Math.floor(L.depth / 2));
-  const T = { kind, stele: st, t: 0, limit: kind === 'pluie' ? 14 : 14 + n * 1.6, hits: 0, alive: 0, pending: 0, total: n, done: false, bombT: 1 };
+  const T = { kind, stele: st, t: 0, limit: kind === 'pluie' ? 16 : 14 + n * 1.6, hits: 0, alive: 0, pending: 0, total: n, done: false, bombT: 1, volley: 0 };
   L.trial = T;
+  rallyHeroes(trig, tr.room);
+  sealRoom(tr);
   if (kind !== 'pluie') {
-    const types = rollSquad(L.depth, n);
-    for (let k = 0; k < n; k++) {
-      for (let tries = 0; tries < 12; tries++) {
-        const a = rand(0, Math.PI * 2);
-        const dist = rand(2.8, 5);
-        const x = st.x + Math.cos(a) * dist;
-        const z = st.z + Math.sin(a) * dist;
-        if (collides(x, z, 0.5) || nearAnyHero(x, z, 2)) continue;
-        queueSpawn(types[k], x, z, 0.8 + k * 0.12, { trial: T });
-        T.pending++;
-        break;
+    const r = tr.room;
+    const spots = [];
+    for (let j = r.y; j < r.y + r.h; j++) {
+      for (let i = r.x; i < r.x + r.w; i++) {
+        if (L.grid[idx(i, j)] === 1 && !nearAnyHero(i * TILE, j * TILE, 3.4) && !trapNear(i * TILE, j * TILE)) spots.push([i, j]);
       }
+    }
+    shuffle(spots);
+    const types = rollSquad(L.depth, n);
+    const count = Math.min(n, spots.length);
+    for (let k = 0; k < count; k++) {
+      queueSpawn(types[k], spots[k][0] * TILE, spots[k][1] * TILE, 0.8 + k * 0.12, { trial: T });
+      T.pending++;
     }
     T.total = T.pending;
   }
@@ -5359,6 +5442,14 @@ function endTrial(T, won) {
   T.done = true;
   L.trial = null;
   $('trial').hidden = true;
+  for (let n = L.bombs.length - 1; n >= 0; n--) {
+    const b = L.bombs[n];
+    if (!b.trial) continue;
+    L.group.remove(b.g);
+    if (b.lob) L.group.remove(b.lob);
+    L.bombs.splice(n, 1);
+  }
+  if (L.trialRoom) unsealRoom(L.trialRoom);
   const st = T.stele;
   if (won) {
     for (const r of st.runes) r.material = M.rune;
@@ -5387,16 +5478,28 @@ function updateTrial(dt) {
   if (T.kind === 'pluie') {
     T.bombT -= dt;
     if (T.bombT <= 0) {
-      T.bombT = 0.55;
       const h = pick(standing()) ?? heroes[0];
       const a = rand(0, Math.PI * 2);
       const d = rand(0, 2.4);
       const x = h.x + Math.cos(a) * d;
       const z = h.z + Math.sin(a) * d;
-      if (!isWall(tileOf(x), tileOf(z))) spawnBomb(x, z, 1.3, ENEMIES.brute.dmg * dmgScale(L.depth) * 0.5, 0.95);
+      if (!isWall(tileOf(x), tileOf(z))) {
+        spawnBomb(x, z, 1.4, ENEMIES.brute.dmg * dmgScale(L.depth) * 0.6, 0.85);
+        L.bombs[L.bombs.length - 1].trial = true;
+      }
+      if (T.t > 6) {
+        const lead = 0.7;
+        const bx = h.x + (h.ivx || 0) * lead;
+        const bz = h.z + (h.ivz || 0) * lead;
+        if (!isWall(tileOf(bx), tileOf(bz))) {
+          spawnBomb(bx, bz, 1.4, ENEMIES.brute.dmg * dmgScale(L.depth) * 0.6, 0.85);
+          L.bombs[L.bombs.length - 1].trial = true;
+        }
+      }
+      T.bombT = T.t > 10 ? 0.3 : T.t > 6 ? 0.38 : 0.48;
     }
-    $('trial-info').textContent = `${left} s · ${Math.max(0, 2 - T.hits)} coup${2 - T.hits > 1 ? 's' : ''} de marge`;
-    if (T.hits > 2) endTrial(T, false);
+    $('trial-info').textContent = `${left} s · ${Math.max(0, 1 - T.hits)} coup de marge`;
+    if (T.hits > 1) endTrial(T, false);
     else if (T.t >= T.limit) endTrial(T, true);
     return;
   }
@@ -7540,7 +7643,6 @@ function updateShots(dt) {
       for (const p of L.props) {
         if (p.dead || Math.hypot(p.x - s.x, p.z - s.z) > p.r + 0.15) continue;
         if (p.kind === 'stele') {
-          if (s.owner === 'bolt') startTrial(p);
           dead = true;
           break;
         }
@@ -7983,13 +8085,19 @@ function unsealRoom(a) {
 }
 
 function updateAmbushes(dt) {
-  for (const a of L.ambushes) {
+  for (const a of L.trialRoom ? [...L.ambushes, L.trialRoom] : L.ambushes) {
     for (const gate of a.gates) {
       gate.g.visible = L.seen[idx(gate.i, gate.j)] === 1 || tileSeen(gate.ii * TILE, gate.jj * TILE);
       gate.g.position.y += (0 - gate.g.position.y) * damp(12, dt);
     }
   }
   if (state !== 'play') return;
+  const tr = L.trialRoom;
+  if (tr && !tr.triggered && !L.trial) {
+    const trig = heroes.find((h) => !h.down && inRoom(tr.room, h.ti, h.tj, 1));
+    const st = L.props.find((p) => p.kind === 'stele' && !p.used);
+    if (trig && st) startTrial(st, trig);
+  }
   for (const a of L.ambushes) {
     const trig = heroes.find((h) => !h.down && inRoom(a.room, h.ti, h.tj, 1));
     if (a.triggered || !trig) continue;
@@ -8117,9 +8225,14 @@ function updateItems(dt) {
   if (sc && !sc.open) {
     const dx0 = sc.door.i * TILE;
     const dz0 = sc.door.j * TILE;
-    const close = L.seen[sc.k] === 1 && nearAnyHero(dx0, dz0, 3.2);
-    sc.crack.visible = close;
-    if (L.seen[sc.k] === 1 && nearAnyHero(dx0, dz0, 5.5) && Math.random() < 0.035) emit({ x: sc.door.i * TILE + sc.out[0] * 1.05 + rand(-0.6, 0.6), y: rand(0.4, 1.4), z: sc.door.j * TILE + sc.out[1] * 1.05 + rand(-0.6, 0.6), vx: 0, vy: -0.5, vz: 0, g: 0, life: 0.9, max: 0.9, color: 0xb8ad98, size: 0.3 });
+    const seen = L.seen[sc.k] === 1;
+    sc.crack.visible = seen;
+    if (seen && !sc.mapped) {
+      sc.mapped = true;
+      L.miniCtx.fillStyle = '#7a6f86';
+      L.miniCtx.fillRect(sc.door.i, sc.door.j, 1, 1);
+    }
+    if (seen && Math.random() < (nearAnyHero(dx0, dz0, 5.5) ? 0.03 : 0.012)) emit({ x: sc.door.i * TILE + sc.out[0] * 1.05 + rand(-0.6, 0.6), y: rand(0.4, 1.4), z: sc.door.j * TILE + sc.out[1] * 1.05 + rand(-0.6, 0.6), vx: 0, vy: 0.2, vz: 0, g: 0, life: 0.9, max: 0.9, color: 0xcfc4a8, size: 0.2 });
     if (sc.shake > 0) sc.shake -= dt;
     sc.crack.position.x = sc.door.i * TILE + (sc.shake > 0 ? Math.sin(elapsed * 80) * 0.04 : 0);
   }
@@ -8164,7 +8277,7 @@ function updateItems(dt) {
       const nearSt = !h.down && Math.hypot(h.x - p.x, h.z - p.z) < 1.6;
       if (nearSt && !p.close.has(h) && !hints.stele) {
         hints.stele = true;
-        toast('Stèle d’épreuve', 'frappe-la pour relever un défi : un pouvoir à la clé');
+        toast('Stèle d’épreuve', 'entre dans sa salle pour relever un défi : un pouvoir à la clé');
       }
       if (nearSt) p.close.add(h);
       else p.close.delete(h);
@@ -8235,8 +8348,63 @@ function updateItems(dt) {
     else if (!together) toast('Attends ton coéquipier', 'descendez ensemble');
   }
   st.warned = onStairs;
-  if (active && onStairs && !st.sealed && together) descend();
+  if (!onStairs) st.declined = false;
+  if (active && onStairs && !st.sealed && together && !st.declined) askDescend(nearestHero(st.x, st.z));
 }
+
+// Avant de quitter l'étage : confirmation, et un rappel de ce qu'il reste à fouiller.
+let stairsHero = null;
+function unexploredRooms() {
+  let n = 0;
+  for (const r of L.rooms) {
+    if (r === L.bossRoom || inRoom(r, L.stairs.i, L.stairs.j)) continue;
+    let seen = false;
+    for (let j = r.y; j < r.y + r.h && !seen; j++) for (let i = r.x; i < r.x + r.w; i++) if (L.seen[idx(i, j)] === 1) { seen = true; break; }
+    if (!seen) n++;
+  }
+  return n;
+}
+
+function askDescend(who) {
+  state = 'stairs';
+  stairsHero = who;
+  resetInputs();
+  const left = unexploredRooms();
+  const extras = [];
+  if (L.secret && !L.secret.open) extras.push('une salle secrète');
+  if (L.vault && !L.vault.open) extras.push('une chambre forte');
+  if (L.keyItem) extras.push('une clé d’os');
+  $('stairs-kicker').textContent = `Étage ${L.depth}`;
+  $('stairs-title').textContent = left || extras.length ? 'Pas encore ?' : 'Descendre ?';
+  const hint = [];
+  if (left) hint.push(`${left} salle${left > 1 ? 's' : ''} inexplorée${left > 1 ? 's' : ''}`);
+  hint.push(...extras);
+  $('stairs-lead').textContent = hint.length
+    ? `Il reste ${hint.join(', ')}. Fouille l’étage pour t’enrichir en or, en pouvoirs et en niveaux avant la suite : en bas, tout est plus dur.`
+    : 'Tu as tout exploré. Les profondeurs t’attendent.';
+  $('stairs-go').textContent = hint.length ? 'Descendre quand même' : 'Descendre';
+  $('stairs-go').className = hint.length ? 'secondary' : 'primary';
+  $('stairs-stay').className = hint.length ? 'primary' : 'secondary';
+  showOverlay('menu-stairs');
+  armOverlay('menu-stairs');
+}
+
+function stayOnFloor() {
+  if (state !== 'stairs') return;
+  L.stairs.declined = true;
+  stairsHero = null;
+  state = 'play';
+  showOverlay(null);
+}
+
+function goDown() {
+  if (state !== 'stairs') return;
+  stairsHero = null;
+  showOverlay(null);
+  descend();
+}
+$('stairs-go').addEventListener('click', goDown);
+$('stairs-stay').addEventListener('click', stayOnFloor);
 
 function descend() {
   state = 'transition';
@@ -9428,11 +9596,11 @@ window.addEventListener('keydown', (e) => {
     keyboardSeen = true;
     renderControls();
   }
-  if ((state === 'shop' || state === 'altar') && e.code === 'Escape') {
+  if ((state === 'shop' || state === 'altar' || state === 'stairs') && e.code === 'Escape') {
     MENU_BACK[state]();
     return;
   }
-  if ((state === 'choice' || state === 'altar' || state === 'shop') && !e.repeat) {
+  if ((state === 'choice' || state === 'altar' || state === 'shop' || state === 'stairs') && !e.repeat) {
     const owner = menuOwner();
     const km = owner && heroKeymap(owner);
     if (km) {
@@ -9966,9 +10134,10 @@ function updatePad(dt) {
     }
     st.x = ax;
     st.y = ay;
-    st.attack = binds.pad.attack.some((b) => now[b]);
-    st.parry = binds.pad.parry.some((b) => now[b]);
-    st.dash = binds.pad.dash.some((b) => now[b]);
+    const pb = padBinds(gp.index);
+    st.attack = pb.attack.some((b) => now[b]);
+    st.parry = pb.parry.some((b) => now[b]);
+    st.dash = pb.dash.some((b) => now[b]);
     st.fresh = now.some((v, i) => v && !prev[i]);
     if (st.fresh) initAudio();
     if (!pad.active && (now.some(Boolean) || ax || ay)) {
@@ -9984,14 +10153,15 @@ function updatePad(dt) {
       if (h.down) continue;
       player = h;
       for (const st of heroPads(h)) {
-        if (binds.pad.attack.some(st.pressed)) tryAttack();
-        if (binds.pad.dash.some(st.pressed)) tryDash();
-        if (binds.pad.parry.some(st.pressed)) tryParry();
-        if (binds.pad.potion.some(st.pressed)) drinkPotion();
+        const pb = padBinds(st.index);
+        if (pb.attack.some(st.pressed)) tryAttack();
+        if (pb.dash.some(st.pressed)) tryDash();
+        if (pb.parry.some(st.pressed)) tryParry();
+        if (pb.potion.some(st.pressed)) drinkPotion();
       }
     }
     player = heroes[0];
-    if ([...padStates.values()].some((st) => st.pressed(PAD.START) || binds.pad.pause.some(st.pressed))) pauseGame();
+    if ([...padStates.values()].some((st) => st.pressed(PAD.START) || padBinds(st.index).pause.some(st.pressed))) pauseGame();
     return;
   }
   if (state === 'lobby') {
@@ -10024,6 +10194,7 @@ function menuOwner() {
   if (state === 'choice') return choiceHero;
   if (state === 'altar') return altarHero;
   if (state === 'shop') return shopHero;
+  if (state === 'stairs') return stairsHero;
   return null;
 }
 
@@ -10091,7 +10262,7 @@ const PARRY_ROW = 'Parer, maintenir pour garder. Juste avant un coup au contact 
 
 function controlRows() {
   if (pad.active) {
-    const p = binds.pad;
+    const p = padBinds([...padStates.keys()][0]);
     return [
       ['Stick gauche ou croix', 'Marcher'],
       [orList(padList(p.attack)), ATTACK_ROW],
@@ -10150,13 +10321,16 @@ const kbCaps = (m) => [
   ['frapper', keyList(m.attack).slice(0, 2)], ['esquiver', keyList(m.dash).slice(0, 2)],
   ['parer', keyList(m.parry).slice(0, 2)], ['boire', keyList(m.potion).slice(0, 2)],
 ];
-const padCaps = () => [
-  ['marcher', ['Stick']], ['frapper', padList(binds.pad.attack).slice(0, 2)], ['esquiver', padList(binds.pad.dash).slice(0, 2)],
-  ['parer', padList(binds.pad.parry).slice(0, 2)], ['boire', padList(binds.pad.potion).slice(0, 2)],
-];
+const padCaps = (h) => {
+  const p = padBinds(heroPads(h)[0]?.index ?? [...padStates.keys()][0]);
+  return [
+    ['marcher', ['Stick']], ['frapper', padList(p.attack).slice(0, 2)], ['esquiver', padList(p.dash).slice(0, 2)],
+    ['parer', padList(p.parry).slice(0, 2)], ['boire', padList(p.potion).slice(0, 2)],
+  ];
+};
 function renderKeycaps(box) {
   box.replaceChildren();
-  const capsFor = (h) => (h.device.kind === 'pad' || (h.device.kind === 'any' && pad.active) ? padCaps()
+  const capsFor = (h) => (h.device.kind === 'pad' || (h.device.kind === 'any' && pad.active) ? padCaps(h)
     : kbCaps(h.device.kind === 'kb' && h.device.map !== 'full' ? binds[h.device.map] : binds.solo));
   for (const h of heroes) {
     if (heroes.length > 1) {
@@ -10190,7 +10364,7 @@ function toggleStartPanel(id) {
 }
 
 // B à la manette, Échap au clavier : revenir d'un écran sans rien choisir.
-const MENU_BACK = { keys: () => closeKeys(), debug: () => closeDebug(), shop: () => leaveShop(), altar: () => leaveAltar(), paused: () => resumeGame() };
+const MENU_BACK = { keys: () => closeKeys(), debug: () => closeDebug(), shop: () => leaveShop(), altar: () => leaveAltar(), stairs: () => stayOnFloor(), paused: () => resumeGame() };
 
 // Frise de la descente : les quatre biomes de la partie, trois étages chacun, le troisième gardé.
 function renderTrack(el, depth, done = false) {
@@ -10263,7 +10437,11 @@ const BIND_ICON = {
   pause: '<path d="M9 5v14M15 5v14"/>', move: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
 };
 const bindIcon = (a) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${BIND_ICON[a]}</svg>`;
-const BIND_SCOPE = { solo: ['solo'], left: ['left', 'right'], right: ['left', 'right'], pad: ['pad'] };
+const BIND_SCOPE = { solo: ['solo'], left: ['left', 'right'], right: ['left', 'right'] };
+const scopeOf = (profile) => BIND_SCOPE[profile] ?? [profile];
+let keysPad = 'pad';
+const padProfiles = () => [...padStates.keys()].sort((a, b) => a - b);
+const heroInput = (h) => (h.device.kind === 'pad' ? `manette ${h.device.index + 1}` : h.device.kind === 'kb' ? (h.device.map === 'full' ? 'clavier' : `clavier ${h.device.map === 'left' ? 'gauche' : 'droit'}`) : pad.active && !keyboardSeen ? 'manette' : 'clavier ou manette');
 let keysTab = 'kb';
 let keysProfile = 'solo';
 let keysNote = '';
@@ -10275,6 +10453,9 @@ function openKeys() {
   keysTab = pad.active && !keyboardSeen ? 'pad' : 'kb';
   const d = heroes[0].device;
   keysProfile = heroes.length > 1 && d.kind === 'kb' && d.map !== 'full' ? d.map : 'solo';
+  const live = padProfiles();
+  keysPad = d.kind === 'pad' ? `pad${d.index}` : live.length > 1 ? `pad${live[0]}` : 'pad';
+  if (d.kind === 'pad') keysTab = 'pad';
   bindCapture = null;
   keysNote = '';
   renderKeys();
@@ -10335,12 +10516,31 @@ function renderKeys(focus) {
     b.setAttribute('aria-pressed', String(on));
   }
   $('keys-presets').hidden = !kb || keysProfile !== 'solo';
+  $('keys-now').textContent = `Mode actuel : ${heroes.map((h, n) => `joueur ${n + 1} · ${heroInput(h)}`).join(' ; ')}.`;
+  const live = padProfiles();
+  const bar = $('keys-pads');
+  bar.hidden = kb || live.length < 2;
+  if (!bar.hidden) {
+    bar.replaceChildren();
+    for (const [id, label] of [['pad', 'Toutes'], ...live.map((i) => {
+      const who = heroes.findIndex((h) => h.device.kind === 'pad' && h.device.index === i);
+      return [`pad${i}`, `Manette ${i + 1}${who >= 0 ? ` · J${who + 1}` : ''}`];
+    })]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.className = id === keysPad ? 'on' : '';
+      b.setAttribute('aria-pressed', String(id === keysPad));
+      b.addEventListener('click', () => { keysPad = id; bindCapture = null; keysNote = ''; renderKeys(); });
+      bar.append(b);
+    }
+  }
   const list = $('bind-list');
   const active = document.activeElement;
   const keep = focus ?? (list.contains(active) ? { action: active.dataset.action, slot: Number(active.dataset.slot) } : null);
   const padHad = list.contains(pad.focusEl);
   list.replaceChildren();
-  const map = kb ? binds[keysProfile] : binds.pad;
+  const map = kb ? binds[keysProfile] : binds[keysPad] ?? binds.pad;
   if (!kb) {
     const row = document.createElement('div');
     row.className = 'bind-row fixed';
@@ -10369,7 +10569,7 @@ function startCapture(action, slot) {
     bindCapture = null;
     keysNote = 'Annulé.';
   } else {
-    bindCapture = { tab: keysTab, profile: keysTab === 'kb' ? keysProfile : 'pad', action, slot, at: performance.now() };
+    bindCapture = { tab: keysTab, profile: keysTab === 'kb' ? keysProfile : keysPad, action, slot, at: performance.now() };
     keysNote = '';
   }
   renderKeys({ action, slot });
@@ -10383,8 +10583,9 @@ function assignBind(value) {
   const name = BIND_INFO[c.action][0];
   const label = value === null ? '' : kb ? keyLabel(value) : padLabel(value);
   const moved = [];
+  if (!binds[c.profile]) binds[c.profile] = Object.fromEntries(PAD_ACTIONS.map((a) => [a, binds.pad[a].slice()]));
   if (value !== null) {
-    for (const p of BIND_SCOPE[c.profile]) {
+    for (const p of scopeOf(c.profile)) {
       for (const a of Object.keys(binds[p])) {
         binds[p][a] = binds[p][a].map((v, n) => {
           if (v !== value || (p === c.profile && a === c.action && n === c.slot)) return v;
@@ -10397,7 +10598,7 @@ function assignBind(value) {
   const list = binds[c.profile][c.action];
   while (list.length < c.slot) list.push(null);
   list[c.slot] = value;
-  for (const p of BIND_SCOPE[c.profile]) for (const a of Object.keys(binds[p])) binds[p][a] = binds[p][a].filter((v) => v !== null);
+  for (const p of scopeOf(c.profile)) for (const a of Object.keys(binds[p])) binds[p][a] = binds[p][a].filter((v) => v !== null);
   saveBinds();
   keys.clear();
   keysNote = value === null ? `Case vidée pour « ${name} ».`
@@ -10409,8 +10610,9 @@ function assignBind(value) {
 
 function resetKeys() {
   const def = bindDefaults();
-  const p = keysTab === 'kb' ? keysProfile : 'pad';
-  binds[p] = def[p];
+  const p = keysTab === 'kb' ? keysProfile : keysPad;
+  if (p === 'pad' || !p.startsWith('pad')) binds[p] = def[p];
+  else delete binds[p];
   saveBinds();
   bindCapture = null;
   keysNote = 'Touches d’origine remises.';
@@ -10425,6 +10627,7 @@ function padCapture() {
     return;
   }
   for (const st of padStates.values()) {
+    if (keysPad !== 'pad' && keysPad !== `pad${st.index}`) continue;
     for (let b = 0; b < 17; b++) {
       if ((b >= 12 && b <= 15) || !st.pressed(b)) continue;
       assignBind(b === 8 ? null : b);
@@ -10510,7 +10713,7 @@ function adaptQuality(frameDt) {
 }
 
 // ---------- Boucle
-const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby', 'victory', 'keys']);
+const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'stairs', 'lobby', 'victory', 'keys']);
 const clock = new THREE.Clock();
 let padStatusT = 0;
 // three.js ne redemande l'image suivante qu'après le retour de la boucle : une exception non rattrapée figerait le jeu.
