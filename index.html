@@ -527,6 +527,40 @@ details.more > :not(summary) { margin-top: 10px; }
 .perk.legendaire .perk-cat { color: var(--gold); }
 .perk-duo { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--gold); }
 
+.card.wide.keys { width: min(820px, 100%); gap: 12px; }
+.keys-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.keys-tabs button { display: inline-flex; align-items: center; gap: 7px; }
+.keys-tabs svg { width: 18px; height: 18px; }
+.keys-profiles { justify-self: start; max-width: 100%; }
+.keys-profiles button { padding: 0 12px; font-size: 14px; }
+.keys-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.keys-presets > span { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.chip-btn { min-height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-solid); color: var(--ink); font-size: 14px; touch-action: manipulation; }
+.chip-btn:hover, .chip-btn:focus-visible { border-color: var(--ember); outline: none; }
+.keys-status { margin: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-solid); font-size: 14px; line-height: 1.35; color: var(--ink-dim); }
+.keys-status.listening { border-color: var(--ember); background: rgba(240, 160, 75, 0.1); color: var(--ink); animation: pop 0.3s ease-out; }
+.bind-list { display: grid; gap: 6px; }
+@media (min-width: 740px) { .bind-list { grid-template-columns: 1fr 1fr; column-gap: 12px; } }
+.bind-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 8px 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(11, 9, 16, 0.4); }
+.bind-row.unbound { border-color: rgba(217, 67, 77, 0.65); }
+.bind-row.unbound .bind-name small::after { content: ' · aucune touche !'; color: var(--alert); }
+.bind-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bind-name svg { flex: none; width: 20px; height: 20px; color: var(--ember); }
+.bind-name b { display: block; font-size: 15px; font-weight: 700; }
+.bind-name small { display: block; font-size: 12px; line-height: 1.25; color: var(--ink-dim); }
+.bind-slots { display: flex; gap: 5px; }
+.bind-slot { display: inline-grid; place-items: center; min-width: 46px; height: 34px; box-sizing: border-box; padding: 0 8px; border: 1px solid rgba(241, 231, 212, 0.22); border-bottom-width: 3px; border-radius: 7px; background: #262030; color: var(--ink); font: 700 13px/1 var(--font-body); white-space: nowrap; touch-action: manipulation; }
+.bind-slot.empty { border-style: dashed; border-bottom-width: 1px; background: transparent; color: var(--ink-dim); font-weight: 400; }
+.bind-slot.fixed { border-bottom-width: 1px; background: transparent; color: var(--ink-dim); }
+button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { border-color: var(--ember); outline: none; }
+.bind-slot.listening { border-color: var(--ember); background: rgba(240, 160, 75, 0.2); color: var(--ember); animation: pip 0.9s ease-in-out infinite; }
+.keys-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) {
+  .bind-row { grid-template-columns: 1fr; gap: 6px; }
+  .bind-slots { justify-content: flex-start; }
+  .keys-profiles button { padding: 0 9px; font-size: 13px; }
+}
+
 @media (max-height: 520px) {
   .card { padding: 16px 18px; gap: 10px; }
   .card h1 { font-size: 32px; }
@@ -636,7 +670,7 @@ details.more > :not(summary) { margin-top: 10px; }
     <details class="more" id="settings-start">
       <summary>Réglages</summary>
       <div class="layout" id="auto-start"><span>Attaque auto</span><div class="seg"><button type="button" id="auto-start-on" aria-pressed="false">Oui</button><button type="button" id="auto-start-off" aria-pressed="true">Non</button></div></div>
-      <div class="layout" id="layout-start"><span>Clavier</span><div class="seg"><button type="button" id="layout-start-droitier" aria-pressed="true">Droitier</button><button type="button" id="layout-start-gaucher" aria-pressed="false">Gaucher</button></div></div>
+      <button type="button" class="secondary" id="keys-start">Touches clavier et manette</button>
       <p class="keys-hint" id="pad-status-start" aria-live="polite" hidden></p>
     </details>
   </div>
@@ -734,15 +768,32 @@ details.more > :not(summary) { margin-top: 10px; }
       <button type="button" class="quick-btn" id="audio-pause-music" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>Musique</span><small></small></button>
       <button type="button" class="quick-btn" id="audio-pause-sound" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg><span>Son</span><small></small></button>
       <button type="button" class="quick-btn" id="fs-pause" aria-pressed="false"><svg class="ico-max" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="ico-min" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg><span>Plein écran</span><small></small></button>
+      <button type="button" class="quick-btn" id="keys-pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg><span>Touches</span><small>clavier, manette</small></button>
       <button type="button" class="quick-btn" id="auto-pause" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Attaque auto</span><small></small></button>
     </div>
     <div class="pause-info">
-      <div class="layout" id="layout-pause"><span>Clavier</span><div class="seg"><button type="button" id="layout-pause-droitier" aria-pressed="true">Droitier</button><button type="button" id="layout-pause-gaucher" aria-pressed="false">Gaucher</button></div></div>
       <p class="keys-hint" id="pause-keys"></p>
       <p class="keys-hint" id="pad-status-pause" aria-live="polite" hidden></p>
       <div class="relics"><p class="relics-title">Pouvoirs et équipement</p><ul class="chips" id="pause-relics"></ul></div>
     </div>
     <button class="secondary quit" id="abandon">Abandonner la partie</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu-keys" hidden>
+  <div class="card wide keys">
+    <div class="keys-head">
+      <div><p class="kicker">Réglages</p><h1>Touches</h1></div>
+      <div class="seg keys-tabs">
+        <button type="button" id="keys-tab-kb" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>Clavier</button>
+        <button type="button" id="keys-tab-pad" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-3.9 3.2l-1.1 5.6A3 3 0 0 0 4.6 17.4c1 0 1.9-.5 2.5-1.3L8 15h8l.9 1.1c.6.8 1.5 1.3 2.5 1.3a3 3 0 0 0 2.9-3.6l-1.1-5.6A4 4 0 0 0 17.3 5Z"/></svg>Manette</button>
+      </div>
+    </div>
+    <div class="seg keys-profiles" id="keys-profiles"><button type="button" data-profile="solo">Solo</button><button type="button" data-profile="left">Duo · joueur 1</button><button type="button" data-profile="right">Duo · joueur 2</button></div>
+    <div class="keys-presets" id="keys-presets"><span>Préréglages</span><button type="button" class="chip-btn" id="preset-droitier">Droitier</button><button type="button" class="chip-btn" id="preset-gaucher">Gaucher</button></div>
+    <p class="keys-status" id="keys-status" aria-live="polite"></p>
+    <div class="bind-list" id="bind-list"></div>
+    <div class="keys-foot"><button type="button" class="secondary" id="keys-reset">Réinitialiser</button><button type="button" class="primary" id="keys-done">Terminé</button></div>
   </div>
 </div>
 
@@ -932,6 +983,79 @@ const store = {
     }
   },
 };
+
+// ---------- Touches personnalisées
+// Clavier en solo et pour chaque moitié du clavier en duo, boutons de manette.
+const BIND_KEY = 'profondeurs.touches';
+const LABEL_KEY = 'profondeurs.clavier';
+const BIND_SLOTS = 3;
+const KB_ACTIONS = ['up', 'down', 'left', 'right', 'attack', 'dash', 'parry', 'potion'];
+const PAD_ACTIONS = ['attack', 'dash', 'parry', 'potion', 'pause'];
+const PAD_DEFAULT = { attack: [0, 7], dash: [5, 3], parry: [1, 4, 6], potion: [2], pause: [9] };
+const fromPreset = (map) => Object.fromEntries(KB_ACTIONS.map((a) => [a, map[a].slice(0, BIND_SLOTS)]));
+const bindDefaults = () => ({
+  solo: fromPreset(KEYMAPS[store.get(LAYOUT_KEY, 'droitier')] ?? KEYMAPS.droitier),
+  left: fromPreset(KEYMAPS_DUO.left),
+  right: fromPreset(KEYMAPS_DUO.right),
+  pad: Object.fromEntries(PAD_ACTIONS.map((a) => [a, PAD_DEFAULT[a].slice()])),
+});
+function loadBinds() {
+  const out = bindDefaults();
+  const saved = store.get(BIND_KEY, null) || {};
+  const valid = (m, acts, type) => !!m && acts.every((a) => Array.isArray(m[a]) && m[a].length <= BIND_SLOTS && m[a].every((v) => v === null || typeof v === type));
+  for (const p of ['solo', 'left', 'right']) if (valid(saved[p], KB_ACTIONS, 'string')) out[p] = saved[p];
+  if (valid(saved.pad, PAD_ACTIONS, 'number')) out.pad = saved.pad;
+  return out;
+}
+const binds = loadBinds();
+const saveBinds = () => store.set(BIND_KEY, binds);
+let keysFrom = null;
+let bindCapture = null;
+
+// Nom affiché d'une touche : appris au clavier réel, sinon déduit (AZERTY supposé pour un navigateur en français de France).
+const keyLabels = store.get(LABEL_KEY, {}) || {};
+const layoutLabels = {};
+const AZERTY_GUESS = /^fr(-(FR|BE|LU|MC))?$/i.test(navigator.language || '');
+const AZERTY = { KeyQ: 'A', KeyA: 'Q', KeyW: 'Z', KeyZ: 'W', KeyM: ',', Semicolon: 'M', Comma: ';', Period: ':', Slash: '!' };
+const KEY_NAMES = {
+  Space: 'Espace', Enter: 'Entrée', NumpadEnter: 'Entrée pavé', ShiftLeft: 'Maj gauche', ShiftRight: 'Maj droite',
+  ControlLeft: 'Ctrl gauche', ControlRight: 'Ctrl droite', AltLeft: 'Alt', AltRight: 'Alt droite', MetaLeft: 'Cmd', MetaRight: 'Cmd droite',
+  Tab: 'Tab', CapsLock: 'Verr. maj', Backspace: 'Retour', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  NumpadDecimal: 'Pavé .', NumpadAdd: 'Pavé +', NumpadSubtract: 'Pavé −', NumpadMultiply: 'Pavé ×', NumpadDivide: 'Pavé ÷', IntlBackslash: '<',
+};
+function keyLabel(code) {
+  if (!code) return '';
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  if (/^Numpad\d$/.test(code)) return `Pavé ${code.slice(6)}`;
+  if (KEY_NAMES[code]) return KEY_NAMES[code];
+  const known = keyLabels[code] ?? layoutLabels[code];
+  if (known) return known;
+  if (AZERTY_GUESS && AZERTY[code]) return AZERTY[code];
+  return code.replace(/^Key/, '');
+}
+function learnKey(e) {
+  if (e.key.length !== 1 || e.key === ' ' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || /^(Digit|Numpad)/.test(e.code)) return false;
+  const k = e.key.toUpperCase();
+  if (keyLabels[e.code] === k) return false;
+  keyLabels[e.code] = k;
+  store.set(LABEL_KEY, keyLabels);
+  return true;
+}
+
+const PAD_LABELS = {
+  xbox: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'L3', 'R3', '↑', '↓', '←', '→', 'Xbox'],
+  ps: ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', '↑', '↓', '←', '→', 'PS'],
+  nintendo: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '−', '+', 'L3', 'R3', '↑', '↓', '←', '→', 'Home'],
+};
+let padFamily = 'xbox';
+const padLabel = (b) => PAD_LABELS[padFamily][b] ?? `Bouton ${b}`;
+const padList = (list) => list.filter((b) => b !== null).map(padLabel);
+const keyList = (list) => list.filter(Boolean).map(keyLabel);
+const orList = (labels) => (labels.length > 1 ? `${labels.slice(0, -1).join(', ')} ou ${labels.at(-1)}` : labels[0] ?? 'aucune touche');
+function moveLabel(m) {
+  const sets = [0, 1, 2].map((k) => [m.up[k], m.left[k], m.down[k], m.right[k]]).filter((s) => s.every(Boolean));
+  return sets.length ? sets.map((s) => s.map(keyLabel).join(' ')).join(' ou ') : orList(keyList([...m.up, ...m.left, ...m.down, ...m.right]));
+}
 
 // ---------- Rendu
 // MSAA inutile sur un écran tactile dense : l'aliasing ne s'y voit pas.
@@ -4018,7 +4142,6 @@ let hints = { orb: false, perfect: false, late: false, traps: new Set() };
 
 let state = 'menu';
 let debugRun = false;
-let layout = KEYMAPS[store.get(LAYOUT_KEY, 'droitier')] ? store.get(LAYOUT_KEY, 'droitier') : 'droitier';
 let soloClass = CLASSES[store.get(HERO_KEY, 'lame')] ? store.get(HERO_KEY, 'lame') : 'lame';
 let elapsed = 0;
 let shake = 0;
@@ -4033,8 +4156,8 @@ const addShake = (v) => { if (!reducedMotion) shake = Math.max(shake, v); };
 
 function heroKeymap(h) {
   const d = h.device;
-  if (d.kind === 'any') return KEYMAPS[layout];
-  if (d.kind === 'kb') return d.map === 'full' ? KEYMAPS[layout] : KEYMAPS_DUO[d.map];
+  if (d.kind === 'any') return binds.solo;
+  if (d.kind === 'kb') return d.map === 'full' ? binds.solo : binds[d.map];
   return null;
 }
 
@@ -8301,7 +8424,7 @@ function setupHeroes(devices, classes) {
 
 function showOverlay(id) {
   for (const o of document.querySelectorAll('.overlay')) o.hidden = o.id !== id;
-  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug');
+  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
 }
 
 function pauseGame() {
@@ -8901,7 +9024,36 @@ for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) parryBtn.
 const held = (list) => list.some((k) => keys.has(k));
 const isGameKey = (code) => heroes.some((h) => { const km = heroKeymap(h); return km && Object.values(km).some((list) => list.includes(code)); });
 let keyboardSeen = !coarse;
+const ARROW_DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 window.addEventListener('keydown', (e) => {
+  if (learnKey(e) && !bindCapture) renderControls();
+  if (state === 'keys') {
+    if (bindCapture?.tab === 'kb') {
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.code === 'Escape') {
+        bindCapture = null;
+        keysNote = 'Annulé.';
+        renderKeys();
+      } else if (e.code === 'Backspace' || e.code === 'Delete') {
+        assignBind(null);
+      } else if (e.code === 'Tab' || (bindCapture.profile === 'solo' && e.code === 'KeyP')) {
+        keysNote = `${keyLabel(e.code)} est réservée aux menus et à la pause.`;
+        renderKeys();
+      } else {
+        assignBind(e.code);
+      }
+      return;
+    }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      closeKeys();
+    } else if (ARROW_DIRS[e.code]) {
+      e.preventDefault();
+      keyMenu(...ARROW_DIRS[e.code], false);
+    }
+    return;
+  }
   if (state === 'menu' && !e.repeat) konamiKey(e.key.length === 1 ? e.key.toLowerCase() : e.key);
   if (state === 'menu' && !e.repeat && !$('menu-start').hidden) {
     if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
@@ -8932,10 +9084,11 @@ window.addEventListener('keydown', (e) => {
     const owner = menuOwner();
     const km = owner && heroKeymap(owner);
     if (km) {
-      const dir = km.left.includes(e.code) || km.up.includes(e.code) ? -1 : km.right.includes(e.code) || km.down.includes(e.code) ? 1 : 0;
-      if (dir || km.attack.includes(e.code)) {
+      const dx = km.left.includes(e.code) ? -1 : km.right.includes(e.code) ? 1 : 0;
+      const dy = km.up.includes(e.code) ? -1 : km.down.includes(e.code) ? 1 : 0;
+      if (dx || dy || km.attack.includes(e.code)) {
         e.preventDefault();
-        keyMenu(dir, !dir);
+        keyMenu(dx, dy, !dx && !dy);
         return;
       }
     }
@@ -8950,12 +9103,12 @@ window.addEventListener('keydown', (e) => {
       lobbyBack();
       return;
     }
-    const side = Object.values(KEYMAPS_DUO.left).some((l) => l.includes(e.code)) ? 'kb-left'
-      : Object.values(KEYMAPS_DUO.right).some((l) => l.includes(e.code)) ? 'kb-right' : null;
+    const side = Object.values(binds.left).some((l) => l.includes(e.code)) ? 'kb-left'
+      : Object.values(binds.right).some((l) => l.includes(e.code)) ? 'kb-right' : null;
     if (!side || e.repeat) return;
     e.preventDefault();
     initAudio();
-    const km = KEYMAPS_DUO[side === 'kb-left' ? 'left' : 'right'];
+    const km = binds[side === 'kb-left' ? 'left' : 'right'];
     const action = km.left.includes(e.code) || km.up.includes(e.code) ? 'prev'
       : km.right.includes(e.code) || km.down.includes(e.code) ? 'next' : 'go';
     lobbyInput(side, action);
@@ -9406,16 +9559,18 @@ function padMenu(pressed, ax, ay, dt) {
     pad.menu = overlay.id;
     padFocus(btns.find((b) => b.classList.contains('primary') || b.classList.contains('perk')) || btns[0]);
   }
-  const dir = Math.abs(ay) > 0.55 ? Math.sign(ay) : Math.abs(ax) > 0.55 ? Math.sign(ax) : 0;
+  const dx = Math.abs(ax) > 0.55 && Math.abs(ax) >= Math.abs(ay) ? Math.sign(ax) : 0;
+  const dy = !dx && Math.abs(ay) > 0.55 ? Math.sign(ay) : 0;
   pad.navCd -= dt;
-  if (!dir) {
+  if (!dx && !dy) {
     pad.navCd = 0;
   } else if (pad.navCd <= 0) {
     pad.navCd = 0.22;
-    const k = btns.indexOf(pad.focusEl);
-    padFocus(btns[(k + dir + btns.length) % btns.length]);
+    padFocus(navFrom(btns, pad.focusEl, dx, dy));
   }
-  if (pressed(PAD.A) && !overlay.classList.contains('arming')) pad.focusEl.click();
+  if (overlay.classList.contains('arming')) return;
+  if (pressed(PAD.A)) pad.focusEl.click();
+  else if (pressed(PAD.B) && state === 'keys') closeKeys();
 }
 
 function updatePad(dt) {
@@ -9449,8 +9604,8 @@ function updatePad(dt) {
     }
     st.x = ax;
     st.y = ay;
-    st.attack = !!(now[PAD.A] || now[PAD.RT]);
-    st.parry = !!(now[PAD.B] || now[PAD.LB] || now[PAD.LT]);
+    st.attack = binds.pad.attack.some((b) => now[b]);
+    st.parry = binds.pad.parry.some((b) => now[b]);
     st.fresh = now.some((v, i) => v && !prev[i]);
     if (st.fresh) initAudio();
     if (!pad.active && (now.some(Boolean) || ax || ay)) {
@@ -9466,14 +9621,14 @@ function updatePad(dt) {
       if (h.down) continue;
       player = h;
       for (const st of heroPads(h)) {
-        if (st.pressed(PAD.A) || st.pressed(PAD.RT)) tryAttack();
-        if (st.pressed(PAD.RB) || st.pressed(PAD.Y)) tryDash();
-        if (st.pressed(PAD.B) || st.pressed(PAD.LB) || st.pressed(PAD.LT)) tryParry();
-        if (st.pressed(PAD.X)) drinkPotion();
+        if (binds.pad.attack.some(st.pressed)) tryAttack();
+        if (binds.pad.dash.some(st.pressed)) tryDash();
+        if (binds.pad.parry.some(st.pressed)) tryParry();
+        if (binds.pad.potion.some(st.pressed)) drinkPotion();
       }
     }
     player = heroes[0];
-    if ([...padStates.values()].some((st) => st.pressed(PAD.START))) pauseGame();
+    if ([...padStates.values()].some((st) => st.pressed(PAD.START) || binds.pad.pause.some(st.pressed))) pauseGame();
     return;
   }
   if (state === 'lobby') {
@@ -9492,6 +9647,10 @@ function updatePad(dt) {
     const seq = [[PAD.UP, 'ArrowUp'], [PAD.DOWN, 'ArrowDown'], [PAD.LEFT, 'ArrowLeft'], [PAD.RIGHT, 'ArrowRight'], [PAD.B, 'b'], [PAD.A, 'a']];
     for (const [btn, sym] of seq) if (lead.pressed(btn) && konamiKey(sym)) return;
   }
+  if (state === 'keys' && bindCapture?.tab === 'pad') {
+    padCapture();
+    return;
+  }
   const owner = menuOwner();
   const menuPad = !owner || heroes.length < 2 || owner.device.kind === 'any' ? lead
     : owner.device.kind === 'pad' ? padStates.get(owner.device.index) ?? null : null;
@@ -9505,17 +9664,39 @@ function menuOwner() {
   return null;
 }
 
-function keyMenu(dir, pick) {
+function keyMenu(dx, dy, pick) {
   const overlay = [...document.querySelectorAll('.overlay')].find((o) => !o.hidden);
   if (!overlay) return;
   const btns = [...overlay.querySelectorAll('button')].filter((b) => !b.disabled && b.offsetParent !== null);
   if (!btns.length) return;
-  if (!btns.includes(pad.focusEl)) {
+  const from = btns.includes(pad.focusEl) ? pad.focusEl : btns.includes(document.activeElement) ? document.activeElement : null;
+  if (!from) {
     padFocus(btns.find((b) => b.classList.contains('primary') || b.classList.contains('perk')) || btns[0]);
     return;
   }
-  if (dir) padFocus(btns[(btns.indexOf(pad.focusEl) + dir + btns.length) % btns.length]);
-  else if (pick && !overlay.classList.contains('arming')) pad.focusEl.click();
+  if (dx || dy) padFocus(navFrom(btns, from, dx, dy));
+  else if (pick && !overlay.classList.contains('arming')) from.click();
+}
+
+// Navigation de menu dans la direction demandée : le bouton le plus proche dans ce demi-plan, sinon le suivant dans l'ordre.
+function navFrom(btns, from, dx, dy) {
+  const a = from.getBoundingClientRect();
+  let best = null;
+  let score = Infinity;
+  for (const b of btns) {
+    if (b === from) continue;
+    const r = b.getBoundingClientRect();
+    const along = (r.left + r.width / 2 - a.left - a.width / 2) * dx + (r.top + r.height / 2 - a.top - a.height / 2) * dy;
+    if (along < 6) continue;
+    const gap = Math.max(0, dx > 0 ? r.left - a.right : dx < 0 ? a.left - r.right : dy > 0 ? r.top - a.bottom : a.top - r.bottom);
+    const side = dx ? Math.max(0, r.top - a.bottom, a.top - r.bottom) : Math.max(0, r.left - a.right, a.left - r.right);
+    const s = gap + side * 3 + Math.abs(dx ? r.top - a.top : r.left - a.left) * 0.05;
+    if (s < score) {
+      score = s;
+      best = b;
+    }
+  }
+  return best ?? btns[(btns.indexOf(from) + (dx + dy > 0 ? 1 : -1) + btns.length) % btns.length];
 }
 
 window.addEventListener('gamepadconnected', () => {
@@ -9533,15 +9714,6 @@ window.addEventListener('gamepaddisconnected', (e) => {
   pauseGame();
 });
 
-const CONTROLS_PAD = [
-  ['Stick gauche ou croix', 'Marcher'],
-  ['A / ✕ ou RT', ATTACK_ROW],
-  ['RB ou Y / △', 'Esquiver. Juste avant un coup : ralenti et critique'],
-  ['B / ○, LB ou LT', 'Parer, maintenir pour garder. Juste avant un coup au contact : l’ennemi est étourdi, l’orbe repart'],
-  ['X / □', 'Boire une potion'],
-  ['Start / Options', 'Pause. Dans les menus : croix et A'],
-];
-const PAD_HINT = 'Stick pour marcher, A pour frapper, RB pour esquiver, B pour parer (maintenir pour garder), X pour boire, Start pour reprendre.';
 
 const CONTROLS_TOUCH = [
   ['Pouce à gauche', 'Glisser pour marcher'],
@@ -9551,35 +9723,50 @@ const CONTROLS_TOUCH = [
   ['Attaque auto', 'Frappe seule dès qu’un ennemi est à portée · Réglages'],
   ['Fiole', 'Boire une potion'],
 ];
-const CONTROLS_KEYS = {
-  droitier: [
-    ['ZQSD, WASD ou flèches', 'Marcher'],
-    ['Espace ou J', ATTACK_ROW],
-    ['Maj ou K', 'Esquiver. Juste avant un coup : ralenti et critique'],
-    ['A ou I (Q en QWERTY)', 'Parer, maintenir pour garder. Juste avant un coup au contact : l’ennemi est étourdi, l’orbe repart'],
-    ['E ou L', 'Boire une potion'],
+const DODGE_ROW = 'Esquiver. Juste avant un coup : ralenti et critique';
+const PARRY_ROW = 'Parer, maintenir pour garder. Juste avant un coup au contact : l’ennemi est étourdi, l’orbe repart';
+
+function controlRows() {
+  if (pad.active) {
+    const p = binds.pad;
+    return [
+      ['Stick gauche ou croix', 'Marcher'],
+      [orList(padList(p.attack)), ATTACK_ROW],
+      [orList(padList(p.dash)), DODGE_ROW],
+      [orList(padList(p.parry)), PARRY_ROW],
+      [orList(padList(p.potion)), 'Boire une potion'],
+      [orList([...new Set([padLabel(9), ...padList(p.pause)])]), `Pause. Dans les menus : croix, ${padLabel(0)} pour valider, ${padLabel(1)} pour revenir`],
+    ];
+  }
+  if (!keyboardSeen) return CONTROLS_TOUCH;
+  const m = binds.solo;
+  return [
+    [moveLabel(m), 'Marcher'],
+    [orList(keyList(m.attack)), ATTACK_ROW],
+    [orList(keyList(m.dash)), DODGE_ROW],
+    [orList(keyList(m.parry)), PARRY_ROW],
+    [orList(keyList(m.potion)), 'Boire une potion'],
     ['1, 2, 3', 'Choisir une aptitude'],
-  ],
-  gaucher: [
-    ['Flèches, OKLM ou pavé 8 4 5 6', 'Marcher (main droite)'],
-    ['F ou Espace', ATTACK_ROW],
-    ['D ou Maj', 'Esquiver. Juste avant un coup : ralenti et critique'],
-    ['G ou R', 'Parer, maintenir pour garder. Juste avant un coup au contact : l’ennemi est étourdi, l’orbe repart'],
-    ['S ou E', 'Boire une potion'],
-    ['1, 2, 3', 'Choisir une aptitude'],
-  ],
+    ['Échap ou P', 'Pause'],
+  ];
+}
+const kbHint = (m) => `${moveLabel(m)} pour marcher, ${orList(keyList(m.attack))} pour frapper, ${orList(keyList(m.dash))} pour esquiver, ${orList(keyList(m.parry))} pour parer, ${orList(keyList(m.potion))} pour boire.`;
+const padHint = () => {
+  const p = binds.pad;
+  return `Stick pour marcher, ${orList(padList(p.attack))} pour frapper, ${orList(padList(p.dash))} pour esquiver, ${orList(padList(p.parry))} pour parer, ${orList(padList(p.potion))} pour boire, ${padLabel(9)} pour la pause.`;
 };
-const KEYS_HINT = {
-  droitier: 'ZQSD ou flèches pour marcher, Espace ou J pour frapper, Maj ou K pour esquiver, A ou I pour parer, E ou L pour boire.',
-  gaucher: 'Flèches ou OKLM pour marcher, F pour frapper, D pour esquiver, G pour parer, S pour boire.',
-};
-const LAYOUT_BTNS = ['start', 'pause'].flatMap((where) => ['droitier', 'gaucher'].map((name) => [$(`layout-${where}-${name}`), name]));
+function detectPadFamily() {
+  const id = (readPad()?.id ?? '').toLowerCase();
+  if (/054c|playstation|dualsense|dualshock|wireless controller/.test(id)) return 'ps';
+  if (/057e|nintendo|pro controller|joy-con/.test(id)) return 'nintendo';
+  return 'xbox';
+}
 
 function renderControls() {
-  const rows = pad.active ? CONTROLS_PAD : keyboardSeen ? CONTROLS_KEYS[layout] : CONTROLS_TOUCH;
+  padFamily = detectPadFamily();
   const list = $('controls');
   list.replaceChildren();
-  for (const [k, row] of rows) {
+  for (const [k, row] of controlRows()) {
     const v = row === ATTACK_ROW ? CLASSES[soloClass].attack : row;
     const li = document.createElement('li');
     const kbd = document.createElement('kbd');
@@ -9589,30 +9776,217 @@ function renderControls() {
     li.append(kbd, span);
     list.append(li);
   }
-  const devHint = (h) => (h.device.kind === 'pad' ? 'manette : stick, A frappe, RB esquive, B pare, X boit'
-    : h.device.map === 'left' ? 'ZQSD, Espace frappe, Maj gauche esquive, R pare, A boit'
-    : h.device.map === 'right' ? 'flèches, Entrée ou Alt droite frappe, Maj droite esquive, pavé 3 pare, touche à gauche de Maj droite boit'
-    : KEYS_HINT[layout]);
-  $('pause-keys').textContent = heroes.length > 1 ? heroes.map((h, n) => `J${n + 1} : ${devHint(h)}`).join(' · ') : pad.active ? PAD_HINT : KEYS_HINT[layout];
-  $('layout-start').hidden = !keyboardSeen;
+  const devHint = (h) => (h.device.kind === 'pad' ? `manette : ${padHint()}` : h.device.map === 'left' || h.device.map === 'right' ? kbHint(binds[h.device.map]) : kbHint(binds.solo));
+  $('pause-keys').textContent = heroes.length > 1 ? heroes.map((h, n) => `J${n + 1} : ${devHint(h)}`).join(' · ') : pad.active ? padHint() : kbHint(binds.solo);
   document.body.classList.toggle('kb', keyboardSeen);
-  $('layout-pause').hidden = !keyboardSeen;
   $('pause-keys').hidden = !keyboardSeen && !pad.active && heroes.length < 2;
   $('play-duo').hidden = !keyboardSeen && !pad.active;
+  if (state === 'keys') renderKeys();
 }
 
 function setLayout(name) {
-  layout = name;
   store.set(LAYOUT_KEY, name);
+  binds.solo = fromPreset(KEYMAPS[name]);
+  saveBinds();
   keys.clear();
-  for (const [btn, n] of LAYOUT_BTNS) {
-    btn.setAttribute('aria-pressed', String(n === name));
-    btn.classList.toggle('on', n === name);
-  }
   renderControls();
 }
-for (const [btn, name] of LAYOUT_BTNS) btn.addEventListener('click', () => setLayout(name));
-setLayout(layout);
+
+// ---------- Écran des touches
+const BIND_INFO = {
+  up: ['Haut', 'marcher vers le haut'], down: ['Bas', 'marcher vers le bas'], left: ['Gauche', 'marcher à gauche'], right: ['Droite', 'marcher à droite'],
+  attack: ['Frapper', 'Lame : frappe, renvoie les orbes · Arbalète : tire'], dash: ['Esquiver', 'juste avant un coup : ralenti et critique'],
+  parry: ['Parer', 'maintenir pour garder'], potion: ['Boire', 'une potion de la sacoche'], pause: ['Pause', 'met le jeu en pause'],
+};
+const BIND_ICON = {
+  up: '<path d="M12 19V5M5 12l7-7 7 7"/>', down: '<path d="M12 5v14M5 12l7 7 7-7"/>', left: '<path d="M19 12H5M12 5l-7 7 7 7"/>', right: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  attack: '<path d="M20 4 9.5 14.5M20 4h-4.5M20 4v4.5M6.5 11.5l6 6M8 16l-4 4"/>', dash: '<path d="M3 8h10a3 3 0 1 0-3-3M3 16h13a3 3 0 1 1-3 3M3 12h7"/>',
+  parry: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>', potion: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M7 15h10"/>',
+  pause: '<path d="M9 5v14M15 5v14"/>', move: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+};
+const bindIcon = (a) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${BIND_ICON[a]}</svg>`;
+const BIND_SCOPE = { solo: ['solo'], left: ['left', 'right'], right: ['left', 'right'], pad: ['pad'] };
+let keysTab = 'kb';
+let keysProfile = 'solo';
+let keysNote = '';
+
+function openKeys() {
+  if (!['menu', 'paused'].includes(state)) return;
+  keysFrom = { state, overlay: [...document.querySelectorAll('.overlay')].find((o) => !o.hidden)?.id ?? 'menu-start' };
+  state = 'keys';
+  keysTab = pad.active && !keyboardSeen ? 'pad' : 'kb';
+  const d = heroes[0].device;
+  keysProfile = heroes.length > 1 && d.kind === 'kb' && d.map !== 'full' ? d.map : 'solo';
+  bindCapture = null;
+  keysNote = '';
+  renderKeys();
+  showOverlay('menu-keys');
+  armOverlay('menu-keys');
+  sfx.click();
+}
+
+function closeKeys() {
+  if (state !== 'keys') return;
+  bindCapture = null;
+  state = keysFrom.state;
+  showOverlay(keysFrom.overlay);
+  renderControls();
+  const back = $(keysFrom.overlay === 'menu-pause' ? 'keys-pause' : 'keys-start');
+  if (pad.active) padFocus(back);
+  else back.focus({ preventScroll: true });
+}
+
+function bindRow(action, map, kb) {
+  const row = document.createElement('div');
+  row.className = 'bind-row';
+  const [name, hint] = BIND_INFO[action];
+  const head = document.createElement('div');
+  head.className = 'bind-name';
+  head.innerHTML = `${bindIcon(action)}<span><b>${name}</b><small>${hint}</small></span>`;
+  const slots = document.createElement('div');
+  slots.className = 'bind-slots';
+  for (let s = 0; s < BIND_SLOTS; s++) {
+    const v = map[action][s] ?? null;
+    const listening = bindCapture?.action === action && bindCapture.slot === s;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `bind-slot${v === null ? ' empty' : ''}${listening ? ' listening' : ''}`;
+    b.dataset.action = action;
+    b.dataset.slot = String(s);
+    b.textContent = listening ? '…' : v === null ? '+' : kb ? keyLabel(v) : padLabel(v);
+    b.setAttribute('aria-label', `${name}, case ${s + 1} : ${listening ? 'en attente' : v === null ? 'vide' : b.textContent}`);
+    b.addEventListener('click', () => startCapture(action, s));
+    slots.append(b);
+  }
+  if (map[action].every((v) => v === null)) row.classList.add('unbound');
+  row.append(head, slots);
+  return row;
+}
+
+function renderKeys(focus) {
+  padFamily = detectPadFamily();
+  const kb = keysTab === 'kb';
+  for (const [id, on] of [['keys-tab-kb', kb], ['keys-tab-pad', !kb]]) {
+    $(id).classList.toggle('on', on);
+    $(id).setAttribute('aria-pressed', String(on));
+  }
+  $('keys-profiles').hidden = !kb;
+  for (const b of $('keys-profiles').querySelectorAll('button')) {
+    const on = b.dataset.profile === keysProfile;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+  $('keys-presets').hidden = !kb || keysProfile !== 'solo';
+  const list = $('bind-list');
+  const active = document.activeElement;
+  const keep = focus ?? (list.contains(active) ? { action: active.dataset.action, slot: Number(active.dataset.slot) } : null);
+  const padHad = list.contains(pad.focusEl);
+  list.replaceChildren();
+  const map = kb ? binds[keysProfile] : binds.pad;
+  if (!kb) {
+    const row = document.createElement('div');
+    row.className = 'bind-row fixed';
+    row.innerHTML = `<div class="bind-name">${bindIcon('move')}<span><b>Marcher</b><small>non modifiable</small></span></div><div class="bind-slots"><span class="bind-slot fixed">Stick</span><span class="bind-slot fixed">Croix</span></div>`;
+    list.append(row);
+  }
+  for (const a of kb ? KB_ACTIONS : PAD_ACTIONS) list.append(bindRow(a, map, kb));
+  const status = $('keys-status');
+  status.classList.toggle('listening', !!bindCapture);
+  status.textContent = bindCapture
+    ? (keysNote ? `${keysNote} ` : '') + (kb
+      ? `Appuie sur une touche pour « ${BIND_INFO[bindCapture.action][0]} » · Échap : annuler · Retour arrière : vider la case`
+      : `Appuie sur un bouton de la manette pour « ${BIND_INFO[bindCapture.action][0]} » · ${padLabel(8)} : vider la case · sans réponse, annulé dans 6 s`)
+    : keysNote || (kb ? 'Choisis une case, puis appuie sur la touche voulue. Jusqu’à trois touches par action.'
+      : pad.active ? 'Choisis une case, puis appuie sur le bouton voulu.' : 'Branche une manette et appuie sur un de ses boutons pour la réveiller.');
+  if (!keep) return;
+  const target = list.querySelector(`[data-action="${keep.action}"][data-slot="${keep.slot}"]`);
+  if (!target) return;
+  if (padHad || pad.active) padFocus(target);
+  else target.focus({ preventScroll: true });
+}
+
+function startCapture(action, slot) {
+  if (state !== 'keys') return;
+  if (bindCapture?.action === action && bindCapture.slot === slot) {
+    bindCapture = null;
+    keysNote = 'Annulé.';
+  } else {
+    bindCapture = { tab: keysTab, profile: keysTab === 'kb' ? keysProfile : 'pad', action, slot, at: performance.now() };
+    keysNote = '';
+  }
+  renderKeys({ action, slot });
+}
+
+function assignBind(value) {
+  const c = bindCapture;
+  if (!c) return;
+  bindCapture = null;
+  const kb = c.tab === 'kb';
+  const name = BIND_INFO[c.action][0];
+  const label = value === null ? '' : kb ? keyLabel(value) : padLabel(value);
+  const moved = [];
+  if (value !== null) {
+    for (const p of BIND_SCOPE[c.profile]) {
+      for (const a of Object.keys(binds[p])) {
+        binds[p][a] = binds[p][a].map((v, n) => {
+          if (v !== value || (p === c.profile && a === c.action && n === c.slot)) return v;
+          moved.push(BIND_INFO[a][0] + (p !== c.profile ? ` (${p === 'left' ? 'joueur 1' : 'joueur 2'})` : ''));
+          return null;
+        });
+      }
+    }
+  }
+  const list = binds[c.profile][c.action];
+  while (list.length < c.slot) list.push(null);
+  list[c.slot] = value;
+  for (const p of BIND_SCOPE[c.profile]) for (const a of Object.keys(binds[p])) binds[p][a] = binds[p][a].filter((v) => v !== null);
+  saveBinds();
+  keys.clear();
+  keysNote = value === null ? `Case vidée pour « ${name} ».`
+    : moved.length ? `« ${label} » sert maintenant à ${name} ; retirée de ${orList(moved)}.` : `« ${label} » : ${name}.`;
+  sfx.click();
+  renderControls();
+  renderKeys({ action: c.action, slot: c.slot });
+}
+
+function resetKeys() {
+  const def = bindDefaults();
+  const p = keysTab === 'kb' ? keysProfile : 'pad';
+  binds[p] = def[p];
+  saveBinds();
+  bindCapture = null;
+  keysNote = 'Touches d’origine remises.';
+  renderControls();
+}
+
+function padCapture() {
+  if (performance.now() - bindCapture.at > 6000) {
+    bindCapture = null;
+    keysNote = 'Annulé.';
+    renderKeys();
+    return;
+  }
+  for (const st of padStates.values()) {
+    for (let b = 0; b < 17; b++) {
+      if ((b >= 12 && b <= 15) || !st.pressed(b)) continue;
+      assignBind(b === 8 ? null : b);
+      return;
+    }
+  }
+}
+
+$('keys-tab-kb').addEventListener('click', () => { keysTab = 'kb'; bindCapture = null; keysNote = ''; renderKeys(); });
+$('keys-tab-pad').addEventListener('click', () => { keysTab = 'pad'; bindCapture = null; keysNote = ''; renderKeys(); });
+for (const b of $('keys-profiles').querySelectorAll('button')) b.addEventListener('click', () => { keysProfile = b.dataset.profile; bindCapture = null; keysNote = ''; renderKeys(); });
+for (const name of ['droitier', 'gaucher']) $(`preset-${name}`).addEventListener('click', () => { setLayout(name); keysNote = `Préréglage ${name} appliqué.`; renderKeys(); });
+$('keys-reset').addEventListener('click', resetKeys);
+$('keys-done').addEventListener('click', closeKeys);
+$('keys-start').addEventListener('click', openKeys);
+$('keys-pause').addEventListener('click', openKeys);
+navigator.keyboard?.getLayoutMap?.().then((m) => {
+  for (const [code, key] of m) layoutLabels[code] = key.toUpperCase();
+  renderControls();
+}).catch(() => {});
 
 const HERO_BTNS = CLASS_IDS.map((id) => [$(`hero-start-${id}`), id]);
 function setSoloClass(id) {
@@ -9677,7 +10051,7 @@ function adaptQuality(frameDt) {
 }
 
 // ---------- Boucle
-const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby', 'victory']);
+const FROZEN = new Set(['paused', 'choice', 'altar', 'shop', 'lobby', 'victory', 'keys']);
 const clock = new THREE.Clock();
 let padStatusT = 0;
 // three.js ne redemande l'image suivante qu'après le retour de la boucle : une exception non rattrapée figerait le jeu.
