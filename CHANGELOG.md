@@ -2,6 +2,13 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.1.1 — 2026-11-18
+
+- Zones hostiles : le gouffre gelé éteint les pouvoirs de flamme, la forge fait fondre le gel.
+- Salle secrète : plus de pierres au sol, seule la fissure sur le mur reste.
+- Grilles (chambre forte, embuscade, épreuve, gardien) plus épaisses et pleines : on voit qu'on ne passe pas.
+- Un monstre gelé ne se retourne plus vers le joueur.
+
 ## 1.1.0 — 2026-11-18
 
 - Coups chargés (épée et arbalète), course en maintenant Esquiver, orientation verrouillée pendant l'attaque.

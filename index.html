@@ -978,7 +978,7 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.1.0';
+const GAME_VERSION = '1.1.1';
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = `Version ${GAME_VERSION}`;
 const MUTE_KEY = 'profondeurs.muted';
 const MUSIC_KEY = 'profondeurs.music';
@@ -1389,6 +1389,8 @@ const M = {
   boulder: lambert(0x6d6475),
   gate: lambert(0x7a4ad0, { emissive: 0x3a1a80 }),
   vaultGate: lambert(0xd8b050, { emissive: 0x5a3a08 }),
+  vaultPanel: basic(0xf2c450, { ...additive, opacity: 0.3 }),
+  gatePanel: basic(0xb070ff, { ...additive, opacity: 0.3 }),
   bone: lambert(0xeee4cc, { emissive: 0x3a3020 }),
   lava: new THREE.MeshBasicMaterial({ map: lavaTex }),
   ice: lambert(0xcfefff, { emissive: 0x2a4a60, transparent: true, opacity: 0.9 }),
@@ -3085,6 +3087,18 @@ function poisonPlayer(who = player) {
   who.poisonT = POISON_TIME;
 }
 
+// Les zones éteignent certains pouvoirs : le gouffre gelé étouffe les flammes, la forge fait fondre le gel.
+const fireOff = () => L.biome.id === 'glace';
+const frostOff = () => L.biome.id === 'forge';
+function zoneBlock(who, text) {
+  if (elapsed - (who.zoneMsgAt ?? -9) < 4) return;
+  who.zoneMsgAt = elapsed;
+  floatText(who.x, 1.9, who.z, text, 'block');
+  if (!hints.zone) {
+    hints.zone = true;
+    toast('Zone hostile', fireOff() ? 'le froid éteint tes flammes ici' : 'la chaleur fait fondre ton gel ici');
+  }
+}
 const FREEZE_TIME = 1.3;
 function thaw(e) {
   if (!(e.freezeT > 0) && !(e.chill > 0)) return;
@@ -3097,6 +3111,10 @@ function thaw(e) {
 
 function freezeEnemy(e, time = FREEZE_TIME) {
   if (e.dying >= 0 || e.type === 'boss' || e.hidden || e.spawnT > 0) return;
+  if (frostOff()) {
+    zoneBlock(player, 'Gel fondu');
+    return;
+  }
   const fresh = !(e.freezeT > 0);
   e.freezeT = Math.max(e.freezeT || 0, time);
   e.chill = Math.max(e.chill || 0, time + 0.2);
@@ -4492,7 +4510,8 @@ function updatePlayer(dt) {
     movePlayer(dx * DASH_SPEED * dt, dz * DASH_SPEED * dt);
     player.moving = true;
     emit({ x: player.x + rand(-0.2, 0.2), y: rand(0.3, 1), z: player.z + rand(-0.2, 0.2), vx: 0, vy: 0.3, vz: 0, g: 0, life: 0.25, max: 0.25, color: 0x9cc8ff, size: 0.8 });
-    if (player.emberDash) {
+    if (player.emberDash && fireOff()) zoneBlock(player, 'Flammes éteintes');
+    else if (player.emberDash) {
       player.emberT -= dt;
       if (player.emberT <= 0) {
         player.emberT = 0.06;
@@ -4570,7 +4589,8 @@ function updatePlayer(dt) {
   }
 
   const aura = player.perks.braise;
-  if (aura) {
+  if (aura && fireOff()) zoneBlock(player, 'Flammes éteintes');
+  else if (aura) {
     player.auraT -= dt;
     if (player.auraT <= 0) {
       player.auraT = 0.5;
@@ -5198,7 +5218,7 @@ function killEnemy(e) {
     const lvl = player.perks.onde;
     L.blasts.push({ x: e.x, z: e.z, t: 0.1, R: 1.6 + 0.6 * lvl, dmg: dmgOf() * (0.4 + 0.3 * lvl), color: 0xffa040, by: player });
   }
-  if (player.perks.coeurforge && inTranse()) L.blasts.push({ x: e.x, z: e.z, t: 0.05, R: 1.9, dmg: dmgOf() * 0.6, color: 0xff7a20, by: player });
+  if (player.perks.coeurforge && inTranse() && !fireOff()) L.blasts.push({ x: e.x, z: e.z, t: 0.05, R: 1.9, dmg: dmgOf() * 0.6, color: 0xff7a20, by: player });
   if (player.perks.coeurspores && e.type !== 'boss' && Math.random() < 0.33) spawnCloud(e.x, e.z, true);
   gainXp(e.xp);
 }
@@ -5244,14 +5264,6 @@ function fillSecret(sc) {
   const crack = new THREE.Group();
   crack.position.set(sc.door.i * TILE, 0, sc.door.j * TILE);
   crack.add(part(G.wall, M.crack, 1.02, 1.01, 1.02, 0, 0, 0));
-  const fx = sc.out[0] * (TILE / 2 + 0.25);
-  const fz = sc.out[1] * (TILE / 2 + 0.25);
-  for (let n = 0; n < 6; n++) {
-    const sz = rand(0.16, 0.32);
-    const rock = part(G.box, M.stone, sz, sz * 0.7, sz, fx + rand(-0.6, 0.6) * (sc.out[0] ? 0.4 : 1), sz * 0.35, fz + rand(-0.6, 0.6) * (sc.out[1] ? 0.4 : 1));
-    rock.rotation.y = rand(0, Math.PI);
-    crack.add(rock);
-  }
   crack.visible = false;
   L.group.add(crack);
   sc.crack = crack;
@@ -7477,7 +7489,7 @@ function updateEnemies(dt) {
     const hunting = active && (e.aware > 0 || e.awake);
     const want = hunting ? Math.atan2(dx, dz) : mv.x || mv.z ? Math.atan2(mv.x, mv.z) : e.face;
     const turn = e.type === 'garde' ? (e.mode === 'recover' || e.mode === 'stun' ? 0 : 2.2) : 8;
-    if (e.mode !== 'dash' && turn) e.face = lerpAngle(e.face, want, damp(turn, dt));
+    if (e.mode !== 'dash' && turn && !(e.freezeT > 0)) e.face = lerpAngle(e.face, want, damp(turn, dt));
     g.position.set(e.x, 0, e.z);
     g.rotation.y = e.face;
     g.visible = e.seen && !e.airborne;
@@ -8062,8 +8074,9 @@ function sealRoom(a, mat = M.gate, haloColor = 0xb070ff, outside = false) {
     const edge = outside ? 0.85 : -0.85;
     g.position.set(i * TILE + di * edge, -1.6, j * TILE + dj * edge);
     g.rotation.y = Math.atan2(di, dj);
-    for (let k = -2; k <= 2; k++) g.add(part(G.box, mat, 0.1, 1.5, 0.1, k * 0.4, 0.75, 0));
-    g.add(part(G.box, mat, 2, 0.1, 0.12, 0, 1.45, 0), part(G.box, mat, 2, 0.08, 0.12, 0, 0.1, 0));
+    for (let k = -5; k <= 5; k++) g.add(part(G.box, mat, 0.1, 1.6, 0.32, k * 0.18, 0.8, 0));
+    for (const y of [0.1, 0.8, 1.55]) g.add(part(G.box, mat, 2, 0.14, 0.4, 0, y, 0));
+    g.add(part(G.box, mat === M.vaultGate ? M.vaultPanel : M.gatePanel, 2, 1.6, 0.1, 0, 0.8, 0));
     const halo = glow(haloColor, 2.2, 0.5);
     halo.position.y = 0.8;
     g.add(halo);
@@ -8241,7 +8254,7 @@ function updateItems(dt) {
       L.miniCtx.fillStyle = '#7a6f86';
       L.miniCtx.fillRect(sc.door.i, sc.door.j, 1, 1);
     }
-    if (seen && Math.random() < (nearAnyHero(dx0, dz0, 5.5) ? 0.03 : 0.012)) emit({ x: sc.door.i * TILE + sc.out[0] * 1.05 + rand(-0.6, 0.6), y: rand(0.4, 1.4), z: sc.door.j * TILE + sc.out[1] * 1.05 + rand(-0.6, 0.6), vx: 0, vy: 0.2, vz: 0, g: 0, life: 0.9, max: 0.9, color: 0xcfc4a8, size: 0.2 });
+    if (seen && nearAnyHero(dx0, dz0, 5.5) && Math.random() < 0.02) emit({ x: sc.door.i * TILE + sc.out[0] * 1.05 + rand(-0.6, 0.6), y: rand(0.4, 1.4), z: sc.door.j * TILE + sc.out[1] * 1.05 + rand(-0.6, 0.6), vx: 0, vy: 0.2, vz: 0, g: 0, life: 0.9, max: 0.9, color: 0xcfc4a8, size: 0.2 });
     if (sc.shake > 0) sc.shake -= dt;
     sc.crack.position.x = sc.door.i * TILE + (sc.shake > 0 ? Math.sin(elapsed * 80) * 0.04 : 0);
   }
