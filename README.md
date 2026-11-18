@@ -25,7 +25,7 @@ Le dépôt tient en trois fichiers : `index.html`, ce `README.md` et un `.gitign
 | 1–632 | `<head>` + `<style>` | Métas mobiles (viewport-fit cover), polices Google (Alegreya Sans, IM Fell English SC), tout le CSS du HUD et des menus |
 | 634–903 | HTML | Canevas 3D `#scene`, HUD `#hud` (bandeau de gardien, bandeau d'épreuve, clé d'os), contrôles tactiles, et 11 overlays : accueil, mode test, duo, choix d'aptitude, autel, marchand, pause, touches, victoire, mort |
 | 905–925 | Script classique | Filet de démarrage : affiche une erreur si three.js ne charge pas ou si le jeu n'a pas signalé `window.__profondeursReady` après 15 s |
-| 926–10442 | `<script type="module">` | Tout le jeu, découpé en sections `// ---------- Nom` |
+| 926–10445 | `<script type="module">` | Tout le jeu, découpé en sections `// ---------- Nom` |
 
 Les sections du module, dans l'ordre du fichier :
 
@@ -55,12 +55,12 @@ Les sections du module, dans l'ordre du fichier :
 | 8553–8843 | HUD | Barres, minicarte, toasts, combo, recharges d'esquive et de parade |
 | 8844–9009 | Héros, lumière, caméra | Animation des héros, torches, caméra |
 | 9010–9379 | Commandes | Clavier, souris, tactile, garde maintenue |
-| 9380–9513 | Deux joueurs | Menu duo, attribution des appareils |
-| 9514–9592 | Mode test | Code Konami, choix du biome et de l'étage |
-| 9593–10003 | Manette | Gamepad API, navigation directionnelle des menus (`navFrom`, `MENU_BACK`), aides et touches dessinées générées depuis les touches, tuiles de l'accueil, frise de la descente (`renderTrack`), bilan et compteurs (`countUp`) |
-| 10004–10215 | Écran des touches | Onglets clavier et manette, profils, capture d'une touche ou d'un bouton, conflits, préréglages, réinitialisation |
-| 10216–10262 | Fluidité | Qualité adaptative |
-| 10263–10442 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
+| 9380–9516 | Deux joueurs | Menu duo, attribution des appareils |
+| 9517–9595 | Mode test | Code Konami, choix du biome et de l'étage |
+| 9596–10006 | Manette | Gamepad API, navigation directionnelle des menus (`navFrom`, `MENU_BACK`), aides et touches dessinées générées depuis les touches, tuiles de l'accueil, frise de la descente (`renderTrack`), bilan et compteurs (`countUp`) |
+| 10007–10218 | Écran des touches | Onglets clavier et manette, profils, capture d'une touche ou d'un bouton, conflits, préréglages, réinitialisation |
+| 10219–10265 | Fluidité | Qualité adaptative |
+| 10266–10445 | Boucle | `requestAnimationFrame`, ordre des mises à jour, démarrage |
 
 ## Architecture technique
 
@@ -463,6 +463,7 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 | Marchand | Voir Équipement et marchand |
 | Mort | « Nouveau record ! », frise jusqu'à l'étage atteint, ce qu'il restait (étages et gardiens), compteurs qui défilent, « Redescendre » ou « Accueil » |
 | Victoire | « Nouveau record ! », frise complète, compteurs, « Descendre plus loin » ou « Remonter à la surface » |
+| Duo | Chaque case vide dit quelle touche ou quel bouton la prend (touches réelles de l'écran Touches) ; le HUD est masqué |
 
 Dans tous les menus, flèches, stick et croix déplacent le focus vers le bouton le plus proche dans la direction choisie. B à la manette et Échap au clavier reviennent en arrière : fermer les touches ou le mode test, quitter le marchand ou l'autel, reprendre après la pause.
 - **Manette** : zone morte de 0,22, la croix prime sur le stick, vibrations si la manette les gère. Une ligne de diagnostic dans les réglages indique la manette vue, son mapping et les boutons enfoncés. Sur Mac, Firefox ne voit pas les manettes Xbox ni la Switch Pro : le jeu conseille Safari.

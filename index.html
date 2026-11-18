@@ -8529,7 +8529,7 @@ function setupHeroes(devices, classes) {
 
 function showOverlay(id) {
   for (const o of document.querySelectorAll('.overlay')) o.hidden = o.id !== id;
-  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
+  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
 }
 
 function pauseGame() {
@@ -9390,9 +9390,12 @@ function deviceLabel(dev) {
 }
 
 function renderLobby() {
+  const joinLeft = keyList(binds.left.attack)[0] ?? 'une touche de gauche';
+  const joinRight = keyList(binds.right.attack)[0] ?? 'une touche de droite';
+  const free = [!lobby.slots.includes('kb-left') && `${joinLeft} (clavier gauche)`, !lobby.slots.includes('kb-right') && `${joinRight} (clavier droit)`, `${padLabel(0)} (manette)`].filter(Boolean);
   lobby.slots.forEach((dev, n) => {
     const cls = CLASSES[lobby.classes[n]];
-    $(`slot-${n + 1}-dev`).textContent = dev ? deviceLabel(dev) : 'En attente…';
+    $(`slot-${n + 1}-dev`).textContent = dev ? deviceLabel(dev) : `Appuie sur ${orList(free)}`;
     $(`slot-${n + 1}`).classList.toggle('ready', !!dev);
     $(`slot-${n + 1}-pick`).hidden = !dev;
     $(`slot-${n + 1}-hero`).textContent = cls.name;
@@ -9401,7 +9404,8 @@ function renderLobby() {
   const ready = lobby.slots.every(Boolean);
   $('duo-go').disabled = !ready;
   $('duo-combo').hidden = !(lobby.classes.includes('lame') && lobby.classes.includes('arbalete'));
-  $('duo-hint').textContent = ready ? 'Prêts. Frappe ou A pour descendre, gauche ou droite pour changer de héros.' : 'Chaque joueur appuie sur Espace, sur Entrée ou sur A de sa manette.';
+  $('duo-hint').textContent = ready ? `Prêts. Frappe ou ${padLabel(0)} pour descendre, gauche ou droite pour changer de héros.`
+    : `Chaque joueur rejoint avec son appareil : ${joinLeft} pour la moitié gauche du clavier, ${joinRight} pour la moitié droite, ${padLabel(0)} pour une manette.`;
 }
 
 function cycleHero(n, dir) {
@@ -9414,7 +9418,6 @@ function cycleHero(n, dir) {
 function openLobby() {
   initAudio();
   if (state !== 'menu') return;
-  $('duo-hint').textContent = `Chaque joueur appuie sur ${keyList(binds.left.attack)[0] ?? 'une touche de la moitié gauche'} (clavier gauche), ${keyList(binds.right.attack)[0] ?? 'une touche de la moitié droite'} (clavier droit) ou ${padLabel(0)} de sa manette.`;
   lobby.slots = [null, null];
   state = 'lobby';
   renderLobby();
