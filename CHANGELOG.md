@@ -1,6 +1,11 @@
 # Changelog
 
-Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
+Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
+
+## 1.2.0 — 2026-11-18
+
+- Journal des versions consultable depuis l'accueil (tuile Nouveautés, pastille tant qu'il n'a pas été lu).
+- Version du jeu affichée sur l'accueil et dans la pause.
 
 ## 1.1.1 — 2026-11-18
 

@@ -597,4 +597,4 @@ Une valeur de PV ou de dégâts se règle en interne, soit 10 fois plus petite q
 
 ## Version
 
-`GAME_VERSION` (semver) dans `index.html`, affichée sur l'accueil et dans la pause. À incrémenter à chaque publication, avec une entrée dans `CHANGELOG.md`.
+`GAME_VERSION` (semver) dans `index.html`, affichée sur l'accueil et dans la pause. À incrémenter à chaque publication, avec une entrée dans le tableau `CHANGELOG` d'`index.html` (affiché par la tuile Nouveautés de l'accueil) et la même dans `CHANGELOG.md`.
