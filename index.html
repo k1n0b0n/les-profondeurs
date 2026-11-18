@@ -812,8 +812,8 @@ const $ = (id) => document.getElementById(id);
 
 const TILE = 2;
 const WALL_H = 1.5;
-const MAP_W = 44;
-const MAP_H = 44;
+const MAP_W = 56;
+const MAP_H = 56;
 const PLAYER_R = 0.36;
 const PLAYER_SPEED = 5.4;
 const REVEAL_R = 6;
@@ -1125,6 +1125,12 @@ const M = {
   pit: lambert(0x120f17, { side: THREE.BackSide }),
   step: lambert(0x4d4656),
   rune: basic(0x6ab0ff, { ...additive, opacity: 0.9 }),
+  portalVeil0: basic(0x5ae0ff, { ...additive, opacity: 0.5 }),
+  portalVeil1: basic(0xc080ff, { ...additive, opacity: 0.5 }),
+  portalRing0: basic(0x5ae0ff, { ...additive, opacity: 0.85 }),
+  portalRing1: basic(0xc080ff, { ...additive, opacity: 0.85 }),
+  portalVeil2: basic(0x8af07a, { ...additive, opacity: 0.5 }),
+  portalRing2: basic(0x8af07a, { ...additive, opacity: 0.85 }),
   runeSealed: basic(0xff4a3a, { ...additive, opacity: 0.9 }),
   runeEmber: basic(0xff8a30),
   teleEdge: basic(0xff4a3a, { transparent: true, opacity: 0.85, depthWrite: false }),
@@ -1771,17 +1777,26 @@ function sealCuts(grid, start, r) {
   return sealed.some((v, k) => v === 1 && genDist[k] >= 0 && sealDist[k] < 0);
 }
 
+// Étages en dents de scie : le premier d'un biome est ramassé, le deuxième (celui du marchand) le plus vaste,
+// celui du gardien entre les deux ; chaque biome part un cran plus grand. [côté de la grille, salles] au premier biome.
+const FLOOR_SHAPE = [[36, 8], [44, 12], [40, 10]];
+function floorShape(depth) {
+  const biome = Math.min(3, Math.floor((depth - 1) / BOSS_EVERY));
+  const [side, rooms] = FLOOR_SHAPE[(depth - 1) % BOSS_EVERY];
+  return { side: Math.min(MAP_W, side + 4 * biome), rooms: rooms + 2 * biome };
+}
+
 function tryGenerate(depth, relaxed) {
   const grid = new Uint8Array(MAP_W * MAP_H);
   const rooms = [];
-  const want = Math.min(8 + depth, 14);
+  const { side: size, rooms: want } = floorShape(depth);
   const boss = isBossFloor(depth);
   const free = (x, y, w, h) => !rooms.some((o) => x <= o.x + o.w && o.x <= x + w && y <= o.y + o.h && o.y <= y + h);
   for (let t = 0; t < 400 && rooms.length < want - (boss ? 1 : 0); t++) {
     const w = randi(4, 9);
     const h = randi(4, 8);
-    const x = randi(1, MAP_W - w - 1);
-    const y = randi(1, MAP_H - h - 1);
+    const x = randi(1, size - w - 1);
+    const y = randi(1, size - h - 1);
     if (free(x, y, w, h)) rooms.push({ x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) });
   }
   // Étage de gardien : l'arène est taillée à part, sur l'emplacement libre le plus éloigné du départ.
@@ -1790,8 +1805,8 @@ function tryGenerate(depth, relaxed) {
     for (let t = 0; t < 200; t++) {
       const w = randi(8, 9);
       const h = randi(7, 8);
-      const x = randi(1, MAP_W - w - 1);
-      const y = randi(1, MAP_H - h - 1);
+      const x = randi(1, size - w - 1);
+      const y = randi(1, size - h - 1);
       const d = Math.abs(x + (w >> 1) - rooms[0].cx) + Math.abs(y + (h >> 1) - rooms[0].cy);
       if (free(x, y, w, h) && d > (best?.d ?? -1)) best = { x, y, w, h, d };
     }
@@ -1849,7 +1864,7 @@ function tryGenerate(depth, relaxed) {
     }
   }
   const [si, sj] = spots.length ? pick(spots) : [far.cx, far.cy];
-  return { grid, rooms, start, stairsRoom: far, stairs: { i: si, j: sj } };
+  return { grid, rooms, size, start, stairsRoom: far, stairs: { i: si, j: sj } };
 }
 
 function generateDungeon(depth) {
@@ -1865,7 +1880,7 @@ function carveSecret(dun, depth) {
   const { grid } = dun;
   const solid = (i0, j0, i1, j1) => {
     for (let j = j0; j <= j1; j++) {
-      for (let i = i0; i <= i1; i++) if (i < 1 || j < 1 || i >= MAP_W - 1 || j >= MAP_H - 1 || grid[idx(i, j)] !== 0) return false;
+      for (let i = i0; i <= i1; i++) if (i < 1 || j < 1 || i >= dun.size - 1 || j >= dun.size - 1 || grid[idx(i, j)] !== 0) return false;
     }
     return true;
   };
@@ -1957,7 +1972,7 @@ function buildLevel(depth) {
   mini.height = MAP_H;
 
   L = {
-    depth, grid, tint, wallId, floorId, wallMesh, floorMesh, group,
+    depth, grid, size: dun.size, tint, wallId, floorId, wallMesh, floorMesh, group,
     seen: new Uint8Array(cells),
     mini, miniCtx: mini.getContext('2d'),
     enemies: [], coins: [], potions: [], chests: [], props: [], traps: [], shots: [], blasts: [], waves: [],
@@ -1965,7 +1980,7 @@ function buildLevel(depth) {
     ice: new Uint8Array(cells), iceId: new Int32Array(cells).fill(-1), iceMesh: null,
     biome: BIOMES[biomeFor(depth)], walk: null, lava: new Uint8Array(cells), lavaId: new Int32Array(cells).fill(-1), lavaMesh: null, lavaPatches: [],
     icicles: [], clouds: [], icicleT: 3, moteAcc: 0, corpses: [],
-    stairs: null, altar: null, fountain: null, merchant: null, haven: null, boss: null, bossRoom: null, bossLock: null, shrines: [], propsDirty: false,
+    portals: [], stairs: null, altar: null, fountain: null, merchant: null, haven: null, boss: null, bossRoom: null, bossLock: null, shrines: [], propsDirty: false,
     vault: null, keyItem: null, keyHeld: false, trial: null,
     secret: secret && { ...secret, k: doorK, hits: 0, open: false, shake: 0, kind: null, crack: null },
   };
@@ -2091,7 +2106,8 @@ function populate(dun) {
   }
   const fighting = others.filter((r) => r !== L.bossRoom && r !== L.haven && !ambushRooms.includes(r) && r !== L.vault?.room);
   const area = fighting.reduce((sum, r) => sum + r.w * r.h, 0) || 1;
-  const total = Math.min(40, 13 + (depth - 1) * 2) * (boss ? 0.6 : 1) * (hasPact('hordes') ? 1.3 : 1);
+  const roomy = clamp(dun.rooms.length / Math.min(8 + depth, 14), 0.8, 1.25);
+  const total = Math.min(40, 13 + (depth - 1) * 2) * roomy * (boss ? 0.6 : 1) * (hasPact('hordes') ? 1.3 : 1);
   for (const r of others) {
     if (r === L.bossRoom || ambushRooms.includes(r) || r === L.vault?.room) continue;
     const count = fighting.includes(r) ? clamp(Math.round((total * r.w * r.h) / area + rand(-1, 1)), 0, 6) : 0;
@@ -2156,8 +2172,151 @@ function populate(dun) {
     }
   }
   if (L.vault) fillVault(L.vault, tileIn, eliteList, others.filter((r) => r !== L.vault.room && !ambushRooms.includes(r)));
+  placePortals(dun, occupied, ambushRooms);
 
   placeTraps(dun, occupied, ambushRooms);
+}
+
+// Portails runiques : des paires qui relient les salles les plus éloignées, même une fois les raccourcis précédents comptés.
+// Une arche s'éveille quand les deux bouts ont été approchés ; s'y tenir 0,5 s emporte toute l'équipe de l'autre côté.
+const PORTAL_COLORS = [0x5ae0ff, 0xc080ff, 0x8af07a];
+const PORTAL_CSS = ['#5ae0ff', '#c080ff', '#8af07a'];
+const PORTAL_CHARGE = 0.5;
+function placePortals(dun, occupied, ambushRooms) {
+  const pairs = dun.rooms.length >= 16 ? 3 : dun.rooms.length >= 14 ? 2 : dun.rooms.length >= 10 ? 1 : 0;
+  const pool = dun.rooms.filter((r) => r !== L.bossRoom && r !== L.vault?.room && !ambushRooms.includes(r));
+  if (!pairs || pool.length < 4) return;
+  const D = pool.map((r) => {
+    bfs(L.grid, r.cx, r.cy, genDist);
+    return pool.map((o) => (genDist[idx(o.cx, o.cy)] < 0 ? 9999 : genDist[idx(o.cx, o.cy)]));
+  });
+  const links = [];
+  const cost = (a, b) => links.reduce((d, [u, v]) => Math.min(d, D[a][u] + 4 + D[v][b], D[a][v] + 4 + D[u][b]), D[a][b]);
+  for (let n = 0; n < pairs; n++) {
+    let best = null;
+    for (let a = 0; a < pool.length; a++) {
+      for (let b = a + 1; b < pool.length; b++) {
+        if (links.some((l) => l.includes(a) || l.includes(b))) continue;
+        const d = cost(a, b) + (pool[a] === L.haven || pool[b] === L.haven ? 12 : 0);
+        if (!best || d > best.d) best = { a, b, d };
+      }
+    }
+    if (!best || best.d < 30) break;
+    links.push([best.a, best.b]);
+  }
+  const spotIn = (r) => {
+    for (let t = 0; t < 40; t++) {
+      const i = randi(r.x + 1, r.x + r.w - 2);
+      const j = randi(r.y + 1, r.y + r.h - 2);
+      const k = idx(i, j);
+      if ((i === r.cx && j === r.cy) || L.grid[k] !== 1 || occupied.has(k) || isWall(i, j - 1) || isWall(i - 1, j) || isWall(i + 1, j)) continue;
+      occupied.add(k);
+      return [i, j];
+    }
+    return null;
+  };
+  links.forEach(([a, b], pair) => {
+    const sa = spotIn(pool[a]);
+    const sb = sa && spotIn(pool[b]);
+    if (!sb) return;
+    const pa = spawnPortal(...sa, pair);
+    const pb = spawnPortal(...sb, pair);
+    pa.twin = pb;
+    pb.twin = pa;
+  });
+}
+
+function spawnPortal(i, j, pair) {
+  const x = i * TILE;
+  const z = j * TILE;
+  const veilMat = M[`portalVeil${pair}`];
+  const ringMat = M[`portalRing${pair}`];
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  const veil = part(G.box, veilMat, 1.5, 1.7, 0.05, 0, 0.95, 0);
+  const ring = part(G.edge, ringMat, 1.05, 1, 1.05, 0, 0.04, 0);
+  const fill = part(G.disc, ringMat, 0.01, 1, 0.01, 0, 0.035, 0);
+  const halo = glow(PORTAL_COLORS[pair], 2.6, 0.5);
+  halo.position.y = 1;
+  const stones = new THREE.Group();
+  for (let n = 0; n < 3; n++) {
+    const a = (n / 3) * Math.PI * 2;
+    stones.add(part(G.box, M.stone, 0.16, 0.16, 0.16, Math.cos(a) * 1.15, 0.5 + n * 0.25, Math.sin(a) * 1.15));
+  }
+  g.add(
+    part(G.box, M.stone, 0.26, 2, 0.3, -0.92, 1, 0),
+    part(G.box, M.stone, 0.26, 2, 0.3, 0.92, 1, 0),
+    part(G.box, M.stone, 2.2, 0.28, 0.34, 0, 2.06, 0),
+    part(G.box, ringMat, 0.5, 0.08, 0.36, 0, 2.06, 0.01),
+    part(G.shadow, M.shadow, 1.1, 1, 0.5, 0, 0.02, 0),
+    veil, ring, fill, halo, stones,
+  );
+  mergeBody(g, 'portal', { veil, ring, fill });
+  mergeBody(stones, 'portalStones', {});
+  g.visible = false;
+  L.group.add(g);
+  const p = { i, j, x, z, pair, g, veil, ring, fill, halo, stones, found: false, charge: 0, twin: null };
+  L.portals.push(p);
+  return p;
+}
+
+function discoverPortal(p) {
+  p.found = true;
+  burst(p.x, 1, p.z, PORTAL_COLORS[p.pair], 16, 3, -4, 0.8);
+  if (p.twin.found) {
+    sfx.relic();
+    flash(p.x, 1, p.z, PORTAL_COLORS[p.pair], 6, 0.4);
+    toast('Portails éveillés', 'un raccourci relie deux bouts de l’étage : tiens-toi sous l’arche');
+  } else if (!hints.portal) {
+    hints.portal = true;
+    sfx.slab();
+    toast('Portail runique', 'il dort tant que tu n’as pas approché son jumeau, ailleurs dans l’étage');
+  }
+}
+
+function travelPortal(p, leader) {
+  const q = p.twin;
+  const color = PORTAL_COLORS[p.pair];
+  p.charge = 0;
+  burst(p.x, 1, p.z, color, 24, 4, -3, 0.8);
+  const spots = [[0, 1], [0.9, 0.6], [-0.9, 0.6], [0, 0], [0.9, -0.6], [-0.9, -0.6]]
+    .map(([ox, oz]) => [q.x + ox, q.z + oz])
+    .filter(([x, z]) => !collides(x, z, PLAYER_R));
+  [leader, ...heroes.filter((h) => h !== leader)].forEach((h, n) => {
+    const [x, z] = spots[n] ?? [q.x, q.z];
+    h.x = x;
+    h.z = z;
+    h.kvx = h.kvz = h.ivx = h.ivz = 0;
+    h.ti = tileOf(x);
+    h.tj = tileOf(z);
+    h.portalLock = q;
+  });
+  camLook.x = heroes.reduce((s, h) => s + h.x, 0) / heroes.length;
+  camLook.z = heroes.reduce((s, h) => s + h.z, 0) / heroes.length;
+  burst(q.x, 1, q.z, color, 24, 4, -3, 0.8);
+  flash(q.x, 1, q.z, color, 6, 0.35);
+  sfx.portal();
+  addShake(0.15);
+  rumble(0.3, 120);
+}
+
+function updatePortals(dt, active) {
+  for (const p of L.portals) {
+    const live = p.found && p.twin.found;
+    p.g.visible = tileSeen(p.x, p.z);
+    M[`portalVeil${p.pair}`].opacity = live ? 0.5 + Math.sin(elapsed * 3) * 0.08 : 0.1;
+    M[`portalRing${p.pair}`].opacity = live ? 0.85 : 0.3;
+    p.stones.rotation.y += dt * (live ? 1.8 : 0.25);
+    p.halo.scale.setScalar(live ? 2.6 + Math.sin(elapsed * 2.4 + p.x) * 0.25 : 1.2);
+    p.fill.scale.set(Math.max(0.01, p.charge / PORTAL_CHARGE), 1, Math.max(0.01, p.charge / PORTAL_CHARGE));
+    if (live && p.g.visible && Math.random() < dt * 9) emit({ x: p.x + rand(-0.6, 0.6), y: 0.2, z: p.z + rand(-0.15, 0.15), vx: 0, vy: rand(0.6, 1.2), vz: 0, g: 0, life: 1.2, max: 1.2, color: PORTAL_COLORS[p.pair], size: 0.35 });
+    if (!active) continue;
+    if (!p.found && heroes.some((h) => !h.down && Math.hypot(h.x - p.x, h.z - p.z) < 3)) discoverPortal(p);
+    for (const h of heroes) if (h.portalLock === p && Math.hypot(h.x - p.x, h.z - p.z) > 1.4) h.portalLock = null;
+    const on = live && heroes.find((h) => !h.down && h.portalLock !== p && Math.hypot(h.x - p.x, h.z - p.z) < 0.85);
+    p.charge = on ? p.charge + dt : Math.max(0, p.charge - dt * 2);
+    if (on && p.charge >= PORTAL_CHARGE) travelPortal(p, on);
+  }
 }
 
 // ---------- Pièges : placement
@@ -2183,7 +2342,7 @@ function placeTraps(dun, occupied, ambushRooms) {
   const nearStart = (i, j) => i >= s.x - 1 && i <= s.x + s.w && j >= s.y - 1 && j <= s.y + s.h;
   const nearStairs = (i, j) => Math.abs(i - L.stairs.i) <= 1 && Math.abs(j - L.stairs.j) <= 1;
   const roomOf = (i, j) => dun.rooms.find((r) => inRoom(r, i, j));
-  const nearHaven = (i, j) => (!!L.haven && inRoom(L.haven, i, j, -1)) || (!!L.secret && inRoom(L.secret.room, i, j, -1)) || (!!L.vault && inRoom(L.vault.room, i, j, -1));
+  const nearHaven = (i, j) => (!!L.haven && inRoom(L.haven, i, j, -1)) || (!!L.secret && inRoom(L.secret.room, i, j, -1)) || (!!L.vault && inRoom(L.vault.room, i, j, -1)) || L.portals.some((p) => Math.abs(p.i - i) <= 1 && Math.abs(p.j - j) <= 1);
   const lineClear = (l) => {
     for (let n = 0; n < l.len; n++) if (nearHaven(l.a[0] + l.dir[0] * n, l.a[1] + l.dir[1] * n)) return null;
     return l;
@@ -3369,6 +3528,7 @@ const sfx = {
   transe: () => [440, 554, 659, 880, 1109].forEach((f, n) => tone(f, 0.14, { type: 'square', vol: 0.045, delay: n * 0.05 })),
   lastBreath: () => { tone(220, 0.6, { type: 'sine', vol: 0.12, slide: 2 }); tone(660, 0.5, { type: 'triangle', vol: 0.06, delay: 0.1, slide: 1.5 }); },
   fountain: () => [523, 784, 1046, 1568].forEach((f, n) => tone(f, 0.3, { type: 'sine', vol: 0.06, delay: n * 0.07 })),
+  portal: () => { [392, 523, 784].forEach((f, n) => tone(f, 0.35, { type: 'sine', vol: 0.06, slide: 1.5, delay: n * 0.05 })); hiss(0.4, 2600, 0.06); },
   icicle: () => { if (!throttled('icicle', 0.05)) return; hiss(0.2, 5200, 0.1); tone(2100, 0.15, { type: 'triangle', vol: 0.05, slide: 0.5 }); },
   sizzle: () => { if (!throttled('sizzle', 0.3)) return; hiss(0.35, 2600, 0.07); },
 };
@@ -7587,6 +7747,8 @@ function updateItems(dt) {
     }
   }
 
+  updatePortals(dt, active);
+
   const f = L.fountain;
   if (f) {
     f.g.visible = tileSeen(f.x, f.z);
@@ -8294,9 +8456,9 @@ function drawMinimap(dt) {
   const h = mm.height;
   mctx.clearRect(0, 0, w, h);
   mctx.imageSmoothingEnabled = false;
-  mctx.drawImage(L.mini, 0, 0, w, h);
-  const sx = w / MAP_W;
-  const sy = h / MAP_H;
+  mctx.drawImage(L.mini, 0, 0, L.size, L.size, 0, 0, w, h);
+  const sx = w / L.size;
+  const sy = h / L.size;
   if (L.altar && !L.altar.used && tileSeen(L.altar.x, L.altar.z)) {
     mctx.fillStyle = '#f2c450';
     mctx.fillRect((L.altar.x / TILE) * sx, (L.altar.z / TILE) * sy, sx, sy);
@@ -8314,6 +8476,13 @@ function drawMinimap(dt) {
   if (L.keyItem && tileSeen(L.keyItem.x, L.keyItem.z)) {
     mctx.fillStyle = '#fff0c8';
     mctx.fillRect((L.keyItem.x / TILE) * sx, (L.keyItem.z / TILE) * sy, sx, sy);
+  }
+  for (const p of L.portals) {
+    if (!p.found && !tileSeen(p.x, p.z)) continue;
+    mctx.globalAlpha = p.found && p.twin.found ? 1 : 0.45;
+    mctx.fillStyle = PORTAL_CSS[p.pair];
+    mctx.fillRect((p.i - 0.5) * sx, (p.j - 0.5) * sy, sx * 2, sy * 2);
+    mctx.globalAlpha = 1;
   }
   const fo = L.fountain;
   if (fo && tileSeen(fo.x, fo.z) && !heroes.every((h) => fo.usedBy.has(h))) {
