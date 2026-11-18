@@ -436,7 +436,7 @@ Le grimoire (`profondeurs.grimoire`) garde d'une partie à l'autre les reliques 
 
 ## Contrôles
 
-Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les touches sont lues par position physique (`KeyW` = Z sur AZERTY), donc les mêmes doigts servent sur AZERTY et QWERTY. Toutes se changent dans l'écran **Touches** (accueil › Réglages, ou tuile Touches de la pause) ; le tableau donne les touches d'origine.
+Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les touches sont lues par position physique (`KeyW` = Z sur AZERTY), donc les mêmes doigts servent sur AZERTY et QWERTY. Toutes se changent dans l'écran **Touches** (tuile Touches de l'accueil et de la pause) ; le tableau donne les touches d'origine.
 
 | Action | Clavier droitier | Clavier gaucher | Manette | Tactile |
 | --- | --- | --- | --- | --- |
@@ -451,6 +451,8 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 - **Écran Touches** : onglets Clavier et Manette ; au clavier, trois profils (Solo, Duo · joueur 1, Duo · joueur 2) et, en solo, les préréglages Droitier et Gaucher. Choisir une case puis appuyer sur la touche ou le bouton voulu : jusqu'à trois par action. Une touche déjà prise quitte son ancienne action (en duo, les deux moitiés du clavier ne partagent aucune touche). Échap annule, Retour arrière vide la case ; à la manette, le bouton Select / Share vide la case et une capture sans réponse s'annule au bout de 6 s. Échap et Tab restent réservés, ainsi que P en solo. Les noms affichés suivent le clavier réel (appris à la première frappe, déduits AZERTY pour un navigateur en français de France) et la famille de manette (Xbox, PlayStation, Nintendo). Les aides de l'accueil et de la pause se recalculent depuis ces touches.
 - **Menus** : flèches, stick ou croix déplacent le focus vers le bouton le plus proche dans la direction choisie ; A valide, B referme l'écran Touches.
 - **Réglages** (accueil et pause) : touches, attaque auto, musique, son, plein écran. Tous sont mémorisés.
+- **Manette** : zone morte de 0,22, la croix prime sur le stick, vibrations si la manette les gère. Une ligne de diagnostic dans les réglages indique la manette vue, son mapping et les boutons enfoncés. Sur Mac, Firefox ne voit pas les manettes Xbox ni la Switch Pro : le jeu conseille Safari.
+- **Pause automatique** : quand l'onglet passe en arrière-plan, quand le contexte WebGL est perdu, ou quand la manette d'un héros se déconnecte.
 
 ### Écrans
 
@@ -466,8 +468,6 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 | Duo | Chaque case vide dit quelle touche ou quel bouton la prend (touches réelles de l'écran Touches) ; le HUD est masqué |
 
 Dans tous les menus, flèches, stick et croix déplacent le focus vers le bouton le plus proche dans la direction choisie. B à la manette et Échap au clavier reviennent en arrière : fermer les touches ou le mode test, quitter le marchand ou l'autel, reprendre après la pause.
-- **Manette** : zone morte de 0,22, la croix prime sur le stick, vibrations si la manette les gère. Une ligne de diagnostic dans les réglages indique la manette vue, son mapping et les boutons enfoncés. Sur Mac, Firefox ne voit pas les manettes Xbox ni la Switch Pro : le jeu conseille Safari.
-- **Pause automatique** : quand l'onglet passe en arrière-plan, quand le contexte WebGL est perdu, ou quand la manette d'un héros se déconnecte.
 
 ### Deux joueurs sur le même écran
 
