@@ -594,3 +594,7 @@ Une valeur de PV ou de dégâts se règle en interne, soit 10 fois plus petite q
 - **Escalier** : confirmation avec rappel des salles inexplorées.
 - **Manette** : A esquive, X frappe, B pare, Y boit ; une disposition par manette (`pad0`, `pad1`…) dans l'écran des touches.
 - **Musique** : 4 variantes par boucle, thème « mystère » pour pause et menus, fanfare après un gardien.
+
+## Version
+
+`GAME_VERSION` (semver) dans `index.html`, affichée sur l'accueil et dans la pause. À incrémenter à chaque publication, avec une entrée dans `CHANGELOG.md`.
