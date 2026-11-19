@@ -986,9 +986,13 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.4.1';
+const GAME_VERSION = '1.5.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.5.0', date: '19/11/2026', items: [
+    'Salle nettoyée : vider une salle de combat rapporte des écus, un cœur à chaque héros et parfois une potion.',
+    'Plus de potions lâchées quand la vie est basse.',
+  ] },
   { version: '1.4.1', date: '19/11/2026', items: [
     'Un coup direct coupe le monstre dans son élan : préparation, charge ou frappe annulées, bref étourdissement.',
   ] },
@@ -5272,7 +5276,21 @@ function killEnemy(e) {
   } else {
     const roll = Math.random();
     if (roll < 0.25) spawnCoins(e.x, e.z, randi(2, 4) + Math.floor(L.depth / 2), true);
-    else if (roll < 0.265) spawnPotion(e.x, e.z);
+    else if (roll < 0.265 + (player.hp < player.maxHp * 0.4 ? 0.03 : 0)) spawnPotion(e.x, e.z);
+  }
+  // Salle nettoyée : le dernier monstre d'une salle de combat tombé, une récompense marque la fin de la bataille.
+  const cleared = e.type !== 'boss' && !e.splits && !e.ambush && !e.trial ? L.rooms.find((r) => inRoom(r, tileOf(e.x), tileOf(e.z))) : null;
+  if (cleared && !cleared.cleared && cleared !== L.haven && cleared !== L.bossRoom) {
+    cleared.kills = (cleared.kills ?? 0) + 1;
+    const left = L.enemies.some((o) => o !== e && o.dying < 0 && inRoom(cleared, tileOf(o.x), tileOf(o.z)));
+    if (cleared.kills >= 2 && !left && !L.spawnQueue.length && !L.pendingSpawns.length) {
+      cleared.cleared = true;
+      floatText(e.x, 2.3, e.z, 'Salle nettoyée', 'crit');
+      sfx.level();
+      spawnCoins(e.x, e.z, randi(3, 6) + L.depth, true);
+      for (const h of heroes) if (!h.down) heal(1, h);
+      if (Math.random() < 0.3) spawnPotion(e.x + 0.6, e.z);
+    }
   }
   if (e.splits) {
     for (const s of [-1, 1]) L.spawnQueue.push(['slime', e.x, e.z, { size: 0.62, hpMul: 0.35, speedMul: 1.3, kick: [s * 5, rand(-2, 2)] }]);
