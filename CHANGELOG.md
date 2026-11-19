@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.3.0 — 2026-11-19
+
+- Équilibrage : monstres nettement plus faibles aux premiers étages, puis une montée régulière qui rejoint l'ancienne difficulté vers le fond.
+- Moins de monstres et d'embuscades au départ, davantage en profondeur.
+- Performances : séparation des monstres et alertes de groupe allégées, file d'apparition vidée d'un seul coup.
+
 ## 1.2.0 — 2026-11-18
 
 - Journal des versions consultable depuis l'accueil (tuile Nouveautés, pastille tant qu'il n'a pas été lu).
