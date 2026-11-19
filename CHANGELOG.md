@@ -2,6 +2,14 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.4.0 — 2026-11-19
+
+- Multi-kills : Double, Triple, Massacre… avec écus et secousse à chaque palier.
+- Chaque mort recharge un peu l'esquive.
+- Paliers de combo récompensés : ×5 soin, ×10 potion, ×15 expérience et transe pleine, ×25 pluie d'écus.
+- Transe dès ×6 au lieu de ×8, fenêtre de combo à 6 s.
+- Pause de frappe plus marquée sur la mort d'une élite.
+
 ## 1.3.0 — 2026-11-19
 
 - Équilibrage : monstres nettement plus faibles aux premiers étages, puis une montée régulière qui rejoint l'ancienne difficulté vers le fond.

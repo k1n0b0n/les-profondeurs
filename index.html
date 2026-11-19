@@ -980,15 +980,22 @@ const DASH_SPEED = 15;
 const DASH_CD = 0.85;
 const DODGE_TIME = DASH_TIME + 0.06;
 const ELAN_WINDOW = 0.35;
-const COMBO_WINDOW = 5;
+const COMBO_WINDOW = 6;
 const TRAP_PERIOD = 2.8;
 const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.3.0';
+const GAME_VERSION = '1.4.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.4.0', date: '19/11/2026', items: [
+    'Multi-kills : Double, Triple, Massacre… avec écus et secousse à chaque palier.',
+    'Chaque mort recharge un peu l’esquive.',
+    'Paliers de combo récompensés : ×5 soin, ×10 potion, ×15 expérience et transe pleine, ×25 pluie d’écus.',
+    'Transe dès ×6 au lieu de ×8, fenêtre de combo à 6 s.',
+    'Pause de frappe plus marquée sur la mort d’une élite.',
+  ] },
   { version: '1.3.0', date: '19/11/2026', items: [
     'Équilibrage : monstres nettement plus faibles aux premiers étages, puis une montée régulière qui rejoint l’ancienne difficulté vers le fond.',
     'Moins de monstres et d’embuscades au départ, davantage en profondeur.',
@@ -4411,8 +4418,9 @@ const xpNeed = () => 4 * team.level * team.level + 4;
 const teamGold = () => Math.max(...heroes.map((h) => h.gold));
 const tagOf = (h) => (heroes.length > 1 ? `J${h.index + 1}` : '');
 const combo = { n: 0, t: 0, best: 0 };
+const multi = { n: 0, t: -9 };
 const comboMul = () => (combo.n >= 2 ? 1 + Math.min(combo.n - 1, 10) * 0.1 : 1);
-const TRANSE_AT = 8;
+const TRANSE_AT = 6;
 const TRANSE_TIME = 10;
 const TRANSE_MAX = 14;
 const transeBonus = () => (anyPerk('coeurforge') ? 4 : 0);
@@ -5165,7 +5173,7 @@ function killEnemy(e) {
   if (combo.n >= 2) {
     sfx.combo(combo.n);
     bumpCombo();
-    if (combo.n === 5) toast('Combo ×5', 'écus +40 %');
+    if (combo.n === 5) toast('Combo ×5', 'écus +40 % · un cœur regagné');
     if (combo.n === TRANSE_AT && !inTranse()) {
       transe.t = TRANSE_TIME + transeBonus();
       toast('Transe', `${TRANSE_TIME + transeBonus()} s de coups plus vifs et plus forts`);
@@ -5173,8 +5181,32 @@ function killEnemy(e) {
       flash(e.x, 1, e.z, 0xf0a04b, 5, 0.35);
       for (const h of heroes) rumble(0.4, 160, h);
     }
-    if (combo.n === 10) toast('Carnage', 'écus +90 %');
+    if (combo.n === 10) toast('Carnage', 'écus +90 % · une potion de plus');
+    if (combo.n === 5) heal(1.5);
+    if (combo.n === 10) for (const h of heroes) if (h.potions < h.maxPotions) h.potions++;
+    if (combo.n === 15) {
+      toast('Déchaîné', 'expérience offerte et transe prolongée');
+      gainXp(Math.ceil(xpNeed() * 0.4));
+      if (inTranse()) transe.t = transeMax();
+    }
+    if (combo.n === 25) {
+      toast('Légende', 'pluie d’écus');
+      for (let k = 0; k < 5; k++) spawnCoins(e.x + rand(-1.2, 1.2), e.z + rand(-1.2, 1.2), randi(4, 8) + L.depth, true);
+    }
   }
+  // Chaque mort recharge un peu l'esquive : enchaîner frappes et roulades se récompense.
+  player.dashCd = Math.max(0, player.dashCd - 0.4);
+  if (elapsed - multi.t < 0.45) multi.n++;
+  else multi.n = 1;
+  multi.t = elapsed;
+  if (multi.n >= 2) {
+    const label = multi.n === 2 ? 'Double !' : multi.n === 3 ? 'Triple !' : multi.n === 4 ? 'Quadruple !' : 'Massacre ×' + multi.n;
+    floatText(e.x, 2.1, e.z, label, 'crit');
+    spawnCoins(e.x, e.z, multi.n * 2 + Math.floor(L.depth / 2), true);
+    addShake(Math.min(0.3, 0.1 + multi.n * 0.04));
+    hitStop = Math.max(hitStop, 0.06);
+  }
+  if (e.elite) hitStop = Math.max(hitStop, 0.14);
 
   if (e.type === 'boss') {
     player.bosses++;
