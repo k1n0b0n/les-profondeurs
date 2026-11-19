@@ -2,6 +2,10 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.4.1 — 2026-11-19
+
+- Un coup direct coupe le monstre dans son élan : préparation, charge ou frappe annulées, bref étourdissement.
+
 ## 1.4.0 — 2026-11-19
 
 - Multi-kills : Double, Triple, Massacre… avec écus et secousse à chaque palier.

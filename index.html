@@ -986,9 +986,12 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.4.0';
+const GAME_VERSION = '1.4.1';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.4.1', date: '19/11/2026', items: [
+    'Un coup direct coupe le monstre dans son élan : préparation, charge ou frappe annulées, bref étourdissement.',
+  ] },
   { version: '1.4.0', date: '19/11/2026', items: [
     'Multi-kills : Double, Triple, Massacre… avec écus et secousse à chaque palier.',
     'Chaque mort recharge un peu l’esquive.',
@@ -5144,6 +5147,20 @@ function hitEnemy(e, amount, nx, nz, opts = {}) {
   if (e.mode === 'windup' && e.type === 'sorcier') {
     e.mode = 'chase';
     e.shootCd = 1.2;
+  }
+  // Un coup direct coupe le monstre dans son élan : préparation, charge et frappe amorcée sont annulées.
+  if (opts.direct && e.type !== 'boss' && !(e.freezeT > 0) && (!e.elite || opts.crit || (opts.knock ?? 1) > 1) && (e.mode === 'windup' || e.mode === 'dash' || e.armT > 0 || e.act === 'rush')) {
+    if (e.tele) e.tele.visible = false;
+    e.mode = 'stun';
+    e.modeT = e.elite ? 0.3 : 0.45;
+    e.armT = 0;
+    e.act = 'idle';
+    e.vx = e.vz = 0;
+    e.atkCd = Math.max(e.atkCd, 0.7);
+    e.dashCd = Math.max(e.dashCd, 0.9);
+    e.slamCd = Math.max(e.slamCd, 0.9);
+    e.shootCd = Math.max(e.shootCd, 0.9);
+    if (!opts.quiet) floatText(e.x, e.def.barY * e.size + 0.2, e.z, 'Coupé !', 'block');
   }
   if (!opts.quiet) {
     hitStop = Math.max(hitStop, 0.05);
