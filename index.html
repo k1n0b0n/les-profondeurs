@@ -411,6 +411,12 @@ details.more > :not(summary) { margin-top: 10px; }
 .pact-offer { margin: 0 0 14px; }
 .pact-offer .kicker { margin: 0 0 6px; }
 .pact-offer .pact { width: 100%; }
+.floor-grade { display: flex; align-items: center; gap: 14px; margin: 0 0 14px; padding: 10px 12px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; }
+.floor-grade p { margin: 0; font-weight: 700; color: var(--ink); }
+.floor-grade small { display: block; margin-top: 2px; font-size: 13px; color: var(--ink-dim); }
+.grade-letter { font: 400 38px/1 var(--font-display); min-width: 34px; text-align: center; color: var(--gold); }
+.grade-letter[data-g="C"] { color: var(--ink-dim); }
+.grade-letter[data-g="S"] { color: var(--ember); }
 .pact-reward { color: var(--gold); font-weight: 700; }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 1px; overflow: hidden; background: var(--line); border: 1px solid var(--line); border-radius: 8px; }
 .stats div { padding: 10px 12px; background: var(--panel-solid); }
@@ -814,6 +820,10 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <p class="kicker" id="stairs-kicker">L’escalier</p>
     <h1 id="stairs-title">Descendre ?</h1>
     <p class="lead" id="stairs-lead"></p>
+    <div class="floor-grade" id="floor-grade" hidden>
+      <b class="grade-letter" id="grade-letter"></b>
+      <div><p id="grade-title"></p><small id="grade-detail"></small></div>
+    </div>
     <div class="pact-offer" id="pact-offer" hidden>
       <p class="kicker">Pacte avant le gardien</p>
       <button type="button" class="pact" id="pact-take" aria-pressed="false">
@@ -998,9 +1008,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.7.0';
+const GAME_VERSION = '1.8.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.8.0', date: '26/11/2026', items: [
+    'Note d’étage : S, A, B ou C selon les dégâts subis, les esquives et parades parfaites, le combo et le temps.',
+    'La note s’affiche à l’escalier (par héros et pour l’équipe en duo), se résume dans la pause et les bilans de fin.',
+    'Elle est purement informative : rien ne change dans le jeu.',
+  ] },
   { version: '1.7.0', date: '26/11/2026', items: [
     'Pactes en jeu : avant chaque gardien, l’escalier propose un pacte (Hordes, Acier, Fureur ou Hâte), dès la première partie.',
     'Un pacte pris dure jusqu’à l’offre suivante et rapporte une seconde relique légendaire à chaque héros à la chute du gardien.',
@@ -2283,6 +2298,7 @@ function buildLevel(depth) {
 
   L = {
     depth, grid, size: dun.size, tint, wallId, floorId, wallMesh, floorMesh, group,
+    fl: newFloorStats(),
     seen: new Uint8Array(cells),
     mini, miniCtx: mini.getContext('2d'),
     enemies: [], coins: [], potions: [], chests: [], props: [], traps: [], shots: [], blasts: [], waves: [],
@@ -4395,7 +4411,7 @@ const bodyStart = () => ({
   chargeT: 0, chargeStage: 0, sprinting: false, guardT: 0, guardAge: 0, parryCd: 0, parried: false, bufDash: 0, bufDashDir: null, bufAttack: 0, bufParry: 0, readyFlash: 0,
   ivx: 0, ivz: 0, chill: 0, slowT: 0, poisonT: 0, poisonTick: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
   shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9, riposteT: 0, emberT: 0,
-  learned: {}, missed: 0,
+  learned: {}, missed: 0, fl: { dmg: 0, perfect: 0 },
 });
 function makeHero(index, mesh, light, cls = 'lame') {
   const h = Object.create(HeroProto);
@@ -4543,6 +4559,37 @@ function teachMissed(p) {
   L.teachRemind = true;
   showTeach(mech);
 }
+
+// ---------- Note d'étage
+// Informative : S, A, B ou C selon dégâts subis, esquives et parades parfaites, combo maximal et temps, ramenés à la taille de l'étage.
+const GRADE = {
+  weights: { dmg: 0.35, perfect: 0.25, combo: 0.25, time: 0.15 },
+  cuts: [['S', 85], ['A', 65], ['B', 40]],
+  hpFactor: 1.2, perfectPerKill: 0.25, perfectMin: 2, comboFull: 10, parPerRoom: 22, parMin: 60, slow: 2.5,
+};
+const GRADE_LETTERS = 'SABC';
+const newFloorStats = () => ({ time: 0, combo: 0, kills: 0 });
+
+function gradeOf(h) {
+  const fl = L.fl;
+  const par = Math.max(GRADE.parMin, L.rooms.length * GRADE.parPerRoom);
+  const sig = {
+    dmg: 1 - Math.min(1, h.fl.dmg / (h.maxHp * GRADE.hpFactor)),
+    perfect: Math.min(1, h.fl.perfect / Math.max(GRADE.perfectMin, fl.kills * GRADE.perfectPerKill)),
+    combo: Math.min(1, fl.combo / GRADE.comboFull),
+    time: clamp(1 - (fl.time - par) / (par * (GRADE.slow - 1)), 0, 1),
+  };
+  const score = Math.round(100 * Object.entries(GRADE.weights).reduce((sum, [k, w]) => sum + w * sig[k], 0));
+  return { score, letter: gradeLetter(score), sig };
+}
+const gradeLetter = (score) => (GRADE.cuts.find(([, min]) => score >= min) ?? ['C'])[0];
+function teamGrade() {
+  const each = heroes.map(gradeOf);
+  const score = Math.round(each.reduce((n, g) => n + g.score, 0) / each.length);
+  return { score, letter: gradeLetter(score), heroes: each };
+}
+const lastGrade = () => run.grades.at(-1) ?? null;
+const gradesLine = () => (run.grades.length ? `Notes : ${run.grades.map((g) => g.team).join(' · ')}.` : '');
 
 let state = 'menu';
 let debugRun = false;
@@ -5295,6 +5342,8 @@ function killEnemy(e) {
   combo.t = COMBO_WINDOW;
   if (inTranse()) transe.t = Math.min(transeMax(), transe.t + 0.6);
   combo.best = Math.max(combo.best, combo.n);
+  L.fl.combo = Math.max(L.fl.combo, combo.n);
+  L.fl.kills++;
   if (combo.n === 1 && L.depth === 2 && toastT <= 0 && !L.comboHint) {
     L.comboHint = true;
     showTeach('combo');
@@ -5879,6 +5928,7 @@ function gainXp(n) {
 function perfectDodge(p) {
   if (p.perfectDone) return;
   p.perfectDone = true;
+  p.fl.perfect++;
   if (p.riposte) p.riposteT = 2;
   slowMo = 0.45;
   p.nextCrit = true;
@@ -5912,6 +5962,7 @@ function parryHeld(h) {
 
 function parrySuccess(p, src) {
   learn(p, 'parade');
+  p.fl.perfect++;
   p.parried = true;
   p.guardT = Math.min(p.guardT, 0.05);
   p.parryCd = 0.1;
@@ -6028,6 +6079,7 @@ function hurtPlayer(amount, sx, sz, who = player, src = null) {
   }
   amount *= 1 - Math.min(0.45, p.armor);
   p.hp = Math.max(0, p.hp - amount);
+  p.fl.dmg += amount;
   teachMissed(p);
   if (L.trial) L.trial.hits++;
   p.inv = 0.5;
@@ -6208,7 +6260,7 @@ const PACTS = [
   { id: 'disette', name: 'Disette', desc: 'Une potion de moins au départ, et chacune soigne 10 PV de moins.' },
 ];
 // pacts : pactes de départ choisis à l'accueil, toute la partie. vow : pacte pris à l'escalier d'un gardien (vowFloor = étage de ce gardien), actif jusqu'à l'offre suivante ; taken : nombre de pactes ainsi pris.
-const run = { won: false, pacts: [], vow: null, vowFloor: 0, taken: 0 };
+const run = { won: false, pacts: [], vow: null, vowFloor: 0, taken: 0, grades: [] };
 const hasPact = (id) => run.pacts.includes(id) || run.vow === id;
 const heatOf = () => run.pacts.length + run.taken;
 let chosenPacts = (store.get(PACTS_KEY, []) || []).filter((id) => PACTS.some((p) => p.id === id));
@@ -6271,7 +6323,7 @@ function openWin() {
   const heat = heatOf();
   $('win-record').hidden = !record;
   renderTrack($('win-track'), VICTORY_DEPTH, true);
-  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence.`;
+  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence. ${gradesLine()}`.trim();
   const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
   $('w-level').textContent = team.level;
   $('w-gold').textContent = split('gold');
@@ -6332,7 +6384,7 @@ function die() {
   pendingChoices.length = 0;
   $('boss').hidden = true;
   const record = recordBest();
-  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}.`;
+  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}. ${gradesLine()}`.trim();
   $('dead-record').hidden = !record;
   renderTrack($('dead-track'), L.depth);
   const left = Math.max(0, VICTORY_DEPTH - L.depth);
@@ -8612,6 +8664,18 @@ function rollPactOffer() {
   return pool.length ? { id: pick(pool).id, taken: false } : null;
 }
 
+const fmtTime = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+function renderFloorGrade() {
+  const duo = heroes.length > 1;
+  const tg = teamGrade();
+  $('grade-letter').textContent = tg.letter;
+  $('grade-letter').dataset.g = tg.letter;
+  $('grade-title').textContent = duo ? `Équipe · ${tg.heroes.map((g, n) => `${tagOf(heroes[n])} ${g.letter}`).join(' · ')}` : 'Note de l’étage';
+  const own = heroes.map((h) => `${duo ? `${tagOf(h)} ` : ''}${Math.round(h.fl.dmg * 10)} PV perdus, ${h.fl.perfect} parfaite${h.fl.perfect > 1 ? 's' : ''}`).join(' · ');
+  $('grade-detail').textContent = `${own} · combo ×${L.fl.combo} · ${fmtTime(L.fl.time)}`;
+  $('floor-grade').hidden = false;
+}
+
 function renderPactOffer() {
   const box = $('pact-offer');
   const show = isBossFloor(L.depth + 1) && !debugRun;
@@ -8649,6 +8713,7 @@ function askDescend(who) {
   $('stairs-lead').textContent = hint.length
     ? `Il reste ${hint.join(', ')}. Fouille l’étage pour t’enrichir en or, en pouvoirs et en niveaux avant la suite : en bas, tout est plus dur.`
     : 'Tu as tout exploré. Les profondeurs t’attendent.';
+  renderFloorGrade();
   renderPactOffer();
   $('stairs-go').textContent = hint.length ? 'Descendre quand même' : 'Descendre';
   $('stairs-go').className = hint.length ? 'secondary' : 'primary';
@@ -8667,6 +8732,8 @@ function stayOnFloor() {
 
 function goDown() {
   if (state !== 'stairs') return;
+  const tg = teamGrade();
+  run.grades.push({ depth: L.depth, team: tg.letter, heroes: tg.heroes.map((g) => g.letter) });
   if (isBossFloor(L.depth + 1) && !debugRun) {
     const offer = L.pactOffer;
     run.vow = offer?.taken ? offer.id : null;
@@ -9134,7 +9201,10 @@ function startFloor(depth) {
     const vow = run.vow && run.vowFloor === depth ? `Pacte : ${PACTS.find((q) => q.id === run.vow).name}` : '';
     toast(`Étage ${depth}`, [guard, vow].filter(Boolean).join(' · '));
   }
-  for (const h of heroes) h.missed = 0;
+  for (const h of heroes) {
+    h.missed = 0;
+    h.fl = { dmg: 0, perfect: 0 };
+  }
   teachMech = FLOOR_MECH[depth] ?? null;
   teachDelay = teachMech ? TEACH_DELAY : 0;
 }
@@ -9146,6 +9216,9 @@ function newRun(saved) {
   run.vow = saved && PACTS.some((q) => q.id === saved.vow && q.id !== 'disette') ? saved.vow : null;
   run.vowFloor = run.vow && Number.isInteger(saved.vowFloor) ? saved.vowFloor : 0;
   run.taken = saved && Number.isInteger(saved.taken) && saved.taken > 0 ? saved.taken : 0;
+  run.grades = saved && Array.isArray(saved.grades)
+    ? saved.grades.filter((g) => g && Number.isInteger(g.depth) && GRADE_LETTERS.includes(g.team)).map((g) => ({ depth: g.depth, team: g.team, heroes: Array.isArray(g.heroes) ? g.heroes.filter((x) => GRADE_LETTERS.includes(x)) : [] }))
+    : [];
   winPending = false;
   for (const h of heroes) {
     Object.assign(h, bodyStart(), heroStats());
@@ -9479,6 +9552,7 @@ const lastEgide = [null, null];
 const lastStatus = [null, null];
 let lastTranse = false;
 function updateOverlays(dt, running) {
+  if (running && state === 'play' && L?.fl) L.fl.time += dt;
   if (running && teachDelay > 0) {
     teachDelay -= dt;
     if (teachDelay <= 0 && teachMech) showTeach(teachMech);
@@ -10682,7 +10756,7 @@ function renderTrack(el, depth, done = false) {
 
 function renderRunChips(el) {
   const kills = heroes.reduce((n, h) => n + h.kills, 0);
-  el.replaceChildren(...[['Niveau', team.level], ['Écus', teamGold()], ['Ennemis', kills], ['Combo max', combo.best], ['Gardiens', team.bosses], ...(run.vow ? [['Pacte', PACTS.find((q) => q.id === run.vow).name]] : [])].map(([k, v]) => {
+  el.replaceChildren(...[['Niveau', team.level], ['Écus', teamGold()], ['Ennemis', kills], ['Combo max', combo.best], ['Gardiens', team.bosses], ...(run.vow ? [['Pacte', PACTS.find((q) => q.id === run.vow).name]] : []), ...(run.grades.length ? [['Notes', run.grades.slice(-6).map((g) => g.team).join(' ')]] : [])].map(([k, v]) => {
     const li = document.createElement('li');
     li.innerHTML = `${k} <b>${v}</b>`;
     return li;
@@ -11162,7 +11236,7 @@ function snapshot() {
     const { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT } = h;
     return { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT, perks: { ...h.perks }, gear: { ...h.gear }, gearKind: { ...h.gearKind } };
   });
-  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor, taken: run.taken } };
+  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor, taken: run.taken, grades: run.grades.map((g) => ({ ...g, heroes: g.heroes.slice() })) } };
 }
 
 function boot(data) {

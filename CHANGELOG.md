@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.8.0 — 2026-11-26
+
+- Note d'étage : S, A, B ou C selon les dégâts subis, les esquives et parades parfaites, le combo et le temps.
+- La note s'affiche à l'escalier (par héros et pour l'équipe en duo), se résume dans la pause et les bilans de fin.
+- Elle est purement informative : rien ne change dans le jeu.
+
 ## 1.7.0 — 2026-11-26
 
 - Pactes en jeu : avant chaque gardien, l'écran de l'escalier propose un pacte (Hordes, Acier, Fureur ou Hâte), disponible dès la première partie.

@@ -248,6 +248,19 @@ Les étages 1 et 2 enseignent une mécanique à la fois : l'esquive à l'étage 
 - **Rappel** : trois coups encaissés d'affilée sans utiliser la mécanique de l'étage relancent l'indice, une fois par étage. À l'étage 2, la première victime d'une série affiche aussi « Enchaîne ».
 - **Appris** : une esquive qui évite un coup, une parade parfaite ou deux victimes enchaînées marquent la mécanique réussie. Le suivi est par héros pendant la partie ; la clé `profondeurs.appris` (`{ esquive, parade, combo }`) est écrite quand tous les héros présents ont réussi, et plus aucun indice ne s'affiche ensuite. Le combo est une valeur d'équipe : il compte pour tous les héros.
 
+### Note d'étage
+
+À chaque étage quitté, chaque héros reçoit une note S, A, B ou C, informative : elle ne change ni les monstres, ni les récompenses, ni le record. Elle s'affiche dans l'écran de l'escalier (note courante, valeurs des signaux, et en duo une note par héros plus une note d'équipe), dans la pause (puce « Notes ») et dans les bilans de victoire et de mort.
+
+| Signal | Poids | Mesure |
+| --- | --- | --- |
+| Dégâts subis | 35 % | 1 − PV perdus ÷ (PV max × 1,2), par héros |
+| Esquives et parades parfaites | 25 % | nombre ÷ max(2, victimes × 0,25), par héros |
+| Combo maximal | 25 % | combo ÷ 10 sur l'étage |
+| Temps | 15 % | plein jusqu'à la référence (max(60, salles × 22) s), nul à 2,5 fois la référence ; le temps de pause ne compte pas |
+
+Score = somme pondérée × 100 ; S dès 85, A dès 65, B dès 40, C en dessous. L'équipe prend la moyenne des scores. Les notes (`run.grades`) suivent la reprise de partie.
+
 ### Combo et Transe
 
 - Chaque ennemi vaincu moins de 5 s après le précédent fait monter le combo. Il multiplie les écus ramassés : + 10 % par cran, jusqu'à + 100 %. Encaisser un coup divise par deux le temps restant.
@@ -596,6 +609,7 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 5396 | 0,12 s (0,16 s tactile) |
 | Mémoire des commandes | `INPUT_BUFFER` | 5397 | 0,16 s |
 | Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5398–5402 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
+| Note d'étage : poids, seuils, références | `GRADE`, `gradeOf` | 4565–4573 | 35/25/25/15 · S 85, A 65, B 40 |
 | Pactes | `PACTS` | 6203 | Table |
 | Pacte en jeu : pool, récompense | `PACT_OFFERS`, `PACT_REWARD`, `rollPactOffer` | 8608–8613 | 4 pactes · seconde relique légendaire |
 | Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6190 | Table |
