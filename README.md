@@ -220,6 +220,19 @@ Les dégâts d'un coup valent `(1 + 0,1 × (niveau − 1)) × multiplicateur d'�
 
 L'**attaque auto** (activée par défaut sur écran tactile) frappe seule dès qu'un ennemi est à portée ou qu'une orbe arrive. Dans le refuge du marchand, aucune attaque ne part (« Trêve du marchand »).
 
+### Les quatre classes
+
+Chaque classe appartient à une **famille** qui fixe son moteur d'attaque (mêlée : épée en arc ; distance : tirs) et les aptitudes réservées qu'elle peut recevoir (épée : allonge, tourbillon, miroir ; arbalète : perforant, salve, ricochet).
+
+| Classe | Famille | Départ | Signature |
+| --- | --- | --- | --- |
+| La Lame | mêlée | 100 PV | Renvoie les orbes ; combos avec L'Arbalétrière |
+| L'Arbalétrière | distance | 100 PV | Vise seule, abat les orbes, marque les cibles |
+| Le Gardien | mêlée | 130 PV, coups × 1,2 plus lents, armure + 10 %, vitesse × 0,95 | Rempart : une parade parfaite libère une onde (rayon 2,6) qui repousse et étourdit |
+| Le Mage | distance | 85 PV, tirs × 1,2 plus lents | Éclat : l'orbe explose (60 % des dégâts, rayon 1,5) ; Lueur : chaque victime soigne de 3 PV les héros à moins de 4 unités |
+
+Les valeurs de départ vivent dans `CLASSES[id].mods` (`applyClassMods`). Le choix solo est mémorisé ; le salon du duo accepte la même classe deux fois.
+
 ### Esquive, élan et critiques
 
 - **Esquive** : 0,2 s de ruée à 15 unités/s, invulnérable 0,26 s, recharge 0,85 s. Un anneau bleu bref signale qu'elle est de nouveau prête.

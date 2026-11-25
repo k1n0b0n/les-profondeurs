@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.11.0 — 2026-11-26
+
+- Deux nouveaux héros : Le Gardien (mêlée, 130 PV, sa parade parfaite libère une onde qui étourdit) et Le Mage (distance, 85 PV, orbes explosifs, chaque victime soigne les alliés proches).
+- Les aptitudes d'épée et d'arbalète s'appliquent à toute la famille (mêlée ou distance).
+- Quatre cartes de héros à l'accueil, et quatre classes à choisir dans le salon du duo.
+
 ## 1.10.0 — 2026-11-26
 
 - Duo : relève en élan. Quand un allié est relevé, une onde de choc repousse et étourdit les monstres autour de lui, et ton prochain coup est critique.

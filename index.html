@@ -747,6 +747,8 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <div class="hero-pick">
       <button type="button" class="hero-card" id="hero-start-lame" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><b>La Lame</b><small id="hero-desc-lame"></small></button>
       <button type="button" class="hero-card" id="hero-start-arbalete" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></svg><b>L’Arbalétrière</b><small id="hero-desc-arbalete"></small></button>
+      <button type="button" class="hero-card" id="hero-start-garde" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><b>Le Gardien</b><small id="hero-desc-garde"></small></button>
+      <button type="button" class="hero-card" id="hero-start-mage" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17v4"/><path d="M17 19h4"/></svg><b>Le Mage</b><small id="hero-desc-mage"></small></button>
     </div>
     <button class="primary" id="play" disabled>Chargement du donjon…</button>
     <button class="secondary" id="play-duo" hidden>Jouer à deux sur cet écran</button>
@@ -1011,9 +1013,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.10.0';
+const GAME_VERSION = '1.11.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.11.0', date: '26/11/2026', items: [
+    'Deux nouveaux héros : Le Gardien (mêlée, 130 PV, sa parade parfaite libère une onde qui étourdit) et Le Mage (distance, 85 PV, orbes explosifs, chaque victime soigne les alliés proches).',
+    'Les aptitudes d’épée et d’arbalète s’appliquent à toute la famille (mêlée ou distance).',
+    'Quatre cartes de héros à l’accueil, et quatre classes à choisir dans le salon du duo.',
+  ] },
   { version: '1.10.0', date: '26/11/2026', items: [
     'Duo : relève en élan. Quand un allié est relevé, une onde de choc repousse et étourdit les monstres autour de lui, et ton prochain coup est critique.',
     'Duo : cordée. À moins de quatre unités l’un de l’autre, vous infligez 15 % de dégâts en plus et en subissez 10 % de moins (liseré doré sur les fiches).',
@@ -1123,11 +1130,32 @@ const BOLT_DMG = 0.8;
 const BOW_Z = 0.16;
 const MARK_TIME = 4;
 const STAGGER_TIME = 0.9;
+// family : moteur d'attaque (melee = épée en arc, ranged = tirs) ; mods : PV max (absolu), facteurs *Mul, armure (additive) ; tint/scale : apparence.
 const CLASSES = {
-  lame: { name: 'La Lame', short: 'Lame', desc: 'Épée au corps à corps : frappe en arc, renvoie les orbes.', attack: 'Frapper, renvoyer les orbes' },
-  arbalete: { name: "L'Arbalétrière", short: 'Arbalète', desc: 'Carreaux à distance : vise seule, abat les orbes en vol, marque les cibles.', attack: 'Tirer, abattre les orbes' },
+  lame: { name: 'La Lame', short: 'Lame', family: 'melee', desc: 'Épée au corps à corps : frappe en arc, renvoie les orbes.', attack: 'Frapper, renvoyer les orbes' },
+  arbalete: { name: "L'Arbalétrière", short: 'Arbalète', family: 'ranged', desc: 'Carreaux à distance : vise seule, abat les orbes en vol, marque les cibles.', attack: 'Tirer, abattre les orbes' },
+  garde: {
+    name: 'Le Gardien', short: 'Gardien', family: 'melee', attack: 'Frapper, parer',
+    desc: 'Bouclier et lourde épée : encaisse beaucoup, et sa parade parfaite libère une onde qui étourdit.',
+    mods: { maxHp: 13, atkCdMul: 1.2, armor: 0.1, speedMul: 0.95 }, tint: 0x8a96a8, scale: 1.12,
+  },
+  mage: {
+    name: 'Le Mage', short: 'Mage', family: 'ranged', attack: 'Lancer, soigner',
+    desc: 'Orbes explosifs à distance : touchent les groupes, et chaque victime soigne les alliés proches.',
+    mods: { maxHp: 8.5, atkCdMul: 1.2 }, tint: 0x8a5ad8, scale: 0.95,
+  },
 };
 const CLASS_IDS = Object.keys(CLASSES);
+const isRanged = (x) => CLASSES[typeof x === 'string' ? x : x?.cls]?.family === 'ranged';
+function applyClassMods(h) {
+  const m = CLASSES[h.cls]?.mods;
+  if (!m) return;
+  for (const [k, v] of Object.entries(m)) {
+    if (k === 'maxHp') h.maxHp = h.hp = v;
+    else if (k.endsWith('Mul')) h[k] *= v;
+    else h[k] += v;
+  }
+}
 const ATTACK_ROW = 'attaque';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -1625,11 +1653,15 @@ function buildHero(tunic = 0x3a5ca8, tagColor = 0x6aa8ff) {
   rig.add(body, belt, head, helm, hood, eyeL, eyeR, sword, bow, torch);
   root.add(rig, part(G.shadow, M.shadow, 0.5, 1, 0.5, 0, 0.02, 0), arc, spinRing, shield, guard, ready, tag, revive, frost);
   scene.add(root);
-  return { root, rig, sword, bow, bowBolt, helm, hood, flame, halo, arc, arcMat, spinRing, spinMat, shield, guard, guardMat, ready, readyMat, bodyMat, tag, revive, frost };
+  return { root, rig, tunic, sword, bow, bowBolt, helm, hood, flame, halo, arc, arcMat, spinRing, spinMat, shield, guard, guardMat, ready, readyMat, bodyMat, tag, revive, frost };
 }
 
 function dressHero(mesh, cls) {
-  const archer = cls === 'arbalete';
+  const archer = isRanged(cls);
+  const look = CLASSES[cls] ?? {};
+  mesh.bodyMat.color.setHex(mesh.tunic);
+  if (look.tint) mesh.bodyMat.color.lerp(new THREE.Color(look.tint), 0.4);
+  mesh.rig.scale.setScalar(look.scale ?? 1);
   mesh.sword.visible = !archer;
   mesh.helm.visible = !archer;
   mesh.bow.visible = archer;
@@ -4333,13 +4365,15 @@ const grimoire = (() => {
 })();
 const saveGrimoire = () => store.set(GRIMOIRE_KEY, grimoire);
 const perkCls = (p) => p.cls ?? (p.req ? p.req.map((id) => perkById(id).cls).find(Boolean) : undefined);
+// Une aptitude réservée à « lame » ou « arbalete » vaut pour toute la famille (mêlée, distance) ; une autre classe n'a que la sienne.
+const perkFits = (cls, who) => (cls === 'lame' || cls === 'arbalete' ? CLASSES[cls].family === CLASSES[who.cls].family : cls === who.cls);
 const duosOpenedBy = (who, perk) => PERKS.filter((d) => d.req && d.req.includes(perk.id) && !who.perks[d.id] && d.req.every((id) => id === perk.id || who.perks[id]));
 
 // Le niveau tire au poids de la rareté ; l'autel et le sanctuaire garantissent une rare, le gardien une légendaire.
 function rollPerks(who, kind = 'level') {
   const fits = (p) => {
     const cls = perkCls(p);
-    if (cls && cls !== who.cls) return false;
+    if (cls && !perkFits(cls, who)) return false;
     if ((who.perks[p.id] || 0) >= p.max) return false;
     if (p.req && !p.req.every((id) => who.perks[id])) return false;
     return !p.unlock || grimoire.bosses.includes(p.unlock);
@@ -4387,19 +4421,19 @@ for (const k of Object.keys(TEAM_START)) {
 // Deux objets par emplacement : acheter l'un ferme l'autre pour la partie, les rangs suivants améliorent celui choisi.
 const GEAR = {
   arme: { slot: 'Arme', group: 'Attaque', price: [60, 140, 260, 420], kinds: {
-    lourde: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète lourde' : 'Épée lourde'), desc: 'Dégâts +30 % par rang, mais attaques 8 % plus lentes.', apply: (h) => { h.dmgMul += 0.3; h.atkCdMul *= 1.08; } },
-    vive: { name: (h) => (h.cls === 'arbalete' ? 'Arbalète légère' : 'Épée vive'), desc: 'Attaques 10 % plus rapides et +5 % de critiques par rang.', apply: (h) => { h.atkCdMul *= 0.9; h.crit += 0.05; } },
+    lourde: { name: (h) => (isRanged(h) ? 'Arbalète lourde' : 'Épée lourde'), desc: 'Dégâts +30 % par rang, mais attaques 8 % plus lentes.', apply: (h) => { h.dmgMul += 0.3; h.atkCdMul *= 1.08; } },
+    vive: { name: (h) => (isRanged(h) ? 'Arbalète légère' : 'Épée vive'), desc: 'Attaques 10 % plus rapides et +5 % de critiques par rang.', apply: (h) => { h.atkCdMul *= 0.9; h.crit += 0.05; } },
   } },
   armure: { slot: 'Torse', group: 'Défense', price: [55, 130, 250], kinds: {
     plates: { name: () => 'Cuirasse', desc: 'Dégâts subis −10 % par rang.', apply: (h) => { h.armor += 0.1; } },
     epines: { name: () => 'Cotte d’épines', desc: 'Dégâts subis −5 % par rang, et chaque coup reçu blesse les monstres collés à toi.', apply: (h) => { h.armor += 0.05; h.thorns += 1; } },
   } },
   heaume: { slot: 'Tête', group: 'Défense', price: [45, 110, 210], kinds: {
-    heaume: { name: (h) => (h.cls === 'arbalete' ? 'Chaperon' : 'Heaume'), desc: '+20 PV max par rang, rendus tout de suite.', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
+    heaume: { name: (h) => (isRanged(h) ? 'Chaperon' : 'Heaume'), desc: '+20 PV max par rang, rendus tout de suite.', apply: (h) => { h.maxHp += 2; h.hp += 2; } },
     lanterne: { name: () => 'Lanterne de mineur', desc: 'Tu vois une case plus loin par rang, et l’escalier apparaît sur la minicarte dès l’arrivée.', apply: (h) => { h.sight += 1; h.finder = true; } },
   } },
   bouclier: { slot: 'Bras', group: 'Défense', price: [90, 200], kinds: {
-    garde: { name: (h) => (h.cls === 'arbalete' ? 'Brassards' : 'Bouclier'), desc: '12 % de chances par rang de dévier un coup entier.', apply: (h) => { h.parry += 0.12; } },
+    garde: { name: (h) => (isRanged(h) ? 'Brassards' : 'Bouclier'), desc: '12 % de chances par rang de dévier un coup entier.', apply: (h) => { h.parry += 0.12; } },
     riposte: { name: () => 'Gantelets de riposte', desc: 'Après une esquive parfaite, ton critique frappe 60 % plus fort par rang.', apply: (h) => { h.riposte += 1; } },
   } },
   bottes: { slot: 'Pieds', group: 'Mobilité', price: [40, 100, 190], kinds: {
@@ -4433,6 +4467,7 @@ const bodyStart = () => ({
 function makeHero(index, mesh, light, cls = 'lame') {
   const h = Object.create(HeroProto);
   Object.assign(h, bodyStart(), heroStats(), { index, mesh, light, cls, device: { kind: 'any' } });
+  applyClassMods(h);
   dressHero(mesh, cls);
   return h;
 }
@@ -4441,7 +4476,7 @@ function setHeroClass(h, cls) {
   h.cls = CLASSES[cls] ? cls : 'lame';
   dressHero(h.mesh, h.cls);
   if (h.index === 0) {
-    const archer = h.cls === 'arbalete';
+    const archer = isRanged(h.cls);
     $('ico-sword').toggleAttribute('hidden', archer);
     $('ico-bow').toggleAttribute('hidden', !archer);
     $('attack').setAttribute('aria-label', archer ? 'Tirer' : 'Frapper');
@@ -4454,7 +4489,7 @@ const AUTO_KEY = 'profondeurs.attaque-auto';
 let autoAttack = store.get(AUTO_KEY, matchMedia('(pointer: coarse)').matches);
 function autoTarget(p) {
   if (inHaven(p.x, p.z)) return false;
-  if (p.cls === 'arbalete') return !!boltAim(p);
+  if (isRanged(p)) return !!boltAim(p);
   const reach = ATTACK_RANGE * p.rangeMul;
   if (L.enemies.some((e) => e.dying < 0 && e.seen && e.spawnT <= 0 && !e.hidden && Math.hypot(e.x - p.x, e.z - p.z) < reach + e.r + 0.15 && los(p.x, p.z, e.x, e.z))) return true;
   return L.shots.some((s) => s.owner === 'foe' && Math.hypot(s.x - p.x, s.z - p.z) < 1.8 && (s.x - p.x) * s.vx + (s.z - p.z) * s.vz < 0);
@@ -4800,7 +4835,7 @@ function updatePlayer(dt) {
       const nx = m.x / m.mag;
       const nz = m.z / m.mag;
       const k = m.analog ? clamp((m.mag - 0.18) / 0.62, 0.3, 1) : 1;
-      const swingSlow = player.cls === 'arbalete' ? 0.75 : 0.45;
+      const swingSlow = isRanged(player) ? 0.75 : 0.45;
       const sprint = player.swing < 0 && player.guardT <= 0 && dashHeld(player);
       player.sprinting = sprint;
       if (sprint && Math.random() < 0.5) emit({ x: player.x + rand(-0.2, 0.2), y: 0.1, z: player.z + rand(-0.2, 0.2), vx: -nx * 1.5, vy: 0.5, vz: -nz * 1.5, g: -1, life: 0.3, max: 0.3, color: 0xc8c0b0, size: 0.45 });
@@ -4988,7 +5023,7 @@ function tryAttack(charge = 0) {
   }
   player.bufAttack = 0;
   const haven = inHaven(player.x, player.z);
-  if (player.cls === 'arbalete') {
+  if (isRanged(player)) {
     if (haven) {
       player.atkCd = 0.4;
       if (elapsed - player.truceAt > 1.5) {
@@ -5237,6 +5272,15 @@ function spawnBolt(p, ang, dmg, sure) {
   });
 }
 
+// Éclat du Mage : l'orbe explose à l'impact et touche les monstres voisins à 60 % des dégâts.
+function mageBurst(s, e, nx, nz) {
+  ring(e.x, e.z, 0xb18cff, 14, 3, 0.3);
+  for (const o of L.enemies.slice()) {
+    if (o === e || o.dying >= 0 || Math.hypot(o.x - e.x, o.z - e.z) > 1.5 + o.r) continue;
+    hitEnemy(o, s.dmg * 0.6, nx, nz, { knock: 0.2 });
+  }
+}
+
 function boltHit(s, e, nx, nz) {
   const flying = e.staggerT > 0;
   const crit = s.sure || flying || Math.random() < s.from.crit;
@@ -5251,6 +5295,7 @@ function boltHit(s, e, nx, nz) {
   }
   if (crit) sfx.crit();
   const killed = hitEnemy(e, s.dmg * (crit ? 2 : 1) * (flying ? 1.25 : 1), nx, nz, { crit, knock: 0.35, direct: true });
+  if (s.from.cls === 'mage') mageBurst(s, e, nx, nz);
   if (!killed && teamHas('lame') && e.blockedAt !== elapsed && !e.ward) markEnemy(e);
 }
 
@@ -5394,6 +5439,7 @@ function killEnemy(e) {
   e.bar.g.visible = false;
   if (e.tele) e.tele.visible = false;
   player.kills++;
+  if (player.cls === 'mage') for (const h of heroes) if (!h.down && Math.hypot(h.x - player.x, h.z - player.z) <= 4) heal(0.3, h);
   sfx.kill();
   burst(e.x, 0.5, e.z, e.def.color, 16, 4);
 
@@ -6027,7 +6073,15 @@ function parryHeld(h) {
   return heroPads(h).some((st) => st.parry);
 }
 
+// Rempart du Gardien : sa parade parfaite libère une onde qui repousse et étourdit.
+function rempart(p) {
+  L.blasts.push({ x: p.x, z: p.z, t: 0, R: 2.6, dmg: dmgOf(p) * 0.8, color: 0xf2d27a, by: p });
+  ring(p.x, p.z, 0xf2d27a, 20, 5.2, 0.35);
+  for (const e of L.enemies) if (e.dying < 0 && e.type !== 'boss' && Math.hypot(e.x - p.x, e.z - p.z) < 2.6 + e.r) stunEnemy(e, p);
+}
+
 function parrySuccess(p, src) {
+  if (p.cls === 'garde') rempart(p);
   learn(p, 'parade');
   p.fl.perfect++;
   p.parried = true;
@@ -9019,7 +9073,7 @@ function shopStalls(who) {
     const kinds = level ? [who.gearKind[slot]] : Object.keys(g.kinds);
     return {
       name: g.slot, group: g.group, level, max,
-      icon: slot === 'arme' && who.cls === 'arbalete' ? 'arbalete' : slot,
+      icon: slot === 'arme' && isRanged(who) ? 'arbalete' : slot,
       note: level >= max ? 'maximum atteint' : level ? `rang ${level + 1} sur ${max}` : 'l’un ou l’autre',
       wares: kinds.map((kind) => ({ key: `${slot}:${kind}`, name: g.kinds[kind].name(who), rank: ROMAN[Math.min(level, max - 1)], desc: g.kinds[kind].desc, price })),
     };
@@ -9295,6 +9349,7 @@ function newRun(saved) {
   winPending = false;
   for (const h of heroes) {
     Object.assign(h, bodyStart(), heroStats());
+    applyClassMods(h);
     h.mesh.rig.rotation.set(0, 0, 0);
   }
   player = heroes[0];
@@ -9722,7 +9777,7 @@ function updateHero(dt) {
   h.rig.position.y = dashing ? 0.05 : player.moving ? Math.abs(Math.sin(player.walk)) * 0.07 : 0;
   h.rig.rotation.x = dashing ? 0.55 : 0;
   h.rig.rotation.z = player.moving && !dashing ? Math.sin(player.walk) * 0.05 : 0;
-  if (player.cls === 'arbalete') {
+  if (isRanged(player)) {
     animateBow(h, dt);
   } else if (player.swing >= 0 && player.spinning) {
     player.swing += dt;
@@ -9763,7 +9818,7 @@ function updateHero(dt) {
   if (guarding) {
     h.guardMat.opacity = sharp ? 0.85 : 0.3;
     h.guard.scale.setScalar(sharp ? 1.1 - player.guardAge * 0.6 : 1);
-    if (player.cls !== 'arbalete') h.sword.rotation.y = 1.25;
+    if (!isRanged(player)) h.sword.rotation.y = 1.25;
   }
   player.readyFlash -= dt;
   h.ready.visible = player.readyFlash > 0;
