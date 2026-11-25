@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.12.0 — 2026-11-26
+
+- Jusqu'à quatre joueurs sur le même écran : clavier gauche, clavier droit et autant de manettes que branchées. La partie démarre dès deux joueurs prêts.
+- Quatre couleurs de joueur, quatre fiches (J1 et J2 en haut, J3 et J4 en bas), une torche par héros.
+- Laisse, caméra, relève et cordée fonctionnent à quatre ; les monstres gagnent 30 % de PV (60 % pour un gardien) par joueur en plus.
+
 ## 1.11.0 — 2026-11-26
 
 - Deux nouveaux héros : Le Gardien (mêlée, 130 PV, sa parade parfaite libère une onde qui étourdit) et Le Mage (distance, 85 PV, orbes explosifs, chaque victime soigne les alliés proches).

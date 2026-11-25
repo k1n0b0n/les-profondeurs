@@ -531,12 +531,14 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 
 Dans tous les menus, flèches, stick et croix déplacent le focus vers le bouton le plus proche dans la direction choisie. B à la manette et Échap au clavier reviennent en arrière : fermer les touches ou le mode test, quitter le marchand ou l'autel, reprendre après la pause.
 
-### Deux joueurs sur le même écran
+### Jusqu'à quatre joueurs sur le même écran
 
 1. Cliquer « Jouer à deux sur cet écran » (visible dès qu'un clavier ou une manette a servi).
+   De deux à quatre joueurs : moitié gauche du clavier, moitié droite, et autant de manettes que branchées. Un emplacement apparaît quand le précédent est pris.
 2. Chaque joueur rejoint avec son appareil : Espace pour la moitié gauche du clavier, Entrée pour la moitié droite, A pour une manette.
 3. Gauche ou droite change de héros ; l'équipe par défaut est Lame + Arbalétrière.
-4. « Descendre à deux » quand les deux places sont prises.
+4. « Descendre à N » dès que deux joueurs au moins ont rejoint : la partie démarre avec ceux qui sont présents. Chaque joueur a sa couleur (bleu, rouge, vert, or) ; les fiches J1 et J2 sont en haut, J3 et J4 en bas de l'écran.
+5. Les monstres gagnent 30 % de PV par joueur en plus (60 % pour un gardien de biome), soit × 1,3 et × 1,6 à deux, × 1,9 et × 2,8 à quatre. La laisse (16 unités) vaut pour chaque paire de héros, la caméra cadre tous les héros debout, et la cordée est active tant qu'un allié debout est à moins de 4 unités.
 
 | Action | Clavier, moitié gauche | Clavier, moitié droite | Manette |
 | --- | --- | --- | --- |

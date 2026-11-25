@@ -27,6 +27,8 @@
   --gold: #f2c450;
   --p1: #6aa8ff;
   --p2: #ff7a7a;
+  --p3: #7be07a;
+  --p4: #ffd35a;
   --font-display: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
   --font-body: "Alegreya Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
 }
@@ -88,6 +90,11 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 }
 #hud.duo .pcard { border-left: 3px solid var(--pc); }
 #hud.duo .pcard.p2 { --pc: var(--p2); border-left: 1px solid var(--line); border-right: 3px solid var(--pc); }
+.pcard.p3 { --pc: var(--p3); }
+.pcard.p4 { --pc: var(--p4); border-left: 1px solid var(--line); border-right: 3px solid var(--pc); }
+.pcard.corner { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(230px, 40vw); grid-column: auto; grid-row: auto; }
+#pcard-3 { left: max(12px, env(safe-area-inset-left, 0px)); }
+#pcard-4 { right: max(12px, env(safe-area-inset-right, 0px)); }
 .pcard.down { opacity: 0.55; }
 .pcard.cordee { box-shadow: inset 0 0 0 1px var(--gold), 0 0 12px rgba(242, 196, 80, 0.25); }
 .pc-head { display: flex; align-items: baseline; gap: 8px; }
@@ -192,6 +199,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #hud.duo .ctl, #hud.duo #joy { display: none; }
 .downmark { --pc: var(--p1); position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border: 1px solid var(--pc); border-radius: 999px; background: rgba(11, 9, 16, 0.85); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; will-change: transform; }
 .downmark.p2 { --pc: var(--p2); }
+.downmark.p3 { --pc: var(--p3); }
+.downmark.p4 { --pc: var(--p4); }
 .downmark i { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--pc); }
 .downmark.here i { display: none; }
 .downmark.here { animation: pulse 0.8s ease-in-out infinite alternate; }
@@ -347,6 +356,8 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 .slot-tag { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
 #slot-1 .slot-tag { color: var(--p1); }
 #slot-2 .slot-tag { color: var(--p2); }
+#slot-3 .slot-tag { color: var(--p3); }
+#slot-4 .slot-tag { color: var(--p4); }
 .slot strong { font-size: 14px; font-weight: 500; line-height: 1.3; color: var(--ink); }
 .slot { min-width: 0; }
 .pick { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
@@ -695,10 +706,22 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
       </div>
     </div>
   </div>
+  <section class="pcard p3 corner" id="pcard-3" aria-label="Joueur 3" hidden>
+    <header class="pc-head"><span class="pc-tag">J3</span><span class="pc-cls" id="pc-cls-3">La Lame</span><span class="pc-status" id="status-3" hidden></span></header>
+    <div class="bar hp" id="hp-bar-3"><div id="hp-fill-3"></div><span id="hp-text-3">100 / 100</span><em id="egide-3" hidden>Égide</em></div>
+    <div class="pc-row"><span class="pots" id="pots-3" aria-label="Potions"></span><span class="gold"><b id="gold-3">0</b> écus</span></div>
+  </section>
+  <section class="pcard p4 corner" id="pcard-4" aria-label="Joueur 4" hidden>
+    <header class="pc-head"><span class="pc-tag">J4</span><span class="pc-cls" id="pc-cls-4">La Lame</span><span class="pc-status" id="status-4" hidden></span></header>
+    <div class="bar hp" id="hp-bar-4"><div id="hp-fill-4"></div><span id="hp-text-4">100 / 100</span><em id="egide-4" hidden>Égide</em></div>
+    <div class="pc-row"><span class="pots" id="pots-4" aria-label="Potions"></span><span class="gold"><b id="gold-4">0</b> écus</span></div>
+  </section>
   <div id="boss" hidden><p id="boss-name">Le Veilleur de pierre</p><div class="boss-bar"><div id="boss-fill"></div></div></div>
   <div id="trial" hidden><p id="trial-name">Épreuve</p><small id="trial-info"></small></div>
   <div class="downmark" id="down-1" hidden><i></i><span>J1 à terre</span></div>
   <div class="downmark p2" id="down-2" hidden><i></i><span>J2 à terre</span></div>
+  <div class="downmark p3" id="down-3" hidden><i></i><span>J3 à terre</span></div>
+  <div class="downmark p4" id="down-4" hidden><i></i><span>J4 à terre</span></div>
   <div id="toast" role="status" aria-live="polite"><strong id="toast-title"></strong><small id="toast-sub"></small></div>
   <div id="joy" aria-hidden="true"><div id="knob"></div></div>
   <button id="potion" class="ctl" tabindex="-1" aria-label="Boire une potion">
@@ -788,10 +811,12 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <div class="slots">
       <div class="slot" id="slot-1"><span class="slot-tag">Joueur 1</span><strong id="slot-1-dev">En attente…</strong><div class="pick" id="slot-1-pick" hidden><button type="button" class="pick-arrow" data-slot="0" data-dir="-1" aria-label="Héros précédent">‹</button><b id="slot-1-hero">La Lame</b><button type="button" class="pick-arrow" data-slot="0" data-dir="1" aria-label="Héros suivant">›</button></div><small class="pick-desc" id="slot-1-desc"></small></div>
       <div class="slot" id="slot-2"><span class="slot-tag">Joueur 2</span><strong id="slot-2-dev">En attente…</strong><div class="pick" id="slot-2-pick" hidden><button type="button" class="pick-arrow" data-slot="1" data-dir="-1" aria-label="Héros précédent">‹</button><b id="slot-2-hero">L'Arbalétrière</b><button type="button" class="pick-arrow" data-slot="1" data-dir="1" aria-label="Héros suivant">›</button></div><small class="pick-desc" id="slot-2-desc"></small></div>
+      <div class="slot" id="slot-3"><span class="slot-tag">Joueur 3</span><strong id="slot-3-dev">En attente…</strong><div class="pick" id="slot-3-pick" hidden><button type="button" class="pick-arrow" data-slot="2" data-dir="-1" aria-label="Héros précédent">‹</button><b id="slot-3-hero">Le Gardien</b><button type="button" class="pick-arrow" data-slot="2" data-dir="1" aria-label="Héros suivant">›</button></div><small class="pick-desc" id="slot-3-desc"></small></div>
+      <div class="slot" id="slot-4"><span class="slot-tag">Joueur 4</span><strong id="slot-4-dev">En attente…</strong><div class="pick" id="slot-4-pick" hidden><button type="button" class="pick-arrow" data-slot="3" data-dir="-1" aria-label="Héros précédent">‹</button><b id="slot-4-hero">Le Mage</b><button type="button" class="pick-arrow" data-slot="3" data-dir="1" aria-label="Héros suivant">›</button></div><small class="pick-desc" id="slot-4-desc"></small></div>
     </div>
     <p class="duo-combo" id="duo-combo" hidden>Lame + Arbalétrière : un carreau marque la cible, l'épée la fait exploser. Un ennemi frappé à l'épée prend un critique s'il reçoit un carreau dans la seconde.</p>
     <p class="keys-hint">Gauche ou droite pour changer de héros. Le niveau est commun, mais chacun choisit ses aptitudes, garde ses potions et ses PV. Chaque pièce ramassée remplit les deux bourses. Un joueur à terre se relève si l'autre reste 2 s à côté de lui.</p>
-    <button class="primary" id="duo-go" disabled>Descendre à deux</button>
+    <button class="primary" id="duo-go" disabled>Descendre</button>
     <button class="secondary" id="duo-back">Retour</button>
   </div>
 </div>
@@ -1013,9 +1038,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.11.0';
+const GAME_VERSION = '1.12.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.12.0', date: '26/11/2026', items: [
+    'Jusqu’à quatre joueurs sur le même écran : clavier gauche, clavier droit et autant de manettes que branchées. La partie démarre dès deux joueurs prêts.',
+    'Quatre couleurs de joueur, quatre fiches (J1 et J2 en haut, J3 et J4 en bas), une torche par héros.',
+    'Laisse, caméra, relève et cordée fonctionnent à quatre ; les monstres gagnent 30 % de PV (60 % pour un gardien) par joueur en plus.',
+  ] },
   { version: '1.11.0', date: '26/11/2026', items: [
     'Deux nouveaux héros : Le Gardien (mêlée, 130 PV, sa parade parfaite libère une onde qui étourdit) et Le Mage (distance, 85 PV, orbes explosifs, chaque victime soigne les alliés proches).',
     'Les aptitudes d’épée et d’arbalète s’appliquent à toute la famille (mêlée ou distance).',
@@ -1312,7 +1342,10 @@ scene.add(ambient);
 const torchLight = new THREE.PointLight(0xffa452, TORCH_I, 20, 2);
 const runeLight = new THREE.PointLight(0x5aa8ff, 9, 9, 2);
 const torchLight2 = new THREE.PointLight(0xffa452, 0, 20, 2);
-scene.add(torchLight, runeLight, torchLight2);
+const torchLight3 = new THREE.PointLight(0xffa452, 0, 20, 2);
+const torchLight4 = new THREE.PointLight(0xffa452, 0, 20, 2);
+const TORCHES = [torchLight, torchLight2, torchLight3, torchLight4];
+scene.add(torchLight, runeLight, torchLight2, torchLight3, torchLight4);
 
 function speckle(g, s, n) {
   for (let k = 0; k < n; k++) {
@@ -3520,7 +3553,7 @@ function spawnEnemy(type, x, z, opts = {}) {
   const elite = !!opts.elite;
   const model = buildEnemyModel(type, opts.kind);
   const bar = buildBar(elite);
-  const party = heroes.length > 1 ? (type === 'boss' ? 1.6 : 1.3) : 1;
+  const party = 1 + (type === 'boss' ? 0.6 : 0.3) * (heroes.length - 1);
   const hp = def.hp * hpScale(L.depth) * (opts.hpMul ?? 1) * (elite ? 2 : 1) * party * (hasPact('acier') ? 1.3 : 1);
   const e = {
     type, def, x, z, size, elite, splits: !!opts.splits, ambush: opts.ambush ?? null, guard: opts.guard ?? null, trial: opts.trial ?? null,
@@ -4504,7 +4537,8 @@ const dashHeld = (h) => {
 };
 const hasteMul = (h) => (h.hasteT > 0 ? 1 - 0.12 * (h.perks.frenesie || 0) : 1);
 const heroes = [makeHero(0, hero, torchLight)];
-let heroTwo = null;
+const extraHeroes = [];
+const PLAYER_LOOK = [[0x3a5ca8, 0x6aa8ff], [0x9a3a4a, 0xff7a7a], [0x3a8a54, 0x7be07a], [0xa88a2a, 0xffd35a]];
 let player = heroes[0];
 // À deux, chaque bourse reçoit 60 % de l'or ramassé : l'équipe gagne 20 % de plus qu'en solo, pas le double.
 const goldShare = () => (heroes.length > 1 ? 0.6 : 1);
@@ -4673,15 +4707,17 @@ const DUO = { revive: { radius: 3, dmg: 1.2 }, cordee: { r: 4, dmg: 1.15, armor:
 let duoKill = { hero: null, t: -9 };
 
 function updateCordee() {
-  const on = heroes.length > 1 && heroes.every((h) => !h.down) && Math.hypot(heroes[0].x - heroes[1].x, heroes[0].z - heroes[1].z) <= DUO.cordee.r;
-  for (const h of heroes) {
+  let any = false;
+  heroes.forEach((h, n) => {
+    const on = heroes.length > 1 && !h.down && heroes.some((o) => o !== h && !o.down && Math.hypot(o.x - h.x, o.z - h.z) <= DUO.cordee.r);
     h.cordee = on;
-    $(`pcard-${h.index + 1}`).classList.toggle('cordee', on);
-  }
-  if (!on && heroes.length < 2) $('pcard-1').classList.remove('cordee');
-  if (on && !hints.cordee) {
+    any ||= on;
+    $(`pcard-${n + 1}`).classList.toggle('cordee', on);
+  });
+  if (heroes.length < 2) $('pcard-1').classList.remove('cordee');
+  if (any && !hints.cordee) {
     hints.cordee = true;
-    toast('Cordée', 'proches l’un de l’autre : + 15 % de dégâts, − 10 % de dégâts subis');
+    toast('Cordée', 'proches d’un allié : + 15 % de dégâts, − 10 % de dégâts subis');
   }
 }
 
@@ -6306,14 +6342,19 @@ function updateRevives(dt) {
 
 function enforceLeash() {
   if (heroes.length < 2 || heroes.some((h) => h.down)) return;
-  const [a, b] = heroes;
-  const dx = b.x - a.x;
-  const dz = b.z - a.z;
-  const d = Math.hypot(dx, dz);
-  if (d <= LEASH) return;
-  const pull = (d - LEASH) / 2;
-  moveBody(a, (dx / d) * pull, (dz / d) * pull, PLAYER_R);
-  moveBody(b, (-dx / d) * pull, (-dz / d) * pull, PLAYER_R);
+  for (let i = 0; i < heroes.length; i++) {
+    for (let j = i + 1; j < heroes.length; j++) {
+      const a = heroes[i];
+      const b = heroes[j];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const d = Math.hypot(dx, dz);
+      if (d <= LEASH) continue;
+      const pull = (d - LEASH) / 2;
+      moveBody(a, (dx / d) * pull, (dz / d) * pull, PLAYER_R);
+      moveBody(b, (-dx / d) * pull, (-dz / d) * pull, PLAYER_R);
+    }
+  }
 }
 
 function drinkPotion() {
@@ -8897,7 +8938,7 @@ function updateTransition(dt) {
 }
 
 // ---------- Choix, autel, menus
-const P_COLOR = ['var(--p1)', 'var(--p2)'];
+const P_COLOR = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
 
 function armOverlay(id) {
   const o = $(id);
@@ -9404,25 +9445,29 @@ function newRun(saved) {
 }
 
 function setupHeroes(devices, classes) {
+  const n = devices ? devices.length : 1;
+  heroes.length = 1;
+  for (let i = 1; i < 4; i++) {
+    if (extraHeroes[i - 1]) extraHeroes[i - 1].mesh.root.visible = false;
+    if (i >= n) TORCHES[i].intensity = 0;
+  }
   if (!devices) {
-    heroes.length = 1;
     heroes[0].device = { kind: 'any' };
     setHeroClass(heroes[0], soloClass);
-    if (heroTwo) heroTwo.mesh.root.visible = false;
-    torchLight2.intensity = 0;
   } else {
-    if (!heroTwo) heroTwo = makeHero(1, buildHero(0x9a3a4a, 0xff7a7a), torchLight2);
-    heroTwo.mesh.root.visible = true;
-    heroes.length = 1;
-    heroes.push(heroTwo);
-    heroes.forEach((h, n) => {
-      h.device = devices[n];
-      setHeroClass(h, classes?.[n] ?? lobby.classes[n]);
+    for (let i = 1; i < n; i++) {
+      if (!extraHeroes[i - 1]) extraHeroes[i - 1] = makeHero(i, buildHero(...PLAYER_LOOK[i]), TORCHES[i]);
+      extraHeroes[i - 1].mesh.root.visible = true;
+      heroes.push(extraHeroes[i - 1]);
+    }
+    heroes.forEach((h, k) => {
+      h.device = devices[k];
+      setHeroClass(h, classes?.[k] ?? lobby.classes[k]);
     });
   }
   for (const h of heroes) h.mesh.tag.visible = heroes.length > 1;
   $('hud').classList.toggle('duo', heroes.length > 1);
-  $('pcard-2').hidden = heroes.length < 2;
+  for (let k = 2; k <= 4; k++) $(`pcard-${k}`).hidden = heroes.length < k;
   lastEgide.fill(null);
   renderControls();
 }
@@ -9480,7 +9525,7 @@ function updateHud() {
   $('potion').classList.toggle('empty', lead.potions === 0);
 }
 
-const lastPots = [null, null];
+const lastPots = [null, null, null, null];
 function renderPots(k, h) {
   const key = `${h.potions}/${h.maxPotions}/${h.potionHeal}`;
   if (lastPots[k - 1] === key) return;
@@ -9649,7 +9694,7 @@ function drawMinimap(dt) {
     mctx.stroke();
   }
   heroes.forEach((p, n) => {
-    mctx.fillStyle = heroes.length < 2 ? '#f0a04b' : n === 0 ? '#6aa8ff' : '#ff7a7a';
+    mctx.fillStyle = heroes.length < 2 ? '#f0a04b' : ['#6aa8ff', '#ff7a7a', '#7be07a', '#ffd35a'][n];
     mctx.globalAlpha = p.down ? 0.45 : 1;
     mctx.beginPath();
     mctx.arc((p.x / TILE + 0.5) * sx, (p.z / TILE + 0.5) * sy, Math.max(2.5, sx * 0.9), 0, Math.PI * 2);
@@ -9677,8 +9722,8 @@ const parryBtn = $('parry');
 let lastParryCd = -1;
 let lastCd = -1;
 let lastCharged = false;
-const lastEgide = [null, null];
-const lastStatus = [null, null];
+const lastEgide = [null, null, null, null];
+const lastStatus = [null, null, null, null];
 let lastTranse = false;
 function updateOverlays(dt, running) {
   if (running && state === 'play' && L?.fl) L.fl.time += dt;
@@ -9860,7 +9905,7 @@ function updateLights() {
     h.light.intensity = TORCH_I * flick * fade * ardent * L.biome.torchMul;
     h.light.position.set(h.x + Math.sin(h.face + 0.9) * 0.35, 2.3, h.z + Math.cos(h.face + 0.9) * 0.35);
   }
-  if (heroes.length < 2) torchLight2.intensity = 0;
+  for (let n = heroes.length; n < TORCHES.length; n++) TORCHES[n].intensity = 0;
   const st = L.stairs;
   runeLight.position.set(st.x, 1.1, st.z);
   runeLight.intensity = st.g.visible ? 9 + Math.sin(elapsed * 2.2) * 2 : 0;
@@ -9883,7 +9928,8 @@ function updateCamera(dt) {
   }
   camLook.x += (tx - camLook.x) * damp(6, dt);
   camLook.z += (tz - camLook.z) * damp(6, dt);
-  const spread = focus.length > 1 ? Math.hypot(focus[0].x - focus[1].x, focus[0].z - focus[1].z) : 0;
+  let spread = 0;
+  for (let i = 0; i < focus.length; i++) for (let j = i + 1; j < focus.length; j++) spread = Math.max(spread, Math.hypot(focus[i].x - focus[j].x, focus[i].z - focus[j].z));
   camZoom += ((L.boss && L.boss.awake && L.boss.dying < 0 ? 1.15 : 1) * (1 + clamp((spread - 6) / 14, 0, 0.55)) - camZoom) * damp(3, dt);
   const zoom = camZoom;
   camera.position.copy(camLook).addScaledVector(CAM_DIR, camDist * zoom);
@@ -10297,7 +10343,8 @@ $('restart').addEventListener('click', () => {
 });
 
 // ---------- Deux joueurs
-const lobby = { slots: [null, null], classes: ['lame', 'arbalete'] };
+const lobby = { slots: [null, null, null, null], classes: ['lame', 'arbalete', 'garde', 'mage'] };
+const lobbyCount = () => lobby.slots.filter(Boolean).length;
 
 function deviceLabel(dev) {
   if (dev === 'kb-left' || dev === 'kb-right') {
@@ -10314,17 +10361,21 @@ function renderLobby() {
   const free = [!lobby.slots.includes('kb-left') && `${joinLeft} (clavier gauche)`, !lobby.slots.includes('kb-right') && `${joinRight} (clavier droit)`, `${padLabel(0)} (manette)`].filter(Boolean);
   lobby.slots.forEach((dev, n) => {
     const cls = CLASSES[lobby.classes[n]];
+    $(`slot-${n + 1}`).hidden = n >= 2 && !lobby.slots[n - 1];
     $(`slot-${n + 1}-dev`).textContent = dev ? deviceLabel(dev) : `Appuie sur ${orList(free)}`;
     $(`slot-${n + 1}`).classList.toggle('ready', !!dev);
     $(`slot-${n + 1}-pick`).hidden = !dev;
     $(`slot-${n + 1}-hero`).textContent = cls.name;
     $(`slot-${n + 1}-desc`).textContent = dev ? cls.desc : '';
   });
-  const ready = lobby.slots.every(Boolean);
+  const count = lobbyCount();
+  const ready = count >= 2;
   $('duo-go').disabled = !ready;
-  $('duo-combo').hidden = !(lobby.classes.includes('lame') && lobby.classes.includes('arbalete'));
-  $('duo-hint').textContent = ready ? `Prêts. Frappe ou ${padLabel(0)} pour descendre, gauche ou droite pour changer de héros.`
-    : `Chaque joueur rejoint avec son appareil : ${joinLeft} pour la moitié gauche du clavier, ${joinRight} pour la moitié droite, ${padLabel(0)} pour une manette.`;
+  $('duo-go').textContent = ready ? `Descendre à ${count}` : 'Descendre';
+  const picked = lobby.slots.map((d, n) => d && lobby.classes[n]).filter(Boolean);
+  $('duo-combo').hidden = !(picked.includes('lame') && picked.includes('arbalete'));
+  $('duo-hint').textContent = ready ? `${count} prêts${count < 4 ? ', un autre peut encore rejoindre' : ''}. Frappe ou ${padLabel(0)} pour descendre, gauche ou droite pour changer de héros.`
+    : `Chaque joueur rejoint avec son appareil : ${joinLeft} pour la moitié gauche du clavier, ${joinRight} pour la moitié droite, ${padLabel(0)} pour une manette. De deux à quatre joueurs.`;
 }
 
 function cycleHero(n, dir) {
@@ -10337,7 +10388,7 @@ function cycleHero(n, dir) {
 function openLobby() {
   initAudio();
   if (state !== 'menu') return;
-  lobby.slots = [null, null];
+  lobby.slots = [null, null, null, null];
   state = 'lobby';
   renderLobby();
   showOverlay('menu-duo');
@@ -10347,7 +10398,7 @@ function lobbyInput(dev, action = 'go') {
   const n = lobby.slots.indexOf(dev);
   if (n >= 0) {
     if (action === 'go') {
-      if (lobby.slots.every(Boolean)) startDuo();
+      if (lobbyCount() >= 2) startDuo();
     } else {
       cycleHero(n, action === 'next' ? 1 : -1);
     }
@@ -10362,7 +10413,7 @@ function lobbyInput(dev, action = 'go') {
 
 function lobbyBack() {
   if (lobby.slots.some(Boolean)) {
-    lobby.slots = [null, null];
+    lobby.slots = [null, null, null, null];
     renderLobby();
     return;
   }
@@ -10371,15 +10422,16 @@ function lobbyBack() {
 }
 
 function startDuo() {
-  if (!lobby.slots.every(Boolean)) return;
-  const devices = lobby.slots.map((dev) => (dev.startsWith('pad-') ? { kind: 'pad', index: Number(dev.slice(4)) } : { kind: 'kb', map: dev === 'kb-left' ? 'left' : 'right' }));
+  if (lobbyCount() < 2) return;
+  const slots = lobby.slots.map((dev, n) => (dev ? { dev, cls: lobby.classes[n] } : null)).filter(Boolean);
+  const devices = slots.map(({ dev }) => (dev.startsWith('pad-') ? { kind: 'pad', index: Number(dev.slice(4)) } : { kind: 'kb', map: dev === 'kb-left' ? 'left' : 'right' }));
   const keyboards = devices.filter((d) => d.kind === 'kb');
-  if (keyboards.length === 1) keyboards[0].map = 'full';
-  setupHeroes(devices, lobby.classes.slice());
+  if (keyboards.length === 1 && devices.length === 2) keyboards[0].map = 'full';
+  setupHeroes(devices, slots.map((x) => x.cls));
   newRun();
   state = 'play';
   showOverlay(null);
-  toast('À deux', 'restez proches, relevez-vous', 3);
+  toast(devices.length > 2 ? `À ${devices.length}` : 'À deux', 'restez proches, relevez-vous', 3);
 }
 
 for (const btn of document.querySelectorAll('.pick-arrow')) {
