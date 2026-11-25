@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.9.0 — 2026-11-26
+
+- Directeur de rythme : dès l'étage 4, le nombre de monstres, d'élites et d'embuscades et la générosité en potions suivent ta note de l'étage précédent et les héros tombés.
+- Les PV, dégâts et vitesse des monstres ne changent pas ; les étages 1 et 2 et les gardiens ne sont jamais ajustés.
+- Mode Récit (accueil et pause) : pression toujours au minimum, sans toucher aux fenêtres d'esquive et de parade. La partie ne compte pas pour le record.
+
 ## 1.8.0 — 2026-11-26
 
 - Note d'étage : S, A, B ou C selon les dégâts subis, les esquives et parades parfaites, le combo et le temps.

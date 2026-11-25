@@ -758,6 +758,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <div class="start-panel" id="changelog-start" hidden><div class="changelog" id="changelog-list" tabindex="0"></div></div>
     <div class="start-panel" id="controls-box" hidden><ul class="controls" id="controls"></ul></div>
     <div class="start-panel" id="settings-start" hidden>
+      <div class="layout" id="recit-start"><span>Mode Récit</span><div class="seg"><button type="button" id="recit-start-on" aria-pressed="false">Oui</button><button type="button" id="recit-start-off" aria-pressed="true">Non</button></div></div>
       <div class="layout" id="auto-start"><span>Attaque auto</span><div class="seg"><button type="button" id="auto-start-on" aria-pressed="false">Oui</button><button type="button" id="auto-start-off" aria-pressed="true">Non</button></div></div>
       <p class="keys-hint" id="pad-status-start" aria-live="polite" hidden></p>
     </div>
@@ -887,6 +888,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
       <button type="button" class="quick-btn" id="fs-pause" aria-pressed="false"><svg class="ico-max" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="ico-min" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg><span>Plein écran</span><small></small></button>
       <button type="button" class="quick-btn" id="keys-pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg><span>Touches</span><small>clavier, manette</small></button>
       <button type="button" class="quick-btn" id="auto-pause" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Attaque auto</span><small></small></button>
+      <button type="button" class="quick-btn" id="recit-pause" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg><span>Mode Récit</span><small></small></button>
     </div>
     <div class="pause-info">
       <div class="keycaps" id="pause-keys"></div>
@@ -1008,9 +1010,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.8.0';
+const GAME_VERSION = '1.9.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.9.0', date: '26/11/2026', items: [
+    'Directeur de rythme : dès l’étage 4, le nombre de monstres, d’élites et d’embuscades et la générosité en potions suivent ta note de l’étage précédent et les héros tombés.',
+    'Les PV, dégâts et vitesse des monstres ne changent pas ; les étages 1 et 2 et les gardiens ne sont jamais ajustés.',
+    'Mode Récit (accueil et pause) : pression toujours au minimum, sans toucher aux fenêtres d’esquive et de parade. La partie ne compte pas pour le record.',
+  ] },
   { version: '1.8.0', date: '26/11/2026', items: [
     'Note d’étage : S, A, B ou C selon les dégâts subis, les esquives et parades parfaites, le combo et le temps.',
     'La note s’affiche à l’escalier (par héros et pour l’équipe en duo), se résume dans la pause et les bilans de fin.',
@@ -2366,6 +2373,9 @@ const companion = (depth) => pick(depth >= 3 ? ['rodeur', 'rodeur', 'garde', 'br
 function populate(dun) {
   const depth = L.depth;
   const boss = isBossFloor(depth);
+  const pressure = directorPressure(depth);
+  L.pressure = pressure;
+  if (recit) run.recit = true;
   const { grid } = dun;
   const occupied = new Set([idx(dun.start.cx, dun.start.cy), idx(L.stairs.i, L.stairs.j)]);
   const tileIn = (r, inner) => {
@@ -2395,7 +2405,7 @@ function populate(dun) {
     if (t) spawnFountain(t.x, t.z);
   }
 
-  const ambushRooms = depth >= 2 ? shuffle(normal.filter((r) => r.w * r.h >= 25 && r !== fountainRoom)).slice(0, depth >= 5 ? 2 : 1) : [];
+  const ambushRooms = depth >= 2 ? shuffle(normal.filter((r) => r.w * r.h >= 25 && r !== fountainRoom)).slice(0, ambushCount(depth, pressure)) : [];
   for (const room of ambushRooms) {
     L.ambushes.push({ room, triggered: false, done: false, pending: 0, alive: 0, count: Math.min(8, 3 + Math.floor(depth * 0.6)), gates: [] });
   }
@@ -2437,7 +2447,7 @@ function populate(dun) {
   const fighting = others.filter((r) => r !== L.bossRoom && r !== L.haven && !ambushRooms.includes(r) && r !== L.vault?.room);
   const area = fighting.reduce((sum, r) => sum + r.w * r.h, 0) || 1;
   const roomy = clamp(dun.rooms.length / Math.min(8 + depth, 14), 0.8, 1.25);
-  const total = Math.min(40, 9 + (depth - 1) * 2.4) * roomy * (boss ? 0.9 : 1) * (hasPact('hordes') ? 1.3 : 1);
+  const total = Math.min(40, 9 + (depth - 1) * 2.4) * roomy * (boss ? 0.9 : 1) * (hasPact('hordes') ? 1.3 : 1) * (1 + DIRECTOR.count * pressure);
   let spawned = 0;
   const ob = ONBOARDING[depth];
   const anchor = ob?.anchorMin ? [...fighting].sort((a, b) => b.w * b.h - a.w * a.h)[0] : null;
@@ -2482,14 +2492,15 @@ function populate(dun) {
   }
 
   const eliteList = [];
-  const elites = boss || depth < 2 ? 0 : depth <= BOSS_EVERY ? +(Math.random() < 0.35) : depth < 7 ? +(Math.random() < 0.7) + +(Math.random() < 0.2) : 1 + +(Math.random() < 0.6) + +(depth >= 10 && Math.random() < 0.5);
+  const chance = (c) => Math.random() < clamp(c + DIRECTOR.elite * pressure, 0, 1);
+  const elites = boss || depth < 2 ? 0 : depth <= BOSS_EVERY ? +chance(0.35) : depth < 7 ? +chance(0.7) + +chance(0.2) : 1 + +chance(0.6) + +(depth >= 10 && chance(0.5));
   for (let n = 0; n < elites; n++) {
     const pool = others.filter((r) => !ambushRooms.includes(r) && r !== L.haven && r !== L.vault?.room);
     const t = pool.length ? tileIn(pick(pool), false) : null;
     if (t) eliteList.push(spawnEnemy(rollEnemy(depth), t.x, t.z, { elite: true, size: 1.35 }));
   }
 
-  if (Math.random() < 0.4) {
+  if (Math.random() < clamp(0.4 - DIRECTOR.potion * pressure, 0, 1)) {
     const t = tileIn(pick(others), true);
     if (t) spawnPotion(t.x, t.z);
   }
@@ -4568,7 +4579,7 @@ const GRADE = {
   hpFactor: 1.2, perfectPerKill: 0.25, perfectMin: 2, comboFull: 10, parPerRoom: 22, parMin: 60, slow: 2.5,
 };
 const GRADE_LETTERS = 'SABC';
-const newFloorStats = () => ({ time: 0, combo: 0, kills: 0 });
+const newFloorStats = () => ({ time: 0, combo: 0, kills: 0, downs: 0 });
 
 function gradeOf(h) {
   const fl = L.fl;
@@ -4590,6 +4601,30 @@ function teamGrade() {
 }
 const lastGrade = () => run.grades.at(-1) ?? null;
 const gradesLine = () => (run.grades.length ? `Notes : ${run.grades.map((g) => g.team).join(' · ')}.` : '');
+const endNotes = () => [gradesLine(), run.recit ? 'Mode Récit : partie hors classement.' : ''].filter(Boolean).join(' ');
+
+// ---------- Directeur de rythme
+// Règle la pression des rencontres (jamais les PV, dégâts ni vitesse des monstres) d'après la note de l'étage précédent. -1 = légère, +1 = soutenue.
+const DIRECTOR = { pressure: { S: 1, A: 0.5, B: 0, C: -0.5 }, downCap: -0.5, count: 0.15, elite: 0.15, potion: 0.25, ambushUpFrom: 4, ambushDownFrom: 3, ambushMax: 3 };
+const RECIT_KEY = 'profondeurs.recit';
+let recit = store.get(RECIT_KEY, false) === true;
+
+function directorPressure(depth) {
+  if (recit) return -1;
+  if (depth <= 2 || isBossFloor(depth)) return 0;
+  const g = lastGrade();
+  if (!g || g.depth !== depth - 1) return 0;
+  const letters = g.heroes.length ? g.heroes : [g.team];
+  const worst = letters.reduce((a, b) => (GRADE_LETTERS.indexOf(b) > GRADE_LETTERS.indexOf(a) ? b : a));
+  const base = DIRECTOR.pressure[worst] ?? 0;
+  return g.downs > 0 ? Math.min(base, DIRECTOR.downCap) : base;
+}
+function ambushCount(depth, p) {
+  let n = depth >= 5 ? 2 : 1;
+  if (p >= 1 && depth >= DIRECTOR.ambushUpFrom) n = Math.min(DIRECTOR.ambushMax, n + 1);
+  if (p <= DIRECTOR.downCap && depth >= DIRECTOR.ambushDownFrom) n = Math.max(0, n - 1);
+  return n;
+}
 
 let state = 'menu';
 let debugRun = false;
@@ -6122,6 +6157,7 @@ function hurtPlayer(amount, sx, sz, who = player, src = null) {
 
 function heroFalls(p) {
   p.down = true;
+  L.fl.downs++;
   p.reviveT = 0;
   p.deadT = 0;
   if (heroes.some((h) => !h.down)) {
@@ -6231,7 +6267,7 @@ function openChest(c, who) {
 // Une victoire bat toute défaite ; ensuite le nombre de pactes, la profondeur et les écus départagent.
 const recordKey = (r) => [r.won ? 1 : 0, r.won ? r.heat ?? 0 : 0, r.depth, r.gold];
 function recordBest() {
-  if (debugRun) return false;
+  if (debugRun || run.recit) return false;
   const best = store.get(BEST_KEY, null);
   const now = { depth: L.depth, gold: teamGold(), won: run.won, heat: heatOf() };
   const a = recordKey(now);
@@ -6260,7 +6296,7 @@ const PACTS = [
   { id: 'disette', name: 'Disette', desc: 'Une potion de moins au départ, et chacune soigne 10 PV de moins.' },
 ];
 // pacts : pactes de départ choisis à l'accueil, toute la partie. vow : pacte pris à l'escalier d'un gardien (vowFloor = étage de ce gardien), actif jusqu'à l'offre suivante ; taken : nombre de pactes ainsi pris.
-const run = { won: false, pacts: [], vow: null, vowFloor: 0, taken: 0, grades: [] };
+const run = { won: false, pacts: [], vow: null, vowFloor: 0, taken: 0, grades: [], recit: false };
 const hasPact = (id) => run.pacts.includes(id) || run.vow === id;
 const heatOf = () => run.pacts.length + run.taken;
 let chosenPacts = (store.get(PACTS_KEY, []) || []).filter((id) => PACTS.some((p) => p.id === id));
@@ -6323,7 +6359,7 @@ function openWin() {
   const heat = heatOf();
   $('win-record').hidden = !record;
   renderTrack($('win-track'), VICTORY_DEPTH, true);
-  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence. ${gradesLine()}`.trim();
+  $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence. ${endNotes()}`.trim();
   const split = (key) => (heroes.length > 1 ? heroes.map((h) => `${tagOf(h)} ${h[key]}`).join(' · ') : heroes[0][key]);
   $('w-level').textContent = team.level;
   $('w-gold').textContent = split('gold');
@@ -6384,7 +6420,7 @@ function die() {
   pendingChoices.length = 0;
   $('boss').hidden = true;
   const record = recordBest();
-  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}. ${gradesLine()}`.trim();
+  $('dead-lead').textContent = `${L.biome.name}, étage ${L.depth}. ${endNotes()}`.trim();
   $('dead-record').hidden = !record;
   renderTrack($('dead-track'), L.depth);
   const left = Math.max(0, VICTORY_DEPTH - L.depth);
@@ -8733,7 +8769,7 @@ function stayOnFloor() {
 function goDown() {
   if (state !== 'stairs') return;
   const tg = teamGrade();
-  run.grades.push({ depth: L.depth, team: tg.letter, heroes: tg.heroes.map((g) => g.letter) });
+  run.grades.push({ depth: L.depth, team: tg.letter, heroes: tg.heroes.map((g) => g.letter), downs: L.fl.downs });
   if (isBossFloor(L.depth + 1) && !debugRun) {
     const offer = L.pactOffer;
     run.vow = offer?.taken ? offer.id : null;
@@ -9216,8 +9252,9 @@ function newRun(saved) {
   run.vow = saved && PACTS.some((q) => q.id === saved.vow && q.id !== 'disette') ? saved.vow : null;
   run.vowFloor = run.vow && Number.isInteger(saved.vowFloor) ? saved.vowFloor : 0;
   run.taken = saved && Number.isInteger(saved.taken) && saved.taken > 0 ? saved.taken : 0;
+  run.recit = !!(saved && saved.recit);
   run.grades = saved && Array.isArray(saved.grades)
-    ? saved.grades.filter((g) => g && Number.isInteger(g.depth) && GRADE_LETTERS.includes(g.team)).map((g) => ({ depth: g.depth, team: g.team, heroes: Array.isArray(g.heroes) ? g.heroes.filter((x) => GRADE_LETTERS.includes(x)) : [] }))
+    ? saved.grades.filter((g) => g && Number.isInteger(g.depth) && GRADE_LETTERS.includes(g.team)).map((g) => ({ depth: g.depth, team: g.team, heroes: Array.isArray(g.heroes) ? g.heroes.filter((x) => GRADE_LETTERS.includes(x)) : [], downs: Number.isInteger(g.downs) && g.downs > 0 ? g.downs : 0 }))
     : [];
   winPending = false;
   for (const h of heroes) {
@@ -10042,6 +10079,16 @@ function setAutoAttack(on) {
   setQuick($('auto-pause'), on);
 }
 
+function setRecit(on) {
+  recit = on;
+  store.set(RECIT_KEY, on);
+  for (const [id, v] of [['recit-start-on', on], ['recit-start-off', !on]]) {
+    $(id).classList.toggle('on', v);
+    $(id).setAttribute('aria-pressed', String(v));
+  }
+  setQuick($('recit-pause'), on);
+}
+
 function setQuick(btn, on) {
   btn.classList.toggle('on', on);
   btn.setAttribute('aria-pressed', String(on));
@@ -10065,12 +10112,16 @@ function setMuted(m) {
 $('auto-start-on').addEventListener('click', () => setAutoAttack(true));
 $('auto-start-off').addEventListener('click', () => setAutoAttack(false));
 $('auto-pause').addEventListener('click', () => setAutoAttack(!autoAttack));
+$('recit-start-on').addEventListener('click', () => setRecit(true));
+$('recit-start-off').addEventListener('click', () => setRecit(false));
+$('recit-pause').addEventListener('click', () => setRecit(!recit));
 for (const w of ['start', 'pause']) {
   $(`audio-${w}-music`).addEventListener('click', () => { initAudio(); setMusic(!music.on); });
   $(`audio-${w}-sound`).addEventListener('click', () => { initAudio(); setMuted(!audio.muted); });
 }
 setMusic(music.on);
 setAutoAttack(autoAttack);
+setRecit(recit);
 $('pause-btn').addEventListener('click', pauseGame);
 
 const fullscreen = {
@@ -11236,7 +11287,7 @@ function snapshot() {
     const { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT } = h;
     return { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT, perks: { ...h.perks }, gear: { ...h.gear }, gearKind: { ...h.gearKind } };
   });
-  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor, taken: run.taken, grades: run.grades.map((g) => ({ ...g, heroes: g.heroes.slice() })) } };
+  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor, taken: run.taken, recit: run.recit, grades: run.grades.map((g) => ({ ...g, heroes: g.heroes.slice() })) } };
 }
 
 function boot(data) {

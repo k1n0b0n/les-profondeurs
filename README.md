@@ -261,6 +261,19 @@ Les étages 1 et 2 enseignent une mécanique à la fois : l'esquive à l'étage 
 
 Score = somme pondérée × 100 ; S dès 85, A dès 65, B dès 40, C en dessous. L'équipe prend la moyenne des scores. Les notes (`run.grades`) suivent la reprise de partie.
 
+### Directeur de rythme et mode Récit
+
+À la génération de chaque étage, le jeu calcule une **pression** de -1 à +1 d'après la note de l'étage précédent (S +1, A +0,5, B 0, C -0,5, en prenant le héros le moins bien noté en duo ; un héros tombé plafonne à -0,5). Les étages 1, 2 et de gardien ne sont jamais ajustés, et un étage sans note valide (mode test, reprise ancienne) vaut 0. La pression ne touche jamais aux PV, dégâts ni vitesse des monstres, et n'est pas affichée en jeu (`L.pressure` à la console).
+
+| Effet | Valeur |
+| --- | --- |
+| Monstres de l'étage | × (1 + 0,15 × pression) |
+| Probabilité de chaque élite tirée au hasard | + 0,15 × pression (les élites garanties dès l'étage 7 restent) |
+| Embuscades | + 1 à la pression +1 dès l'étage 4 (max 3) ; − 1 à -0,5 ou moins dès l'étage 3 |
+| Potion d'étage (base 40 %) | − 0,25 × pression |
+
+Le **mode Récit** (Réglages de l'accueil et pause, mémorisé dans `profondeurs.recit`, désactivé par défaut) fixe la pression à -1 sur tous les étages. Les fenêtres d'esquive et de parade ne changent pas. Une partie dont au moins un étage a été généré en Récit (`run.recit`, conservé à la reprise) ne compte pas pour le record, et les bilans l'indiquent.
+
 ### Combo et Transe
 
 - Chaque ennemi vaincu moins de 5 s après le précédent fait monter le combo. Il multiplie les écus ramassés : + 10 % par cran, jusqu'à + 100 %. Encaisser un coup divise par deux le temps restant.
@@ -610,6 +623,7 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Mémoire des commandes | `INPUT_BUFFER` | 5397 | 0,16 s |
 | Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5398–5402 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
 | Note d'étage : poids, seuils, références | `GRADE`, `gradeOf` | 4565–4573 | 35/25/25/15 · S 85, A 65, B 40 |
+| Directeur : pression, bornes | `DIRECTOR`, `directorPressure`, `ambushCount` | 4608–4628 | ± 15 % de monstres · ± 15 pts d'élites · ± 25 pts de potion |
 | Pactes | `PACTS` | 6203 | Table |
 | Pacte en jeu : pool, récompense | `PACT_OFFERS`, `PACT_REWARD`, `rollPactOffer` | 8608–8613 | 4 pactes · seconde relique légendaire |
 | Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6190 | Table |
