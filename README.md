@@ -550,6 +550,27 @@ Dans tous les menus, flèches, stick et croix déplacent le focus vers le bouton
 
 La caméra suit le centre des héros debout et dézoome jusqu'à × 1,55 quand ils s'écartent. Les menus d'aptitude, d'autel et de marchand appartiennent au héros qui les a ouverts. P ne met pas en pause en duo : il faut Échap ou Start.
 
+### Jouer en ligne
+
+Le jeu en ligne n'utilise **aucun serveur de jeu**. Un joueur **héberge** : la partie tourne chez lui, comme en local. Ses amis voient son écran en direct (flux vidéo WebRTC) et lui envoient leurs commandes. Chaque ami apparaît dans le jeu comme une **manette standard supplémentaire** (index 1001 et suivants dans `readPads`), si bien que le salon, le combat et tous les menus se pilotent à distance sans code particulier.
+
+**Héberger**
+1. À l'accueil, « Jouer à deux sur cet écran », puis « Jouer en ligne avec des amis ».
+2. « Inviter un ami » : le navigateur demande de partager l'écran (choisir l'onglet du jeu). Si le partage est refusé ou indisponible, le jeu partage le canevas seul, sans interface, et le dit.
+3. Envoyer le lien affiché à l'ami. Il renvoie un **code de réponse** ; le coller dans la ligne de cet ami, « Connecter ».
+4. Revenir au salon : l'ami y rejoint avec Entrée (ou le bouton A de sa manette), choisit sa classe, et n'importe quel joueur lance la partie.
+
+**Rejoindre** : ouvrir le lien, « Se connecter », envoyer le code de réponse à l'hôte. L'écran de l'hôte s'affiche en plein écran avec la latence et l'aide des touches ; Quitter ferme la connexion. L'ami joue à sa manette standard ou, à défaut, à son clavier (ses touches « solo », Entrée pour valider dans les menus). Il ne peut pas mettre la partie en pause.
+
+**Limites**
+- Quatre joueurs au plus, hôte compris ; une connexion qui tombe laisse le héros immobile.
+- Latence d'affichage d'environ 100 à 250 ms (flux vidéo) : la précision des esquives parfaites en pâtit pour les amis.
+- Pas de serveur TURN : certains réseaux (NAT symétrique, pare-feu d'entreprise) empêchent la connexion directe.
+- Safari et Firefox partagent plutôt une fenêtre ou un écran qu'un onglet ; le son de l'hôte n'est transmis que par les navigateurs qui le permettent.
+- **Vie privée** : un lien d'invitation contient l'adresse réseau de l'hôte, et les deux parties interrogent le serveur STUN public `stun.l.google.com`. N'envoyer le lien qu'à des amis.
+
+Architecture : manettes virtuelles (`virtualPads`), codes d'offre et de réponse compressés (`packCode`, `unpackCode`), hôte (`netShare`, `netInvite`, `netAccept`), ami (`joinStart`, `remoteStart`). Une version à état répliqué (chaque client rend sa propre vue) supprimerait la latence ; elle demande de séparer simulation et rendu et n'est pas faite.
+
 ### Mode test
 
 1. À l'accueil, taper le code Konami (↑ ↑ ↓ ↓ ← → ← → B A, au clavier ou à la manette), ou toucher 5 fois le titre en moins de 2 s.

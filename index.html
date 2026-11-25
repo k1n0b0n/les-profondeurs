@@ -92,6 +92,18 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #hud.duo .pcard.p2 { --pc: var(--p2); border-left: 1px solid var(--line); border-right: 3px solid var(--pc); }
 .pcard.p3 { --pc: var(--p3); }
 .pcard.p4 { --pc: var(--p4); border-left: 1px solid var(--line); border-right: 3px solid var(--pc); }
+.invites { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.invites li { display: grid; gap: 6px; padding: 10px 12px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; }
+.invites li b { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ember); }
+.invites input, textarea.code { width: 100%; box-sizing: border-box; padding: 7px 9px; font: 12px/1.3 ui-monospace, Menlo, monospace; color: var(--ink); background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 6px; }
+textarea.code { resize: none; }
+.invites .row { display: flex; gap: 6px; }
+.invites .row > * { flex: 1; }
+.invites .row > button { flex: 0 0 auto; }
+#remote { position: fixed; inset: 0; z-index: 60; background: #000; }
+#remote video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+#remote-bar { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink-dim); background: rgba(11, 9, 16, 0.78); border: 1px solid var(--line); border-radius: 8px; }
+#remote-bar button { pointer-events: auto; padding: 4px 10px; font-size: 13px; }
 .pcard.corner { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(230px, 40vw); grid-column: auto; grid-row: auto; }
 #pcard-3 { left: max(12px, env(safe-area-inset-left, 0px)); }
 #pcard-4 { right: max(12px, env(safe-area-inset-right, 0px)); }
@@ -817,8 +829,43 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <p class="duo-combo" id="duo-combo" hidden>Lame + Arbalétrière : un carreau marque la cible, l'épée la fait exploser. Un ennemi frappé à l'épée prend un critique s'il reçoit un carreau dans la seconde.</p>
     <p class="keys-hint">Gauche ou droite pour changer de héros. Le niveau est commun, mais chacun choisit ses aptitudes, garde ses potions et ses PV. Chaque pièce ramassée remplit les deux bourses. Un joueur à terre se relève si l'autre reste 2 s à côté de lui.</p>
     <button class="primary" id="duo-go" disabled>Descendre</button>
+    <button class="secondary" id="duo-online">Jouer en ligne avec des amis</button>
     <button class="secondary" id="duo-back">Retour</button>
   </div>
+</div>
+
+<div class="overlay" id="menu-online" hidden>
+  <div class="card">
+    <p class="kicker">Jouer à distance</p>
+    <h1>En ligne</h1>
+    <p class="lead">Tu héberges : le jeu tourne chez toi, tes amis voient ton écran et t'envoient leurs commandes. Jusqu'à quatre joueurs, toi compris.</p>
+    <p class="keys-hint" id="online-status"></p>
+    <button class="primary" id="online-invite">Inviter un ami</button>
+    <ul class="invites" id="online-list"></ul>
+    <p class="keys-hint">Un lien d'invitation contient ton adresse réseau : ne l'envoie qu'à des amis. Chaque ami renvoie un code de réponse à coller ici ; une fois connecté, il rejoint le salon avec Entrée ou le bouton A de sa manette.</p>
+    <button class="secondary" id="online-back">Retour au salon</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu-join" hidden>
+  <div class="card">
+    <p class="kicker">Invitation reçue</p>
+    <h1>Rejoindre la partie</h1>
+    <p class="lead" id="join-lead">Tu vas voir l'écran de ton hôte et jouer avec ton clavier ou ta manette.</p>
+    <button class="primary" id="join-go">Se connecter</button>
+    <div id="join-answer" hidden>
+      <p class="keys-hint">Envoie ce code à ton hôte, il le colle de son côté :</p>
+      <textarea id="join-code" class="code" readonly rows="4"></textarea>
+      <button class="secondary" id="join-copy">Copier le code</button>
+      <p class="keys-hint">Dès qu'il l'aura saisi, la partie s'affiche ici.</p>
+    </div>
+    <p class="boot-error" id="join-error" role="alert" hidden></p>
+  </div>
+</div>
+
+<div id="remote" hidden>
+  <video id="remote-video" playsinline autoplay></video>
+  <div id="remote-bar"><span id="remote-ping">connexion…</span><span id="remote-keys"></span><button type="button" id="remote-quit">Quitter</button></div>
 </div>
 
 <div class="overlay" id="menu-choice" hidden>
@@ -1038,9 +1085,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.12.0';
+const GAME_VERSION = '1.13.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.13.0', date: '26/11/2026', items: [
+    'Jeu en ligne : un joueur héberge, ses amis rejoignent par un lien, voient son écran en direct et jouent avec leur clavier ou leur manette. Jusqu’à quatre joueurs, toi compris.',
+    'Aucun serveur de jeu ni compte : l’hôte envoie un lien d’invitation, l’ami lui renvoie un code de réponse.',
+    'Chaque ami apparaît comme une manette supplémentaire : salon, combat, choix d’aptitudes, autel et marchand se pilotent à distance comme en local.',
+  ] },
   { version: '1.12.0', date: '26/11/2026', items: [
     'Jusqu’à quatre joueurs sur le même écran : clavier gauche, clavier droit et autant de manettes que branchées. La partie démarre dès deux joueurs prêts.',
     'Quatre couleurs de joueur, quatre fiches (J1 et J2 en haut, J3 et J4 en bas), une torche par héros.',
@@ -9474,7 +9526,7 @@ function setupHeroes(devices, classes) {
 
 function showOverlay(id) {
   for (const o of document.querySelectorAll('.overlay')) o.hidden = o.id !== id;
-  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
+  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || id === 'menu-online' || id === 'menu-join' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
 }
 
 function pauseGame() {
@@ -10352,6 +10404,7 @@ function deviceLabel(dev) {
     return `${dev === 'kb-left' ? 'Clavier gauche' : 'Clavier droit'} : ${moveLabel(m)}, ${orList(keyList(m.attack))} frappe, ${orList(keyList(m.dash))} esquive`;
   }
   const gp = readPads().find((g) => `pad-${g.index}` === dev);
+  if (gp && gp.index >= ONLINE_PAD0) return `Ami en ligne ${gp.index - ONLINE_PAD0}`;
   return `Manette ${gp ? gp.index + 1 : ''} : ${gp ? gp.id.replace(/\s*\(.*$/, '').slice(0, 32) : 'branchée'}`;
 }
 
@@ -10412,6 +10465,10 @@ function lobbyInput(dev, action = 'go') {
 }
 
 function lobbyBack() {
+  if (!$('menu-online').hidden) {
+    showOverlay('menu-duo');
+    return;
+  }
   if (lobby.slots.some(Boolean)) {
     lobby.slots = [null, null, null, null];
     renderLobby();
@@ -10569,12 +10626,405 @@ const PAD = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, START: 9, UP: 
 const pad = { active: false, navCd: 0, menu: null, focusEl: null };
 const padStates = new Map();
 
-function readPads() {
-  try {
-    return navigator.getGamepads ? [...navigator.getGamepads()].filter((gp) => gp && gp.connected) : [];
-  } catch {
-    return [];
+// ---------- Jeu en ligne
+// L'hôte exécute la partie et partage son écran (flux WebRTC) ; chaque ami y répond par ses commandes, vues par le jeu comme une manette standard supplémentaire.
+const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const ONLINE_PAD0 = 1000;
+const ONLINE_MAX_FRIENDS = 3;
+const NET = { stream: null, shareMode: null, peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
+
+const b64u = {
+  enc: (bytes) => {
+    let bin = '';
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  },
+  dec: (str) => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)),
+};
+
+// Un code d'invitation ou de réponse : l'offre ou la réponse WebRTC en JSON, compressée quand le navigateur sait le faire.
+async function packCode(obj) {
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  if (typeof CompressionStream === 'function') {
+    const out = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    return `z${b64u.enc(new Uint8Array(await new Response(out).arrayBuffer()))}`;
   }
+  return `p${b64u.enc(raw)}`;
+}
+
+async function unpackCode(code) {
+  const text = String(code).trim();
+  const kind = text[0];
+  if (!text || (kind !== 'z' && kind !== 'p')) throw new Error('Code invalide.');
+  const bytes = b64u.dec(text.slice(1));
+  let json;
+  if (kind === 'z') {
+    if (typeof DecompressionStream !== 'function') throw new Error('Ce navigateur ne sait pas lire ce code.');
+    json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  } else json = new TextDecoder().decode(bytes);
+  const data = JSON.parse(json);
+  if (!data || data.v !== 1 || !data.d || typeof data.d.sdp !== 'string') throw new Error('Code invalide.');
+  return data.d;
+}
+
+function iceDone(pc, ms = 3000) {
+  return new Promise((resolve) => {
+    if (pc.iceGatheringState === 'complete') return resolve();
+    const t = setTimeout(resolve, ms);
+    pc.addEventListener('icegatheringstatechange', () => {
+      if (pc.iceGatheringState === 'complete') {
+        clearTimeout(t);
+        resolve();
+      }
+    });
+  });
+}
+
+// ----- Hôte
+// Manettes virtuelles : une par ami connecté, au format d'un Gamepad standard.
+function virtualPads() {
+  const out = [];
+  for (const peer of NET.peers.values()) {
+    if (!peer.open) continue;
+    const f = peer.frame;
+    out.push({
+      index: ONLINE_PAD0 + peer.id, id: `Joueur en ligne ${peer.id} (virtuel)`, connected: true, mapping: 'standard', timestamp: 0, vibrationActuator: null,
+      buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: ((f.b >> i) & 1) === 1, value: (f.b >> i) & 1 })),
+      axes: [f.x, f.y, 0, 0],
+    });
+  }
+  return out;
+}
+
+async function netShare() {
+  if (NET.stream) return NET.shareMode;
+  try {
+    NET.stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true, preferCurrentTab: true });
+    NET.shareMode = 'screen';
+  } catch {
+    NET.stream = $('scene').captureStream(30);
+    NET.shareMode = 'canvas';
+  }
+  const track = NET.stream.getVideoTracks()[0];
+  track?.addEventListener('ended', () => {
+    NET.stream = null;
+    NET.shareMode = null;
+    renderOnline();
+  });
+  return NET.shareMode;
+}
+
+const livePeers = () => [...NET.peers.values()].filter((p) => p.state !== 'closed');
+
+function netDrop(peer, why = 'closed') {
+  if (!NET.peers.has(peer.id)) return;
+  const wasOpen = peer.open;
+  peer.open = false;
+  peer.state = why;
+  try {
+    peer.pc.close();
+  } catch {
+    /* déjà fermée */
+  }
+  NET.peers.delete(peer.id);
+  if (wasOpen && typeof toast === 'function') toast('Ami déconnecté', `Joueur en ligne ${peer.id}`, 2.5);
+  renderOnline();
+}
+
+function netWire(peer) {
+  const { pc, dc } = peer;
+  dc.onopen = () => {
+    peer.open = true;
+    peer.state = 'connected';
+    peer.lastSeen = performance.now();
+    for (const sender of pc.getSenders()) {
+      if (sender.track?.kind !== 'video') continue;
+      try {
+        const params = sender.getParameters();
+        if (params.encodings?.length) {
+          params.encodings[0].maxBitrate = 2.5e6;
+          sender.setParameters(params).catch(() => {});
+        }
+      } catch {
+        /* débit non plafonnable sur ce navigateur */
+      }
+    }
+    toast('Ami connecté', `Joueur en ligne ${peer.id} : il rejoint le salon avec Entrée ou A`, 3);
+    renderOnline();
+  };
+  dc.onmessage = (e) => {
+    let m;
+    try {
+      m = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    if (!m || typeof m !== 'object') return;
+    peer.lastSeen = performance.now();
+    if (m.t === 'f') {
+      const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? clamp(v, -1, 1) : 0);
+      peer.frame = { b: Number.isInteger(m.b) ? m.b & 0x1ffff : 0, x: num(m.x), y: num(m.y) };
+    } else if (m.t === 'p' && dc.readyState === 'open') {
+      dc.send(JSON.stringify({ t: 'q', ts: m.ts }));
+    }
+  };
+  dc.onclose = () => netDrop(peer);
+  pc.onconnectionstatechange = () => {
+    if (['failed', 'closed'].includes(pc.connectionState)) netDrop(peer, 'failed');
+    else renderOnline();
+  };
+}
+
+async function netInvite() {
+  if (livePeers().length >= ONLINE_MAX_FRIENDS) throw new Error('Quatre joueurs au plus, toi compris.');
+  await netShare();
+  const id = NET.nextId++;
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  const peer = { id, pc, dc: null, open: false, frame: { b: 0, x: 0, y: 0 }, state: 'invited', link: '', lastSeen: 0 };
+  NET.peers.set(id, peer);
+  for (const track of NET.stream.getTracks()) pc.addTrack(track, NET.stream);
+  peer.dc = pc.createDataChannel('pad', { ordered: false, maxRetransmits: 0 });
+  netWire(peer);
+  await pc.setLocalDescription(await pc.createOffer());
+  await iceDone(pc);
+  peer.link = `${location.origin}${location.pathname}#join=${await packCode({ v: 1, d: pc.localDescription.toJSON() })}`;
+  renderOnline();
+  return peer;
+}
+
+async function netAccept(id, code) {
+  const peer = NET.peers.get(id);
+  if (!peer) throw new Error('Invitation inconnue.');
+  const desc = await unpackCode(code);
+  await peer.pc.setRemoteDescription(desc);
+  peer.state = 'connecting';
+  renderOnline();
+}
+
+setInterval(() => {
+  const now = performance.now();
+  for (const peer of [...NET.peers.values()]) if (peer.open && now - peer.lastSeen > 10000) netDrop(peer, 'timeout');
+}, 2000);
+
+function renderOnline() {
+  const box = $('online-list');
+  if (!box) return;
+  const status = $('online-status');
+  status.textContent = NET.stream ? (NET.shareMode === 'screen' ? 'Écran partagé : tes amis verront aussi l’interface et les menus.' : 'Partage d’écran indisponible : tes amis verront le jeu sans interface.') : 'Ton écran sera partagé quand tu invites un premier ami.';
+  $('online-invite').disabled = livePeers().length >= ONLINE_MAX_FRIENDS;
+  const keep = new Map([...box.querySelectorAll('li[data-id]')].map((li) => [li.dataset.id, li]));
+  for (const peer of NET.peers.values()) {
+    let li = keep.get(String(peer.id));
+    keep.delete(String(peer.id));
+    if (!li) {
+      li = document.createElement('li');
+      li.dataset.id = peer.id;
+      li.innerHTML = '<b></b><div class="row"><input type="text" readonly aria-label="Lien d’invitation"><button type="button" class="secondary" data-act="copy">Copier</button></div><div class="row" data-part="answer"><input type="text" placeholder="Colle ici le code de réponse de ton ami" aria-label="Code de réponse"><button type="button" class="secondary" data-act="accept">Connecter</button></div><small class="keys-hint" data-part="note"></small>';
+      li.querySelector('[data-act=copy]').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(peer.link);
+          li.querySelector('[data-part=note]').textContent = 'Lien copié.';
+        } catch {
+          li.querySelector('input').select();
+        }
+      });
+      li.querySelector('[data-act=accept]').addEventListener('click', async () => {
+        const note = li.querySelector('[data-part=note]');
+        try {
+          await netAccept(peer.id, li.querySelector('[data-part=answer] input').value);
+          note.textContent = 'Connexion en cours…';
+        } catch (err) {
+          note.textContent = err.message || 'Code invalide.';
+        }
+      });
+      box.append(li);
+    }
+    li.querySelector('b').textContent = `Ami ${peer.id} · ${{ invited: 'en attente de sa réponse', connecting: 'connexion…', connected: 'connecté', failed: 'échec', timeout: 'perdu' }[peer.state] ?? peer.state}`;
+    li.querySelector('input').value = peer.link;
+    li.querySelector('[data-part=answer]').hidden = peer.state === 'connected';
+    if (peer.state === 'failed') li.querySelector('[data-part=note]').textContent = 'Connexion impossible : certains réseaux bloquent les connexions directes.';
+  }
+  for (const li of keep.values()) li.remove();
+}
+
+function openOnline() {
+  showOverlay('menu-online');
+  renderOnline();
+}
+$('duo-online').addEventListener('click', openOnline);
+$('online-back').addEventListener('click', () => showOverlay('menu-duo'));
+$('online-invite').addEventListener('click', async () => {
+  $('online-invite').disabled = true;
+  try {
+    await netInvite();
+  } catch (err) {
+    $('online-status').textContent = err.message || 'Impossible de créer l’invitation.';
+  }
+  renderOnline();
+});
+
+// ----- Ami (page ouverte par un lien d'invitation)
+function joinFail(msg) {
+  const el = $('join-error');
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+async function joinStart() {
+  window.__profondeursReady = true;
+  state = 'join';
+  showOverlay('menu-join');
+  let offer;
+  try {
+    offer = await unpackCode(location.hash.slice('#join='.length));
+    if (offer.type !== 'offer') throw new Error('Code invalide.');
+  } catch (err) {
+    $('join-go').hidden = true;
+    joinFail(`Ce lien d’invitation est incomplet ou périmé (${err.message}). Demande-en un nouveau à ton hôte.`);
+    return;
+  }
+  $('join-go').addEventListener('click', async () => {
+    $('join-go').disabled = true;
+    try {
+      const pc = new RTCPeerConnection(RTC_CONFIG);
+      const client = { pc, dc: null, keys: new Set(), last: '', timer: 0, ping: 0 };
+      NET.client = client;
+      pc.ontrack = (e) => {
+        const video = $('remote-video');
+        if (video.srcObject !== e.streams[0]) video.srcObject = e.streams[0];
+        video.play?.().catch(() => {});
+      };
+      pc.ondatachannel = (e) => {
+        client.dc = e.channel;
+        client.dc.onopen = () => remoteStart(client);
+        client.dc.onmessage = (ev) => {
+          try {
+            const m = JSON.parse(ev.data);
+            if (m.t === 'q') client.ping = Math.round(performance.now() - m.ts);
+          } catch {
+            /* message ignoré */
+          }
+        };
+        client.dc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+      };
+      pc.onconnectionstatechange = () => {
+        if (['failed', 'closed'].includes(pc.connectionState)) remoteEnd('La connexion avec l’hôte est perdue.');
+      };
+      await pc.setRemoteDescription(offer);
+      await pc.setLocalDescription(await pc.createAnswer());
+      await iceDone(pc);
+      $('join-code').value = await packCode({ v: 1, d: pc.localDescription.toJSON() });
+      $('join-answer').hidden = false;
+      $('join-go').hidden = true;
+    } catch (err) {
+      $('join-go').disabled = false;
+      joinFail(`Connexion impossible : ${err.message}`);
+    }
+  });
+  $('join-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('join-code').value);
+      $('join-copy').textContent = 'Code copié';
+    } catch {
+      $('join-code').select();
+    }
+  });
+}
+
+function clientFrame(client) {
+  const gp = [...(navigator.getGamepads?.() ?? [])].find((g) => g && g.connected && g.mapping === 'standard');
+  let b = 0;
+  let x = 0;
+  let y = 0;
+  if (gp) {
+    gp.buttons.forEach((bt, i) => {
+      if (i < 17 && (bt.pressed || bt.value > 0.5)) b |= 1 << i;
+    });
+    x = gp.axes[0] || 0;
+    y = gp.axes[1] || 0;
+    if (Math.hypot(x, y) < 0.22) x = y = 0;
+    if ((b >> PAD.START) & 1) b &= ~(1 << PAD.START);
+  } else {
+    const km = binds.solo;
+    const on = (list) => list.some((k) => client.keys.has(k));
+    x = (on(km.right) ? 1 : 0) - (on(km.left) ? 1 : 0);
+    y = (on(km.down) ? 1 : 0) - (on(km.up) ? 1 : 0);
+    if (client.keys.has('ArrowLeft')) x -= 1;
+    if (client.keys.has('ArrowRight')) x += 1;
+    if (client.keys.has('ArrowUp')) y -= 1;
+    if (client.keys.has('ArrowDown')) y += 1;
+    x = clamp(x, -1, 1);
+    y = clamp(y, -1, 1);
+    if (x && y) {
+      x *= Math.SQRT1_2;
+      y *= Math.SQRT1_2;
+    }
+    if (on(km.attack)) b |= 1 << PAD.X;
+    if (on(km.dash) || client.keys.has('Enter') || client.keys.has('NumpadEnter')) b |= 1 << PAD.A;
+    if (on(km.parry ?? [])) b |= 1 << PAD.B;
+    if (on(km.potion)) b |= 1 << PAD.Y;
+  }
+  return { t: 'f', b, x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+}
+
+function remoteStart(client) {
+  showOverlay(null);
+  $('remote').hidden = false;
+  const km = binds.solo;
+  $('remote-keys').textContent = `Manette, ou clavier : ${moveLabel(km)} · ${orList(keyList(km.attack).slice(0, 2))} attaque · ${orList(keyList(km.dash).slice(0, 2))} esquive · ${orList(keyList(km.parry ?? []).slice(0, 1))} parade · Entrée valide`;
+  const onKey = (down) => (e) => {
+    if (e.code === 'Escape' || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (down) client.keys.add(e.code);
+    else client.keys.delete(e.code);
+  };
+  window.addEventListener('keydown', onKey(true), true);
+  window.addEventListener('keyup', onKey(false), true);
+  window.addEventListener('blur', () => client.keys.clear());
+  let beat = 0;
+  client.timer = setInterval(() => {
+    if (client.dc?.readyState !== 'open') return;
+    const frame = clientFrame(client);
+    const sig = `${frame.b}|${frame.x}|${frame.y}`;
+    beat++;
+    if (sig !== client.last || beat % 3 === 0) {
+      client.last = sig;
+      client.dc.send(JSON.stringify(frame));
+    }
+    if (beat % 60 === 0) client.dc.send(JSON.stringify({ t: 'p', ts: performance.now() }));
+    $('remote-ping').textContent = client.ping ? `${client.ping} ms` : 'connecté';
+  }, 33);
+  $('remote-quit').addEventListener('click', () => remoteEnd(null));
+}
+
+function remoteEnd(msg) {
+  const client = NET.client;
+  if (!client) return;
+  NET.client = null;
+  clearInterval(client.timer);
+  try {
+    client.pc.close();
+  } catch {
+    /* déjà fermée */
+  }
+  $('remote').hidden = true;
+  $('remote-video').srcObject = null;
+  state = 'join';
+  showOverlay('menu-join');
+  $('join-answer').hidden = true;
+  $('join-go').hidden = true;
+  joinFail(msg ?? 'Tu as quitté la partie. Demande un nouveau lien à ton hôte pour revenir.');
+}
+
+function readPads() {
+  let real = [];
+  try {
+    real = navigator.getGamepads ? [...navigator.getGamepads()].filter((gp) => gp && gp.connected) : [];
+  } catch {
+    real = [];
+  }
+  return NET.peers.size ? real.concat(virtualPads()) : real;
 }
 
 function readPad() {
@@ -11477,7 +11927,9 @@ try {
 } catch {
   /* l'API de rechargement à chaud est optionnelle */
 }
-if (typeof hot?.ready === 'function') {
+if (NET.joinMode) {
+  joinStart();
+} else if (typeof hot?.ready === 'function') {
   hot.ready(bootOnce);
   setTimeout(() => bootOnce(hot.data ?? {}), 2000);
 } else {
