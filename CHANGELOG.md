@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.7.0 — 2026-11-26
+
+- Pactes en jeu : avant chaque gardien, l'écran de l'escalier propose un pacte (Hordes, Acier, Fureur ou Hâte), disponible dès la première partie.
+- Un pacte pris dure jusqu'à l'offre suivante et rapporte, à la chute du gardien, une seconde relique légendaire à chaque héros.
+- Les pactes de départ de l'accueil restent, et se cumulent avec le pacte pris en jeu pour le record.
+
 ## 1.6.0 — 2026-11-25
 
 - Étages 1 et 2 pensés pour apprendre : l'esquive d'abord, puis la parade et l'enchaînement des victimes.

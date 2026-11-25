@@ -444,6 +444,17 @@ Le grimoire (`profondeurs.grimoire`) garde d'une partie à l'autre les reliques 
 | Hâte | Les monstres sont 15 % plus rapides |
 | Disette | Une potion de moins au départ, et chacune soigne 10 PV de moins |
 
+#### Pacte pris en jeu
+
+Dès la première partie, l'écran de l'escalier propose un pacte quand on descend vers un étage de gardien (3, 6, 9, 12) : un pacte tiré au hasard (Hordes, Acier, Fureur ou Hâte ; Disette et les pactes déjà actifs sont exclus), avec sa récompense. Le tirage est fait une fois par escalier ; « Prendre le pacte » est une bascule, refusée par défaut, qu'on peut reprendre tant qu'on n'a pas confirmé la descente. En duo, c'est le héros qui a ouvert l'escalier qui décide, et le pacte vaut pour les deux.
+
+- **Durée** : le pacte s'applique à l'étage du gardien et aux deux étages suivants. À l'offre suivante, un pacte pris remplace le précédent et un refus y met fin.
+- **Récompense** : à la chute du gardien de l'étage où il a été pris, chaque héros fait un second choix de relique légendaire. Les deux étages d'après portent le pacte sans récompense de plus.
+- **Cumul** : les pactes de départ de l'accueil restent actifs toute la partie ; le pacte en jeu s'y ajoute. Le record et le bilan comptent les deux.
+- **Visibilité** : le toast d'arrivée sur l'étage du gardien nomme le pacte, et la pause affiche une puce « Pacte ».
+- **Sauvegarde** : `run.vow`, `run.vowFloor` et `run.taken` suivent la reprise de partie.
+- Le mode test ne propose rien.
+
 ## Contrôles
 
 Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les touches sont lues par position physique (`KeyW` = Z sur AZERTY), donc les mêmes doigts servent sur AZERTY et QWERTY. Toutes se changent dans l'écran **Touches** (tuile Touches de l'accueil et de la pause) ; le tableau donne les touches d'origine.
@@ -585,7 +596,8 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Fenêtre d'esquive parfaite | `PERFECT_WINDOW` | 5396 | 0,12 s (0,16 s tactile) |
 | Mémoire des commandes | `INPUT_BUFFER` | 5397 | 0,16 s |
 | Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5398–5402 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
-| Pactes | `PACTS` | 5697 | Table |
+| Pactes | `PACTS` | 6203 | Table |
+| Pacte en jeu : pool, récompense | `PACT_OFFERS`, `PACT_REWARD`, `rollPactOffer` | 8608–8613 | 4 pactes · seconde relique légendaire |
 | Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6190 | Table |
 | Durée des actions de gardien | `ACT_TIME` | 6212 | Table |
 | Cycle des bouches de feu | `VENT_PERIOD` | 7424 | 3,4 s |

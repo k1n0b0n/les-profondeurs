@@ -408,6 +408,10 @@ details.more > :not(summary) { margin-top: 10px; }
 .pact::after { content: "Non"; grid-row: 1; grid-column: 2; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .pact[aria-pressed="true"] { border-color: var(--blood); background: rgba(217, 67, 77, 0.12); }
 .pact[aria-pressed="true"]::after { content: "Oui"; color: var(--alert); }
+.pact-offer { margin: 0 0 14px; }
+.pact-offer .kicker { margin: 0 0 6px; }
+.pact-offer .pact { width: 100%; }
+.pact-reward { color: var(--gold); font-weight: 700; }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 1px; overflow: hidden; background: var(--line); border: 1px solid var(--line); border-radius: 8px; }
 .stats div { padding: 10px 12px; background: var(--panel-solid); }
 .stats dt { font-size: 12px; letter-spacing: 0.04em; color: var(--ink-dim); }
@@ -810,6 +814,14 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <p class="kicker" id="stairs-kicker">L’escalier</p>
     <h1 id="stairs-title">Descendre ?</h1>
     <p class="lead" id="stairs-lead"></p>
+    <div class="pact-offer" id="pact-offer" hidden>
+      <p class="kicker">Pacte avant le gardien</p>
+      <button type="button" class="pact" id="pact-take" aria-pressed="false">
+        <b id="pact-name"></b>
+        <small id="pact-desc"></small>
+        <small class="pact-reward" id="pact-reward"></small>
+      </button>
+    </div>
     <button class="primary" id="stairs-go">Descendre</button>
     <button class="secondary" id="stairs-stay">Fouiller encore</button>
   </div>
@@ -986,9 +998,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.6.0';
+const GAME_VERSION = '1.7.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.7.0', date: '26/11/2026', items: [
+    'Pactes en jeu : avant chaque gardien, l’escalier propose un pacte (Hordes, Acier, Fureur ou Hâte), dès la première partie.',
+    'Un pacte pris dure jusqu’à l’offre suivante et rapporte une seconde relique légendaire à chaque héros à la chute du gardien.',
+    'Les pactes de départ de l’accueil restent, et se cumulent avec le pacte pris en jeu pour le record.',
+  ] },
   { version: '1.6.0', date: '25/11/2026', items: [
     'Étages 1 et 2 pensés pour apprendre : l’esquive d’abord, puis la parade et l’enchaînement des victimes.',
     'Un indice discret nomme la commande à utiliser (clavier, manette ou tactile) et disparaît dès que la mécanique est réussie.',
@@ -5352,6 +5369,7 @@ function killEnemy(e) {
       L.group.remove(p.g);
     }
     for (const h of heroes) pendingChoices.push({ kind: 'relic', hero: h });
+    if (run.vow && run.vowFloor === L.depth) for (const h of heroes) pendingChoices.push({ kind: 'relic', hero: h });
   } else if (e.elite) {
     if (hasAffix(e, 'explosif')) spawnBomb(e.x, e.z, 2.4, e.dmg * 1.2);
     if (hasAffix(e, 'vengeur')) {
@@ -6163,7 +6181,7 @@ const recordKey = (r) => [r.won ? 1 : 0, r.won ? r.heat ?? 0 : 0, r.depth, r.gol
 function recordBest() {
   if (debugRun) return false;
   const best = store.get(BEST_KEY, null);
-  const now = { depth: L.depth, gold: teamGold(), won: run.won, heat: run.pacts.length };
+  const now = { depth: L.depth, gold: teamGold(), won: run.won, heat: heatOf() };
   const a = recordKey(now);
   const b = best ? recordKey(best) : null;
   const k = b ? a.findIndex((v, n) => v !== b[n]) : 0;
@@ -6189,8 +6207,10 @@ const PACTS = [
   { id: 'hate', name: 'Hâte', desc: 'Les monstres sont 15 % plus rapides.' },
   { id: 'disette', name: 'Disette', desc: 'Une potion de moins au départ, et chacune soigne 10 PV de moins.' },
 ];
-const run = { won: false, pacts: [] };
-const hasPact = (id) => run.pacts.includes(id);
+// pacts : pactes de départ choisis à l'accueil, toute la partie. vow : pacte pris à l'escalier d'un gardien (vowFloor = étage de ce gardien), actif jusqu'à l'offre suivante ; taken : nombre de pactes ainsi pris.
+const run = { won: false, pacts: [], vow: null, vowFloor: 0, taken: 0 };
+const hasPact = (id) => run.pacts.includes(id) || run.vow === id;
+const heatOf = () => run.pacts.length + run.taken;
 let chosenPacts = (store.get(PACTS_KEY, []) || []).filter((id) => PACTS.some((p) => p.id === id));
 let winPending = false;
 
@@ -6238,7 +6258,7 @@ function winRun() {
   if (debugRun) return;
   if (grimoire.wins === 0) winPending = 'first';
   grimoire.wins++;
-  grimoire.bestHeat = Math.max(grimoire.bestHeat, run.pacts.length);
+  grimoire.bestHeat = Math.max(grimoire.bestHeat, heatOf());
   saveGrimoire();
 }
 
@@ -6248,7 +6268,7 @@ function openWin() {
   state = 'victory';
   resetInputs();
   const record = recordBest();
-  const heat = run.pacts.length;
+  const heat = heatOf();
   $('win-record').hidden = !record;
   renderTrack($('win-track'), VICTORY_DEPTH, true);
   $('win-lead').textContent = `${heat ? `Sous ${heat} pacte${heat > 1 ? 's' : ''}. ` : ''}Niveau ${team.level} atteint.${first ? ' Les pactes sont débloqués sur l’accueil pour durcir les prochaines descentes.' : ''} Plus bas, le gouffre recommence.`;
@@ -8584,6 +8604,34 @@ function unexploredRooms() {
   return n;
 }
 
+// Offre de pacte : tirée une fois par escalier, jamais Disette (effet de départ) ni un pacte déjà actif.
+const PACT_OFFERS = PACTS.filter((q) => q.id !== 'disette');
+const PACT_REWARD = 'Seconde relique légendaire à la chute du gardien';
+function rollPactOffer() {
+  const pool = PACT_OFFERS.filter((q) => !hasPact(q.id));
+  return pool.length ? { id: pick(pool).id, taken: false } : null;
+}
+
+function renderPactOffer() {
+  const box = $('pact-offer');
+  const show = isBossFloor(L.depth + 1) && !debugRun;
+  if (show && L.pactOffer === undefined) L.pactOffer = rollPactOffer();
+  const offer = show ? L.pactOffer : null;
+  box.hidden = !offer;
+  if (!offer) return;
+  const q = PACTS.find((x) => x.id === offer.id);
+  $('pact-name').textContent = q.name;
+  $('pact-desc').textContent = q.desc;
+  $('pact-reward').textContent = PACT_REWARD;
+  $('pact-take').setAttribute('aria-pressed', String(offer.taken));
+}
+
+$('pact-take').addEventListener('click', () => {
+  if (state !== 'stairs' || !L.pactOffer) return;
+  L.pactOffer.taken = !L.pactOffer.taken;
+  renderPactOffer();
+});
+
 function askDescend(who) {
   state = 'stairs';
   stairsHero = who;
@@ -8601,6 +8649,7 @@ function askDescend(who) {
   $('stairs-lead').textContent = hint.length
     ? `Il reste ${hint.join(', ')}. Fouille l’étage pour t’enrichir en or, en pouvoirs et en niveaux avant la suite : en bas, tout est plus dur.`
     : 'Tu as tout exploré. Les profondeurs t’attendent.';
+  renderPactOffer();
   $('stairs-go').textContent = hint.length ? 'Descendre quand même' : 'Descendre';
   $('stairs-go').className = hint.length ? 'secondary' : 'primary';
   $('stairs-stay').className = hint.length ? 'primary' : 'secondary';
@@ -8618,6 +8667,12 @@ function stayOnFloor() {
 
 function goDown() {
   if (state !== 'stairs') return;
+  if (isBossFloor(L.depth + 1) && !debugRun) {
+    const offer = L.pactOffer;
+    run.vow = offer?.taken ? offer.id : null;
+    run.vowFloor = run.vow ? L.depth + 1 : 0;
+    if (run.vow) run.taken++;
+  }
   stairsHero = null;
   showOverlay(null);
   descend();
@@ -9074,7 +9129,11 @@ function startFloor(depth) {
   updateHud();
   const b = L.biome;
   if (depth === 1 || biomeFor(depth - 1) !== b.id) toast(b.name, `Étage ${depth} · ${b.desc}`, 3.2);
-  else toast(`Étage ${depth}`, isBossFloor(depth) ? `${BOSSES[b.id].name.replace(/^L[ae] /, (m) => m.toLowerCase())} garde l’escalier` : '');
+  else {
+    const guard = isBossFloor(depth) ? `${BOSSES[b.id].name.replace(/^L[ae] /, (m) => m.toLowerCase())} garde l’escalier` : '';
+    const vow = run.vow && run.vowFloor === depth ? `Pacte : ${PACTS.find((q) => q.id === run.vow).name}` : '';
+    toast(`Étage ${depth}`, [guard, vow].filter(Boolean).join(' · '));
+  }
   for (const h of heroes) h.missed = 0;
   teachMech = FLOOR_MECH[depth] ?? null;
   teachDelay = teachMech ? TEACH_DELAY : 0;
@@ -9084,6 +9143,9 @@ function newRun(saved) {
   Object.assign(team, TEAM_START);
   run.won = !!(saved && saved.won);
   run.pacts = saved ? (Array.isArray(saved.pacts) ? saved.pacts.filter((id) => PACTS.some((p) => p.id === id)) : []) : grimoire.wins ? chosenPacts.slice() : [];
+  run.vow = saved && PACTS.some((q) => q.id === saved.vow && q.id !== 'disette') ? saved.vow : null;
+  run.vowFloor = run.vow && Number.isInteger(saved.vowFloor) ? saved.vowFloor : 0;
+  run.taken = saved && Number.isInteger(saved.taken) && saved.taken > 0 ? saved.taken : 0;
   winPending = false;
   for (const h of heroes) {
     Object.assign(h, bodyStart(), heroStats());
@@ -10620,7 +10682,7 @@ function renderTrack(el, depth, done = false) {
 
 function renderRunChips(el) {
   const kills = heroes.reduce((n, h) => n + h.kills, 0);
-  el.replaceChildren(...[['Niveau', team.level], ['Écus', teamGold()], ['Ennemis', kills], ['Combo max', combo.best], ['Gardiens', team.bosses]].map(([k, v]) => {
+  el.replaceChildren(...[['Niveau', team.level], ['Écus', teamGold()], ['Ennemis', kills], ['Combo max', combo.best], ['Gardiens', team.bosses], ...(run.vow ? [['Pacte', PACTS.find((q) => q.id === run.vow).name]] : [])].map(([k, v]) => {
     const li = document.createElement('li');
     li.innerHTML = `${k} <b>${v}</b>`;
     return li;
@@ -11100,7 +11162,7 @@ function snapshot() {
     const { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT } = h;
     return { cls, hp, gold, potions, kills, altarUses, maxHp, shieldReady, shieldT, perks: { ...h.perks }, gear: { ...h.gear }, gearKind: { ...h.gearKind } };
   });
-  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice() } };
+  return { run: { depth: L.depth, ...team, duo, heroes: saved, biomes: runBiomes.slice(), won: run.won, pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor, taken: run.taken } };
 }
 
 function boot(data) {
