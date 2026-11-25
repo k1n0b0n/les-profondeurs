@@ -2,29 +2,28 @@
 
 ## Why
 
-Les cinq pactes (Hordes, Acier, Fureur, Hâte, Disette) ne sont accessibles qu'après une première victoire, ce qui laisse les experts sans défi avant d'avoir gagné une fois. Le risque doit être un choix vécu en jeu, pas un réglage de menu.
+Les cinq pactes (Hordes, Acier, Fureur, Hâte, Disette) ne sont accessibles qu'après une première victoire et se choisissent à l'accueil, avant de jouer. Les experts n'ont donc aucun défi avant d'avoir gagné une fois, et le risque n'est jamais un choix fait en cours de partie, avec une récompense qu'on voit.
 
 ## What Changes
 
-- Avant chaque gardien (étages 3, 6, 9, 12), le jeu **propose un pacte** en échange d'une récompense supplémentaire (par exemple une relique légendaire en plus). Le refuser est le choix par défaut.
-- Le pacte accepté s'applique jusqu'à la fin de la partie ou jusqu'au gardien suivant (durée à trancher dans `design.md`).
-- La récompense tient compte de la note d'étage de `note-par-etage`.
-- Les pactes existants gardent leurs effets ; leur déblocage après une victoire est remplacé par cette offre dès la première partie.
-- Le record continue de classer le nombre de pactes d'une victoire.
-- En duo, l'offre est commune : les deux héros subissent le pacte, la récompense est partagée.
+- Quand les héros prennent l'escalier vers un étage de gardien (3, 6, 9, 12), l'écran de confirmation propose **un pacte** tiré au hasard, avec sa récompense : une seconde relique légendaire par héros à la chute du gardien. Ne rien prendre reste le choix par défaut.
+- Seuls les pactes dont l'effet se lit sur les monstres sont proposés : Hordes, Acier, Fureur, Hâte. Disette, qui agit au départ sur les potions, reste réservé à l'accueil.
+- Un pacte pris est actif sur l'étage du gardien et sur les étages suivants, jusqu'à l'offre suivante (au plus trois étages) ; il remplace alors le précédent.
+- Les pactes de départ de l'accueil (débloqués par une victoire) sont **conservés** tels quels et se cumulent avec le pacte en jeu. Ce changement ne les retire pas ; l'offre en jeu est disponible dès la première partie.
+- Le record continue de compter les pactes d'une victoire, en comptant les pactes pris en jeu.
+- En duo, l'offre est décidée par le héros qui a ouvert l'escalier ; le pacte s'applique aux deux et chaque héros reçoit la récompense.
 
-Hors périmètre : nouveaux pactes, paliers de difficulté, réglage « Récit ».
+Hors périmètre : nouveaux pactes, paliers de difficulté, réglage « Récit », note d'étage (la récompense est fixe ; une note pourra la moduler plus tard).
 
 ## Capabilities
 
 ### New Capabilities
-- `pactes-en-partie`: offre de pacte avant un gardien, application, durée et récompense associée.
+- `pactes-en-partie`: offre d'un pacte avant un gardien, durée d'effet, récompense et lien avec le record.
 
 ### Modified Capabilities
 
 ## Impact
 
-- `index.html` : `PACTS`, flux avant gardien (overlay ou rencontre), `rollPerks` ou table de reliques, écran d'accueil (suppression du déblocage par victoire), record.
-- `localStorage` : clé `profondeurs.pactes` à migrer ou à garder compatible.
-- `CHANGELOG.md`, `README.md` (section Pactes et grimoire), `GAME_VERSION`.
-- Dépend de `note-par-etage`.
+- `index.html` : `PACTS` et `hasPact`, `askDescend` et `menu-stairs` (HTML, CSS), `goDown` et `descend`, mort du gardien (relique), `snapshot` et `newRun` (reprise de partie), record et bilan, puces de la pause.
+- `README.md` (section Pactes et grimoire, constantes d'équilibrage), `CHANGELOG.md`, `GAME_VERSION`.
+- Plus de dépendance à `note-par-etage` : la récompense est fixe, la note devient un module optionnel du changement suivant.
