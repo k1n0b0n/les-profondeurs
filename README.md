@@ -283,6 +283,8 @@ Le **mode Récit** (Réglages de l'accueil et pause, mémorisé dans `profondeur
 
 - **Tir au vol** : un coup d'épée étourdit l'ennemi 0,9 s. Un carreau qui le touche pendant ce temps est critique et frappe à 125 %.
 - **Détonation** : un carreau qui ne tue pas marque sa cible 4 s, si une Lame est dans l'équipe. Un coup d'épée sur une cible marquée est critique et la fait exploser (rayon 2,3, 120 % des dégâts).
+- **Cordée** : tant que les deux héros sont debout à moins de 4 unités l'un de l'autre, chacun inflige 15 % de dégâts en plus et subit 10 % de moins (en plus de l'armure, dans la limite des 45 %). Les deux fiches prennent un liseré doré.
+- **Coup double** : si un héros achève un monstre moins de 1,2 s après l'autre héros, le combo gagne un cran de plus et chaque héros debout regagne 5 PV. Il faut alterner : deux victimes du même héros ne comptent pas.
 - **Partage** : chaque pièce remplit les deux bourses, à 60 % chacune. Les héros ne peuvent pas s'écarter de plus de 16 unités, et l'escalier attend que les deux soient à moins de 2,6.
 
 ### Encaisser, tomber, se relever
@@ -291,7 +293,7 @@ Un coup reçu passe ces filtres dans l'ordre : esquive, parade parfaite, invuln�
 
 - **Dernier souffle** : une fois par biome, un coup mortel laisse le héros à 10 PV avec 1,6 s d'invulnérabilité.
 - **Solo** : à 0 PV, la partie s'arrête.
-- **Duo** : le héros tombe à terre. Il rampe à 30 % de sa vitesse et tire faiblement. Son partenaire le relève en restant 2,2 s à moins de 1,8 de lui ; il revient avec 40 % de ses PV max. Un héros encore à terre au changement d'étage se relève avec 30 %. La partie s'arrête quand les deux sont à terre.
+- **Duo** : le héros tombe à terre. Il rampe à 30 % de sa vitesse et tire faiblement. Son partenaire le relève en restant 2,2 s à moins de 1,8 de lui ; il revient avec 40 % de ses PV max. La relève est un élan : une onde de choc (rayon 3) repousse et étourdit les monstres autour du relevé (le gardien ne reçoit que l'onde), et le prochain coup de celui qui l'a relevé est critique. Un héros encore à terre au changement d'étage se relève avec 30 %. La partie s'arrête quand les deux sont à terre.
 
 ### Progression
 
@@ -624,6 +626,7 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Parade : fenêtre parfaite, garde, recharge, dégâts gardés, étourdissement | `PARRY_PERFECT`, `PARRY_GUARD`, `PARRY_CD`, `GUARD_KEEP`, `STUN_TIME` | 5398–5402 | 0,2 s (0,24 s tactile) · 0,42 s · 0,3 s · 35 % · 1,4 s |
 | Note d'étage : poids, seuils, références | `GRADE`, `gradeOf` | 4565–4573 | 35/25/25/15 · S 85, A 65, B 40 |
 | Directeur : pression, bornes | `DIRECTOR`, `directorPressure`, `ambushCount` | 4608–4628 | ± 15 % de monstres · ± 15 pts d'élites · ± 25 pts de potion |
+| Duo : relève, cordée, coup double | `DUO` | 4637 | onde 3 · cordée 4 / + 15 % / − 10 % · fenêtre 1,2 s / 5 PV |
 | Pactes | `PACTS` | 6203 | Table |
 | Pacte en jeu : pool, récompense | `PACT_OFFERS`, `PACT_REWARD`, `rollPactOffer` | 8608–8613 | 4 pactes · seconde relique légendaire |
 | Gardiens : PV, vitesse, paquets d'attaques par phase, désespoir | `BOSSES` | 6190 | Table |

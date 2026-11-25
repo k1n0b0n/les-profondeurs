@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.10.0 — 2026-11-26
+
+- Duo : relève en élan. Quand un allié est relevé, une onde de choc repousse et étourdit les monstres autour de lui, et ton prochain coup est critique.
+- Duo : cordée. À moins de quatre unités l'un de l'autre, vous infligez 15 % de dégâts en plus et en subissez 10 % de moins (liseré doré sur les fiches).
+- Duo : coup double. Alterner les victimes à moins de 1,2 s ajoute un cran de combo et rend 5 PV à chacun.
+
 ## 1.9.0 — 2026-11-26
 
 - Directeur de rythme : dès l'étage 4, le nombre de monstres, d'élites et d'embuscades et la générosité en potions suivent ta note de l'étage précédent et les héros tombés.

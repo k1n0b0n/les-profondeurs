@@ -89,6 +89,7 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: none; }
 #hud.duo .pcard { border-left: 3px solid var(--pc); }
 #hud.duo .pcard.p2 { --pc: var(--p2); border-left: 1px solid var(--line); border-right: 3px solid var(--pc); }
 .pcard.down { opacity: 0.55; }
+.pcard.cordee { box-shadow: inset 0 0 0 1px var(--gold), 0 0 12px rgba(242, 196, 80, 0.25); }
 .pc-head { display: flex; align-items: baseline; gap: 8px; }
 .pc-tag { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--pc); }
 #hud:not(.duo) .pc-tag { display: none; }
@@ -1010,9 +1011,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.9.0';
+const GAME_VERSION = '1.10.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.10.0', date: '26/11/2026', items: [
+    'Duo : relève en élan. Quand un allié est relevé, une onde de choc repousse et étourdit les monstres autour de lui, et ton prochain coup est critique.',
+    'Duo : cordée. À moins de quatre unités l’un de l’autre, vous infligez 15 % de dégâts en plus et en subissez 10 % de moins (liseré doré sur les fiches).',
+    'Duo : coup double. Alterner les victimes à moins de 1,2 s ajoute un cran de combo et rend 5 PV à chacun.',
+  ] },
   { version: '1.9.0', date: '26/11/2026', items: [
     'Directeur de rythme : dès l’étage 4, le nombre de monstres, d’élites et d’embuscades et la générosité en potions suivent ta note de l’étage précédent et les héros tombés.',
     'Les PV, dégâts et vitesse des monstres ne changent pas ; les étages 1 et 2 et les gardiens ne sont jamais ajustés.',
@@ -4422,7 +4428,7 @@ const bodyStart = () => ({
   chargeT: 0, chargeStage: 0, sprinting: false, guardT: 0, guardAge: 0, parryCd: 0, parried: false, bufDash: 0, bufDashDir: null, bufAttack: 0, bufParry: 0, readyFlash: 0,
   ivx: 0, ivz: 0, chill: 0, slowT: 0, poisonT: 0, poisonTick: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
   shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9, riposteT: 0, emberT: 0,
-  learned: {}, missed: 0, fl: { dmg: 0, perfect: 0 },
+  learned: {}, missed: 0, fl: { dmg: 0, perfect: 0 }, cordee: false,
 });
 function makeHero(index, mesh, light, cls = 'lame') {
   const h = Object.create(HeroProto);
@@ -4488,7 +4494,7 @@ const preyFor = (x, z) => {
   return best ?? nearestHero(x, z);
 };
 const nearAnyHero = (x, z, r) => heroes.some((h) => !h.down && Math.hypot(h.x - x, h.z - z) < r);
-const dmgOf = (h = player) => (1 + (team.level - 1) * 0.1) * h.dmgMul * (inTranse() ? 1.25 : 1);
+const dmgOf = (h = player) => (1 + (team.level - 1) * 0.1) * h.dmgMul * (inTranse() ? 1.25 : 1) * (h.cordee ? DUO.cordee.dmg : 1);
 const xpNeed = () => 4 * team.level * team.level + 4;
 const teamGold = () => Math.max(...heroes.map((h) => h.gold));
 const tagOf = (h) => (heroes.length > 1 ? `J${h.index + 1}` : '');
@@ -4624,6 +4630,24 @@ function ambushCount(depth, p) {
   if (p >= 1 && depth >= DIRECTOR.ambushUpFrom) n = Math.min(DIRECTOR.ambushMax, n + 1);
   if (p <= DIRECTOR.downCap && depth >= DIRECTOR.ambushDownFrom) n = Math.max(0, n - 1);
   return n;
+}
+
+// ---------- Coopération en duo
+// Relève en élan, cordée (proches = plus forts, plus solides) et coup double (alterner les victimes). Aucun effet en solo.
+const DUO = { revive: { radius: 3, dmg: 1.2 }, cordee: { r: 4, dmg: 1.15, armor: 0.1 }, chain: { window: 1.2, heal: 0.5 } };
+let duoKill = { hero: null, t: -9 };
+
+function updateCordee() {
+  const on = heroes.length > 1 && heroes.every((h) => !h.down) && Math.hypot(heroes[0].x - heroes[1].x, heroes[0].z - heroes[1].z) <= DUO.cordee.r;
+  for (const h of heroes) {
+    h.cordee = on;
+    $(`pcard-${h.index + 1}`).classList.toggle('cordee', on);
+  }
+  if (!on && heroes.length < 2) $('pcard-1').classList.remove('cordee');
+  if (on && !hints.cordee) {
+    hints.cordee = true;
+    toast('Cordée', 'proches l’un de l’autre : + 15 % de dégâts, − 10 % de dégâts subis');
+  }
 }
 
 let state = 'menu';
@@ -5375,6 +5399,14 @@ function killEnemy(e) {
 
   combo.n = combo.t > 0 ? combo.n + 1 : 1;
   combo.t = COMBO_WINDOW;
+  if (heroes.length > 1) {
+    if (duoKill.hero && duoKill.hero !== player && elapsed - duoKill.t < DUO.chain.window) {
+      combo.n++;
+      for (const h of heroes) if (!h.down) heal(DUO.chain.heal, h);
+      floatText(e.x, 2, e.z, 'Coup double !', 'crit');
+      duoKill.hero = null;
+    } else duoKill = { hero: player, t: elapsed };
+  }
   if (inTranse()) transe.t = Math.min(transeMax(), transe.t + 0.6);
   combo.best = Math.max(combo.best, combo.n);
   L.fl.combo = Math.max(L.fl.combo, combo.n);
@@ -6112,7 +6144,7 @@ function hurtPlayer(amount, sx, sz, who = player, src = null) {
     floatText(p.x, 1.6, p.z, 'Dévié !', 'block');
     return true;
   }
-  amount *= 1 - Math.min(0.45, p.armor);
+  amount *= 1 - Math.min(0.45, p.armor + (p.cordee ? DUO.cordee.armor : 0));
   p.hp = Math.max(0, p.hp - amount);
   p.fl.dmg += amount;
   teachMissed(p);
@@ -6198,7 +6230,7 @@ function updateDowned(dt) {
 function updateRevives(dt) {
   for (const h of heroes) {
     if (!h.down) continue;
-    const helper = heroes.some((o) => o !== h && !o.down && Math.hypot(o.x - h.x, o.z - h.z) < 1.8);
+    const helper = heroes.find((o) => o !== h && !o.down && Math.hypot(o.x - h.x, o.z - h.z) < 1.8);
     h.reviveT = helper ? h.reviveT + dt : Math.max(0, h.reviveT - dt * 0.5);
     if (h.reviveT < 2.2) continue;
     h.down = false;
@@ -6209,6 +6241,10 @@ function updateRevives(dt) {
     burst(h.x, 0.6, h.z, 0x8ee09a, 22, 3.5, -5, 0.8);
     sfx.level();
     floatText(h.x, 1.8, h.z, 'Relevé !', 'heal');
+    helper.nextCrit = true;
+    L.blasts.push({ x: h.x, z: h.z, t: 0, R: DUO.revive.radius, dmg: dmgOf(helper) * DUO.revive.dmg, color: 0x8ee09a, by: helper });
+    ring(h.x, h.z, 0x8ee09a, 22, DUO.revive.radius * 2, 0.4);
+    for (const e of L.enemies) if (e.dying < 0 && e.type !== 'boss' && Math.hypot(e.x - h.x, e.z - h.z) < DUO.revive.radius + e.r) stunEnemy(e, h);
     computeFlow();
     updateHud();
   }
@@ -9271,6 +9307,7 @@ function newRun(saved) {
   comboEl.hidden = true;
   pendingChoices.length = 0;
   hints = { orb: false, perfect: false, late: false, traps: new Set() };
+  duoKill = { hero: null, t: -9 };
   debugRun = false;
   $('perf').hidden = true;
   runBiomes = saved && Array.isArray(saved.biomes) && saved.biomes.length === 4 && saved.biomes.every((b) => BIOMES[b])
@@ -11223,6 +11260,7 @@ function step(now) {
       player = heroes[0];
       enforceLeash();
       updateRevives(dt);
+      updateCordee();
     }
     updateEnemies(dt);
     updateShots(dt);
