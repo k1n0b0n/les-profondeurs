@@ -986,9 +986,14 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.5.0';
+const GAME_VERSION = '1.6.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.6.0', date: '25/11/2026', items: [
+    'Étages 1 et 2 pensés pour apprendre : l’esquive d’abord, puis la parade et l’enchaînement des victimes.',
+    'Un indice discret nomme la commande à utiliser (clavier, manette ou tactile) et disparaît dès que la mécanique est réussie.',
+    'À l’étage 2, ni sorcier, ni artificier, ni chaman, ni brute : des gardes et des rôdeurs en groupe, pour parer et enchaîner.',
+  ] },
   { version: '1.5.0', date: '19/11/2026', items: [
     'Salle nettoyée : vider une salle de combat rapporte des écus, un cœur à chaque héros et parfois une potion.',
     'Plus de potions lâchées quand la vie est basse.',
@@ -1639,9 +1644,15 @@ const SQUADS = [
   { from: 6, core: ['chaman', 'garde'], fill: ['sorcier', 'rodeur', 'brute'] },
 ];
 
+// Étages d'initiation : seuls les monstres dont la menace relève des mécaniques déjà enseignées (esquive à l'étage 1, parade et combo à l'étage 2).
+const ONBOARDING = {
+  1: { types: ['slime'], squads: [] },
+  2: { types: ['slime', 'rodeur', 'garde'], squads: [{ core: ['garde'], fill: ['rodeur', 'slime'] }], garde: 1.6, anchorMin: 3 },
+};
+
 function rollSquad(depth, count) {
   const bias = L?.biome?.roster ?? {};
-  const options = SQUADS.filter((s) => s.from <= depth);
+  const options = ONBOARDING[depth] ? ONBOARDING[depth].squads : SQUADS.filter((s) => s.from <= depth);
   if (!options.length || count < 2 || Math.random() < 0.3) return Array.from({ length: count }, () => rollEnemy(depth));
   const weight = (s) => s.core.reduce((w, t) => w * (bias[t] ?? 1), 1);
   let r = Math.random() * options.reduce((n, s) => n + weight(s), 0);
@@ -1656,6 +1667,11 @@ function rollEnemy(depth) {
   if (depth >= 2) pool.push(['rodeur', 2 + depth * 0.6], ['sorcier', 1 + depth * 0.4]);
   if (depth >= 3) pool.push(['brute', 0.6 + depth * 0.35], ['garde', 0.5 + depth * 0.2], ['artificier', 0.4 + depth * 0.18]);
   if (depth >= 4) pool.push(['chaman', 0.3 + depth * 0.12]);
+  const ob = ONBOARDING[depth];
+  if (ob) {
+    for (let k = pool.length - 1; k >= 0; k--) if (!ob.types.includes(pool[k][0])) pool.splice(k, 1);
+    if (ob.garde) pool.push(['garde', ob.garde]);
+  }
   const bias = L?.biome?.roster ?? {};
   for (const p of pool) p[1] *= bias[p[0]] ?? 1;
   let t = Math.random() * pool.reduce((s, p) => s + p[1], 0);
@@ -2390,10 +2406,17 @@ function populate(dun) {
   const roomy = clamp(dun.rooms.length / Math.min(8 + depth, 14), 0.8, 1.25);
   const total = Math.min(40, 9 + (depth - 1) * 2.4) * roomy * (boss ? 0.9 : 1) * (hasPact('hordes') ? 1.3 : 1);
   let spawned = 0;
+  const ob = ONBOARDING[depth];
+  const anchor = ob?.anchorMin ? [...fighting].sort((a, b) => b.w * b.h - a.w * a.h)[0] : null;
   for (const r of others) {
     if (r === L.bossRoom || ambushRooms.includes(r) || r === L.vault?.room) continue;
     let count = fighting.includes(r) ? clamp(Math.round((total * r.w * r.h) / area + rand(-1, 1)), 0, 6) : 0;
-    const squad = rollSquad(depth, count);
+    let squad;
+    if (r === anchor) {
+      count = Math.max(count, ob.anchorMin);
+      const sq = ob.squads[0];
+      squad = shuffle([...sq.core, ...Array.from({ length: count - sq.core.length }, () => pick(sq.fill))]);
+    } else squad = rollSquad(depth, count);
     if (count > 0 && squad.every((t) => SUPPORT.has(t))) {
       if (count === 1) {
         count = 2;
@@ -4355,6 +4378,7 @@ const bodyStart = () => ({
   chargeT: 0, chargeStage: 0, sprinting: false, guardT: 0, guardAge: 0, parryCd: 0, parried: false, bufDash: 0, bufDashDir: null, bufAttack: 0, bufParry: 0, readyFlash: 0,
   ivx: 0, ivz: 0, chill: 0, slowT: 0, poisonT: 0, poisonTick: 0, ti: -1, tj: -1, walk: 0, moving: false, deadT: 0,
   shieldReady: false, shieldT: 0, down: false, reviveT: 0, lastBreath: false, hasteT: 0, truceAt: -9, riposteT: 0, emberT: 0,
+  learned: {}, missed: 0,
 });
 function makeHero(index, mesh, light, cls = 'lame') {
   const h = Object.create(HeroProto);
@@ -4439,6 +4463,69 @@ let choiceHero = null;
 let altarHero = null;
 let shopHero = null;
 let hints = { orb: false, perfect: false, late: false, traps: new Set() };
+
+// ---------- Apprentissage des mécaniques
+// Étage 1 : esquive. Étage 2 : parade, puis combo. L'état « appris » survit aux parties ; le suivi par héros ne vit que le temps d'une partie.
+const LEARN_KEY = 'profondeurs.appris';
+const learnedSaved = (() => {
+  const v = store.get(LEARN_KEY, null);
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+})();
+const FLOOR_MECH = { 1: 'esquive', 2: 'parade' };
+const TEACH_DELAY = 3.6;
+const TEACH_MISSES = 3;
+const TEACH = {
+  esquive: { title: 'Esquive', act: 'dash', sub: (cmd) => `${cmd} — un instant intouchable, pour passer à travers les coups` },
+  parade: { title: 'Parade', act: 'parry', sub: (cmd) => `${cmd} juste avant l’impact : l’ennemi est étourdi` },
+  combo: { title: 'Enchaîne', act: null, sub: () => `chaque victime en moins de ${COMBO_WINDOW} s prolonge le combo` },
+};
+let teachShown = null;
+let teachDelay = 0;
+let teachMech = null;
+
+function actionLabel(h, act) {
+  const onPad = h.device.kind === 'pad' || (h.device.kind === 'any' && pad.active);
+  if (onPad) return orList(padList(padBinds(heroPads(h)[0]?.index ?? [...padStates.keys()][0])[act]).slice(0, 2));
+  if (coarse && h.device.kind === 'any') return `le bouton ${act === 'dash' ? 'Esquiver' : 'Parer'}`;
+  const km = h.device.kind === 'kb' && h.device.map !== 'full' ? binds[h.device.map] : binds.solo;
+  return orList(keyList(km[act]).slice(0, 2));
+}
+
+function showTeach(mech) {
+  const t = TEACH[mech];
+  if (!t || learnedSaved[mech]) return;
+  const lacking = heroes.filter((h) => !h.learned[mech]);
+  if (!lacking.length) return;
+  const cmd = t.act ? lacking.map((h) => (heroes.length > 1 ? `${tagOf(h)} : ` : '') + actionLabel(h, t.act)).join(' · ') : '';
+  toast(t.title, t.sub(cmd), 4.5);
+  teachShown = mech;
+}
+
+function learn(h, mech) {
+  if (FLOOR_MECH[L?.depth] === mech) h.missed = 0;
+  if (h.learned[mech]) return;
+  h.learned[mech] = true;
+  if (!heroes.every((x) => x.learned[mech])) {
+    if (teachShown === mech) showTeach(mech);
+    return;
+  }
+  if (teachShown === mech) {
+    toastT = 0;
+    toastEl.classList.remove('show');
+    teachShown = null;
+  }
+  if (!learnedSaved[mech]) {
+    learnedSaved[mech] = true;
+    store.set(LEARN_KEY, learnedSaved);
+  }
+}
+
+function teachMissed(p) {
+  const mech = FLOOR_MECH[L.depth];
+  if (!mech || ++p.missed < TEACH_MISSES || p.learned[mech] || learnedSaved[mech] || L.teachRemind) return;
+  L.teachRemind = true;
+  showTeach(mech);
+}
 
 let state = 'menu';
 let debugRun = false;
@@ -5191,7 +5278,12 @@ function killEnemy(e) {
   combo.t = COMBO_WINDOW;
   if (inTranse()) transe.t = Math.min(transeMax(), transe.t + 0.6);
   combo.best = Math.max(combo.best, combo.n);
+  if (combo.n === 1 && L.depth === 2 && toastT <= 0 && !L.comboHint) {
+    L.comboHint = true;
+    showTeach('combo');
+  }
   if (combo.n >= 2) {
+    for (const h of heroes) learn(h, 'combo');
     sfx.combo(combo.n);
     bumpCombo();
     if (combo.n === 5) toast('Combo ×5', 'écus +40 % · un cœur regagné');
@@ -5801,6 +5893,7 @@ function parryHeld(h) {
 }
 
 function parrySuccess(p, src) {
+  learn(p, 'parade');
   p.parried = true;
   p.guardT = Math.min(p.guardT, 0.05);
   p.parryCd = 0.1;
@@ -5867,6 +5960,7 @@ function hurtPlayer(amount, sx, sz, who = player, src = null) {
   const p = who;
   if (state !== 'play' || p.down) return false;
   if (p.dodge > 0) {
+    learn(p, 'esquive');
     if (DODGE_TIME - p.dodge <= PERFECT_WINDOW) perfectDodge(p);
     else dodgedLate(p);
     return false;
@@ -5916,6 +6010,7 @@ function hurtPlayer(amount, sx, sz, who = player, src = null) {
   }
   amount *= 1 - Math.min(0.45, p.armor);
   p.hp = Math.max(0, p.hp - amount);
+  teachMissed(p);
   if (L.trial) L.trial.hits++;
   p.inv = 0.5;
   addShake(0.3);
@@ -8980,6 +9075,9 @@ function startFloor(depth) {
   const b = L.biome;
   if (depth === 1 || biomeFor(depth - 1) !== b.id) toast(b.name, `Étage ${depth} · ${b.desc}`, 3.2);
   else toast(`Étage ${depth}`, isBossFloor(depth) ? `${BOSSES[b.id].name.replace(/^L[ae] /, (m) => m.toLowerCase())} garde l’escalier` : '');
+  for (const h of heroes) h.missed = 0;
+  teachMech = FLOOR_MECH[depth] ?? null;
+  teachDelay = teachMech ? TEACH_DELAY : 0;
 }
 
 function newRun(saved) {
@@ -9091,6 +9189,7 @@ function resumeGame() {
 // ---------- HUD
 const toastEl = $('toast');
 function toast(title, sub = '', dur = 1.8) {
+  teachShown = null;
   $('toast-title').textContent = title;
   $('toast-sub').textContent = sub;
   $('toast-sub').hidden = !sub;
@@ -9318,6 +9417,10 @@ const lastEgide = [null, null];
 const lastStatus = [null, null];
 let lastTranse = false;
 function updateOverlays(dt, running) {
+  if (running && teachDelay > 0) {
+    teachDelay -= dt;
+    if (teachDelay <= 0 && teachMech) showTeach(teachMech);
+  }
   if (toastT > 0) {
     toastT -= dt;
     if (toastT <= 0) toastEl.classList.remove('show');

@@ -118,6 +118,7 @@ Le jeu repose sur un état global mutable au niveau du module, sans framework ni
 | `profondeurs.best` | Meilleure partie |
 | `profondeurs.grimoire` | Reliques débloquées, victoires, pacte le plus lourd |
 | `profondeurs.pactes` | Pactes cochés à l'accueil |
+| `profondeurs.appris` | Mécaniques réussies (esquive, parade, combo), pour ne plus afficher leurs indices |
 | `profondeurs.hero` | Héros solo choisi |
 | `profondeurs.layout` | Dernier préréglage clavier appliqué (droitier ou gaucher) |
 | `profondeurs.touches` | Touches personnalisées : `solo`, `left` et `right` (codes `KeyboardEvent.code`), `pad` (index de boutons de la disposition standard), 3 cases par action |
@@ -187,8 +188,9 @@ Le record classe les parties dans cet ordre : une victoire bat toute défaite, p
 | Taille | En dents de scie par biome (`floorShape`) : 1er étage ramassé, 2e (marchand) le plus vaste, gardien entre les deux ; + 4 cases de côté et + 2 salles par biome. Étages 1 à 3 : 36 × 36 / 8 salles, 44 × 44 / 12, 40 × 40 / 10 ; étages 10 à 12 : 48 × 48 / 14, 56 × 56 / 18, 52 × 52 / 16 |
 | Portails | seulement dans les grands étages : 1 paire dès 14 salles, 2 dès 16, 3 dès 18 |
 | Monstres par étage | min(40, 13 + 2 × (depth − 1)) × (salles ÷ min(8 + depth, 14), borné à 0,8–1,25), × 0,6 sur l'étage du gardien |
-| Types de monstres | slime dès l'étage 1, rôdeur et sorcier dès 2, brute, porte-bouclier et artificier dès 3, psalmodieur dès 4 |
+| Types de monstres | étage 1 : slime seul ; étage 2 : slime, rôdeur et porte-bouclier (table `ONBOARDING`) ; sorcier, brute et artificier dès 3, psalmodieur dès 4 |
 | Composition | 7 salles sur 10 reçoivent une escouade (un noyau + des troupes), les autres un tirage libre |
+| Initiation | étages 1 et 2 : une mécanique à la fois (esquive, puis parade et combo) ; à l'étage 2, la plus grande salle de combat compte au moins 3 monstres dont un porte-bouclier ; l'étage 3, gardé par le premier boss, n'enseigne rien |
 | Élites | aucune à l'étage 1, 35 % jusqu'à l'étage 3, puis 70 % + 20 % d'une 2e ; dès l'étage 7, 1 garantie + 60 % d'une 2e (+ 50 % d'une 3e dès l'étage 10), chacune à deux affixes |
 | Embuscades | dès l'étage 2 : 1 salle, 2 dès l'étage 5, en deux vagues ; la seconde est menée par une élite dès l'étage 4 |
 | Pièges | fléchettes et pointes dès 2, bouches de feu dès 3, lames tournoyantes dès 4, rochers dès 5 |
@@ -237,6 +239,14 @@ La parade répond aux coups portés au contact et aux projectiles ; l'esquive re
 - **Garde tardive** : passé la fenêtre parfaite, la garde laisse passer 35 % des dégâts d'un coup au contact, repousse l'attaquant sans l'étourdir, et arrête net orbes et fléchettes.
 - **Recharge** : 0,3 s après une garde relâchée sans parade parfaite, quasi nulle après une parade réussie. Une nouvelle parade parfaite demande de relâcher puis d'appuyer à nouveau.
 - **Lecture** : avant de frapper au contact, un monstre se fige 0,4 s en rougeoyant (0,28 s pour un Véloce, 0,45 s pour un gardien). C'est le signal pour parer ou esquiver. Les charges (bond du slime, ruée du rôdeur, coup de bouclier) se parent aussi.
+
+### Apprentissage des premiers étages
+
+Les étages 1 et 2 enseignent une mécanique à la fois : l'esquive à l'étage 1, la parade puis l'enchaînement des victimes à l'étage 2. L'étage 3, gardé par le premier boss, n'introduit rien.
+
+- **Indice d'entrée** : 3,6 s après l'arrivée (une fois le nom de l'étage passé), un toast nomme la commande réelle de chaque héros (touche personnalisée, bouton de manette, bouton tactile). Il ne bloque rien.
+- **Rappel** : trois coups encaissés d'affilée sans utiliser la mécanique de l'étage relancent l'indice, une fois par étage. À l'étage 2, la première victime d'une série affiche aussi « Enchaîne ».
+- **Appris** : une esquive qui évite un coup, une parade parfaite ou deux victimes enchaînées marquent la mécanique réussie. Le suivi est par héros pendant la partie ; la clé `profondeurs.appris` (`{ esquive, parade, combo }`) est écrite quand tous les héros présents ont réussi, et plus aucun indice ne s'affiche ensuite. Le combo est une valeur d'équipe : il compte pour tous les héros.
 
 ### Combo et Transe
 
@@ -561,6 +571,8 @@ L'équilibrage tient dans une trentaine de constantes et de tables, presque tout
 | Stats des monstres | `ENEMIES` | 1505 | Table |
 | Biomes : vision, composition, pièges | `BIOMES` | 1516 | Table |
 | Escouades | `SQUADS`, `rollSquad` | 1546–1556 | Noyau + troupes, 30 % de tirage libre |
+| Étages d'initiation : monstres autorisés, taille de la rencontre repère | `ONBOARDING` | 1648 | Étage 1 slime seul ; étage 2 slime, rôdeur, porte-bouclier, au moins 3 monstres dans la plus grande salle |
+| Indices d'apprentissage : mécanique par étage, délai, coups avant rappel | `FLOOR_MECH`, `TEACH_DELAY`, `TEACH_MISSES` | 4474–4476 | Esquive (1), parade (2) · 3,6 s · 3 coups |
 | Tirage des monstres par étage | `rollEnemy` | 1568 | Poids |
 | Densité de monstres, élites, chambre forte, stèle | `populate` | 2227 | Voir « Ce qui change d'un étage à l'autre » |
 | Affixes d'élite | `AFFIXES` | 3220 | Table |

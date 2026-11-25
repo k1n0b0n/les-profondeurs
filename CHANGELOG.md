@@ -2,6 +2,12 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.6.0 — 2026-11-25
+
+- Étages 1 et 2 pensés pour apprendre : l'esquive d'abord, puis la parade et l'enchaînement des victimes.
+- Un indice discret nomme la commande à utiliser (clavier, manette ou tactile) et disparaît dès que la mécanique est réussie.
+- À l'étage 2, ni sorcier, ni artificier, ni chaman, ni brute : des gardes et des rôdeurs en groupe, pour parer et enchaîner.
+
 ## 1.5.0 — 2026-11-19
 
 - Salle nettoyée : vider une salle de combat rapporte des écus, un cœur à chaque héros et parfois une potion.
