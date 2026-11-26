@@ -9,7 +9,7 @@
 
 - [x] 1b.1 Écrire le relais (`relay/server.mjs`, salons en mémoire, 4 membres, origines autorisées, limites de débit et d'IP, `/health`) avec ses tests (`node --test`) : 5 tests passent.
 - [x] 1b.2 Le livrer : Dockerfile, compose isolé (non-root, lecture seule, capacités retirées, 64 Mo, boucle locale), modèle nginx, déploiement derrière TLS sur `profondeurs.kobbo.fr`, certificat renouvelé par certbot. Vérifié en `wss://` depuis Internet : salon, jonction, signaux, origine refusée.
-- [ ] 1b.3 Écrire le README du relais (protocole, variables d'environnement, déploiement, vie privée).
+- [x] 1b.3 Écrire le README du relais (protocole, variables d'environnement, déploiement, vie privée).
 - [x] 1b.4 Écrire le client de signalisation : hôte (créer le salon, afficher le code, un `RTCPeerConnection` par pair annoncé, ICE trickle) et ami (écran « Rejoindre », saisie du code, `?salon=CODE`, erreurs lisibles), vérification de version à la jonction. Retirer `#join=`, `packCode`, `unpackCode`, `iceDone` et l'ancien écran de codes. Vérifier à deux pages : connexion par code seul, code inconnu, relais injoignable, version différente.
 
 ## 2. Canal d'état et héros seuls
