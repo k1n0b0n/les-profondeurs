@@ -12,6 +12,8 @@
 - [x] 1b.3 Écrire le README du relais (protocole, variables d'environnement, déploiement, vie privée).
 - [x] 1b.4 Écrire le client de signalisation : hôte (créer le salon, afficher le code, un `RTCPeerConnection` par pair annoncé, ICE trickle) et ami (écran « Rejoindre », saisie du code, `?salon=CODE`, erreurs lisibles), vérification de version à la jonction. Retirer `#join=`, `packCode`, `unpackCode`, `iceDone` et l'ancien écran de codes. Vérifier à deux pages : connexion par code seul, code inconnu, relais injoignable, version différente.
 
+- [x] 1b.5 Salon en ligne : places automatiques des amis chez l'hôte (textes et code dédiés), écran « Choisis ton héros » chez l'ami (choix par clic ou flèches, liste des joueurs en direct), seul l'hôte lance la partie. Vérifié à deux fenêtres.
+
 ## 2. Canal d'état et héros seuls
 
 - [x] 2.1 Créer le canal `'state'` (ordonné, fiable) dans `netInvite`/`joinStart`, avec échange d'une version de protocole et refus clair en cas d'écart. Vérifier : deux pages en boucle locale, message de version.

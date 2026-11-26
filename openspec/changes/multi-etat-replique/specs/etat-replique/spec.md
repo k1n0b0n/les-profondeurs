@@ -101,6 +101,17 @@ L'hôte SHALL obtenir un code de salon de 4 caractères en ouvrant le jeu en lig
 - **WHEN** le relais ne répond pas
 - **THEN** l'hôte et l'ami voient un message, et le jeu local reste utilisable
 
+### Requirement: Salon vu par l'ami
+Un ami connecté SHALL voir un écran de salon avec le code, les quatre héros à choisir et la liste des joueurs avec leur héros, tenue à jour par l'hôte. Les amis connectés MUST être installés automatiquement dans le salon de l'hôte, et seul l'hôte MUST pouvoir lancer la partie. Au lancement, l'écran de salon de l'ami MUST laisser place à l'étage.
+
+#### Scenario: Choisir son héros
+- **WHEN** l'ami clique sur un héros ou utilise ses flèches
+- **THEN** son héros change dans le salon de l'hôte et dans la liste de l'ami
+
+#### Scenario: Seul l'hôte lance
+- **WHEN** l'ami appuie sur sa touche de validation dans le salon
+- **THEN** la partie ne démarre pas
+
 ### Requirement: Connexion directe et limites
 Le jeu en ligne SHALL fonctionner sans serveur de jeu : le relais ne sert qu'à la mise en relation. La partie MUST accepter au plus quatre joueurs, hôte compris. La perte d'un ami MUST laisser la partie de l'hôte continuer sans erreur ; chez l'ami, un message l'indique et il peut quitter.
 

@@ -863,6 +863,17 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   </div>
 </div>
 
+<div class="overlay" id="menu-friend" hidden>
+  <div class="card">
+    <p class="kicker" id="friend-kicker">Salon en ligne</p>
+    <h1>Choisis ton héros</h1>
+    <div class="hero-pick" id="friend-pick"></div>
+    <p class="section-label">Dans le salon</p>
+    <p class="keys-hint" id="friend-roster">L’hôte prépare la partie…</p>
+    <p class="lead">L’hôte lance la partie : tu arriveras directement dans l’étage.</p>
+  </div>
+</div>
+
 <div id="remote" hidden>
   <div id="remote-bar"><span id="remote-ping">connexion…</span><span id="remote-keys"></span><button type="button" id="remote-quit">Quitter</button></div>
 </div>
@@ -9567,7 +9578,7 @@ function setupHeroes(devices, classes) {
 
 function showOverlay(id) {
   for (const o of document.querySelectorAll('.overlay')) o.hidden = o.id !== id;
-  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || id === 'menu-online' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
+  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || id === 'menu-online' || id === 'menu-friend' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
 }
 
 function pauseGame() {
@@ -10494,6 +10505,7 @@ function renderLobby() {
     $('duo-hint').textContent = ready
       ? `${count} prêts. Change le héros de chacun avec les flèches de sa carte, puis descends. Tes amis ne voient pas encore ce salon : ils verront la partie dès le départ.`
       : `Donne le code ${NET.code ?? ''} à tes amis : ils apparaissent ici dès qu’ils sont connectés. Tes amis ne voient pas ce salon, seulement la partie.`;
+    netBroadcastLobby();
     return;
   }
   $('duo-hint').textContent = ready ? `${count} prêts${count < 4 ? ', un autre peut encore rejoindre' : ''}. Frappe ou ${padLabel(0)} pour descendre, gauche ou droite pour changer de héros.`
@@ -10521,7 +10533,7 @@ function lobbyInput(dev, action = 'go') {
   const n = lobby.slots.indexOf(dev);
   if (n >= 0) {
     if (action === 'go') {
-      if (lobbyCount() >= 2) startDuo();
+      if (lobbyCount() >= 2 && !isOnlineDev(dev)) startDuo();
     } else {
       cycleHero(n, action === 'next' ? 1 : -1);
     }
@@ -10789,6 +10801,26 @@ function floorMessage(peer) {
   };
 }
 
+// Salon : l'hôte diffuse la liste des joueurs et la place de chaque ami ; un ami choisit son héros par `pick`.
+function netBroadcastLobby() {
+  if (!NET.relay) return;
+  const inLobby = state === 'lobby';
+  const list = inLobby ? lobby.slots.map((dev, n) => dev && { dev, cls: lobby.classes[n] }).filter(Boolean) : [];
+  let locals = 0;
+  const players = list.map((p) => ({ cls: p.cls, name: isOnlineDev(p.dev) ? `Ami ${Number(p.dev.slice(4)) - ONLINE_PAD0}` : ++locals === 1 ? 'Hôte' : 'Joueur local' }));
+  for (const peer of NET.peers.values()) {
+    peerSend(peer, { t: 'lobby', code: NET.code, players, me: list.findIndex((p) => p.dev === `pad-${ONLINE_PAD0 + peer.id}`) });
+  }
+}
+
+function hostPick(peer, cls) {
+  if (state !== 'lobby' || !CLASS_IDS.includes(cls)) return;
+  const n = lobby.slots.indexOf(`pad-${ONLINE_PAD0 + peer.id}`);
+  if (n < 0) return;
+  lobby.classes[n] = cls;
+  renderLobby();
+}
+
 // Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions, dernière trame de commande traitée, vitesse effective.
 let snapN = 0;
 let snapAcc = 0;
@@ -10850,7 +10882,7 @@ function netWire(peer) {
     peer.open = true;
     peer.state = 'connected';
     peer.lastSeen = performance.now();
-    toast('Ami connecté', `Joueur en ligne ${peer.id} : il rejoint le salon avec Entrée ou A`, 3);
+    toast('Ami connecté', `Ami ${peer.id} est installé dans le salon`, 3);
     renderOnline();
   };
   dc.onmessage = (e) => {
@@ -10876,6 +10908,7 @@ function netWire(peer) {
     peer.stateOpen = true;
     sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
     if (state !== 'menu' && state !== 'lobby') peerSend(peer, floorMessage(peer));
+    else netBroadcastLobby();
   };
   sc.onmessage = (e) => {
     let m;
@@ -10889,7 +10922,7 @@ function netWire(peer) {
     if (m.t === 'hello' && m.proto !== PROTOCOL) {
       sc.send(JSON.stringify({ t: 'refuse', why: 'proto' }));
       netDrop(peer, 'failed');
-    }
+    } else if (m.t === 'pick') hostPick(peer, m.cls);
   };
   pc.onconnectionstatechange = () => {
     if (['failed', 'closed'].includes(pc.connectionState)) netDrop(peer, 'failed');
@@ -10995,7 +11028,7 @@ function renderOnline() {
   if (state === 'lobby' && NET.relay) {
     seatOnline();
     renderLobby();
-  }
+  } else netBroadcastLobby();
   const room = $('online-room');
   if (!room) return;
   room.hidden = !NET.code;
@@ -11082,7 +11115,7 @@ async function joinRoom(raw) {
     onlineError(err.message);
     return;
   }
-  const client = { ws, pc: null, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0, pending: [], connected: false, seq: 0, hist: [], pred: null, spd: PLAYER_SPEED, st: '' };
+  const client = { ws, pc: null, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0, pending: [], connected: false, lobby: null, seq: 0, hist: [], pred: null, spd: PLAYER_SPEED, st: '' };
   NET.client = client;
   relayListen(ws, (m) => clientOnRelay(client, m));
   ws.addEventListener('close', () => {
@@ -11221,8 +11254,36 @@ function puppetSnap(m) {
   }
 }
 
+function renderFriend() {
+  const c = NET.client;
+  const m = c?.lobby;
+  const pick = $('friend-pick');
+  if (!pick.children.length) {
+    for (const id of CLASS_IDS) {
+      const card = $(`hero-start-${id}`).cloneNode(true);
+      card.removeAttribute('id');
+      for (const el of card.querySelectorAll('[id]')) el.removeAttribute('id');
+      card.dataset.cls = id;
+      card.addEventListener('click', () => {
+        if (NET.client?.sc?.readyState === 'open') NET.client.sc.send(JSON.stringify({ t: 'pick', cls: id }));
+      });
+      pick.append(card);
+    }
+  }
+  const mine = m && m.me >= 0 ? m.players[m.me]?.cls : null;
+  for (const b of pick.children) {
+    b.setAttribute('aria-pressed', String(b.dataset.cls === mine));
+    b.classList.toggle('on', b.dataset.cls === mine);
+  }
+  $('friend-kicker').textContent = m?.code ? `Salon en ligne · ${m.code}` : 'Salon en ligne';
+  $('friend-roster').textContent = m?.players.length ? m.players.map((p, i) => `${i === m.me ? 'Toi' : p.name} : ${CLASSES[p.cls]?.name ?? p.cls}`).join(' · ') : 'L’hôte prépare la partie…';
+}
+
 function clientOnState(m) {
-  if (m.t === 'floor') puppetFloor(m);
+  if (m.t === 'lobby' && NET.client) {
+    NET.client.lobby = m;
+    if (!NET.puppet) renderFriend();
+  } else if (m.t === 'floor') puppetFloor(m);
   else if (m.t === 'snap') puppetSnap(m);
 }
 
@@ -11344,7 +11405,8 @@ function remoteStart(client) {
   } catch {
     /* déjà fermé */
   }
-  showOverlay(null);
+  showOverlay('menu-friend');
+  renderFriend();
   $('remote').hidden = false;
   const km = binds.solo;
   $('remote-keys').textContent = `Manette, ou clavier : ${moveLabel(km)} · ${orList(keyList(km.attack).slice(0, 2))} attaque · ${orList(keyList(km.dash).slice(0, 2))} esquive · ${orList(keyList(km.parry ?? []).slice(0, 1))} parade · Entrée valide`;
