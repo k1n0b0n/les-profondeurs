@@ -38,6 +38,7 @@
 - [ ] 5.1 Retirer le flux vidéo et son repli (`netShare`, `getDisplayMedia`, `captureStream`, piste vidéo, plafond de débit, texte de l'écran « Jouer en ligne » sur le partage), sans conserver de repli ; vérifier qu'aucune demande de partage n'apparaît et que le jeu local (solo, duo, quatre joueurs) est inchangé.
 - [ ] 5.2 Mettre à jour le README (mode d'emploi, limites, vie privée), passer `GAME_VERSION` à 1.14.0 avec `CHANGELOG` d'`index.html` et `CHANGELOG.md`, vérifier la tuile Nouveautés.
 - [ ] 5.3 Parcourir un scénario complet hôte et deux amis en boucle locale : salon, deux étages, choix d'aptitude à distance, combat de gardien, déconnexion, aucune erreur console.
+- [ ] 5.4 Avertir l'hôte quand son onglet passe en arrière-plan (la partie se fige pour tous), et les amis par un message de l'hôte.
 
 ## Workflow follow-up
 

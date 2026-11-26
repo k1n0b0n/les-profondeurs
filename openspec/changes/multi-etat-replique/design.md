@@ -48,6 +48,7 @@ Le jeu est un seul fichier (~11 900 lignes). Constats de l'exploration, qui cont
 - [Débit des instantanés à quatre joueurs et beaucoup d'ennemis] → deltas, arrondi des positions, trame complète périodique ; mesure du débit à l'étape 3.
 - [La prédiction diverge de l'hôte (poussées, glace, pièges, laisse, portails)] → on ne prédit que le déplacement et l'esquive, avec un lissage et un recalage au-delà du seuil ; seuil réglé en jouant avec une latence simulée.
 - [La fonction de déplacement est entremêlée à `updatePlayer` (effets, sons, dégâts)] → `moveHeroBody` partagé par `movePlayer` et le client ; vérifié : le jeu local se déplace comme avant.
+- [Onglet de l'hôte en arrière-plan : le navigateur suspend `requestAnimationFrame`, donc la simulation et les instantanés, et la partie se fige pour tous] → garder la fenêtre de l'hôte visible ; avertir l'hôte et les amis quand `document.hidden` (tâche 5.4) ; une simulation sur minuteur est hors périmètre.
 - [Divergence si l'hôte change de version] → une version de protocole est échangée à la connexion, et une page de version différente est refusée avec un message.
 - [Aucun test automatisé] → vérification sous Playwright Firefox, deux pages dans le même contexte (méthode du changement `multi-en-ligne`).
 

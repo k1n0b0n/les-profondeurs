@@ -823,7 +823,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
 
 <div class="overlay" id="menu-duo" hidden>
   <div class="card">
-    <p class="kicker">Coopération sur le même écran</p>
+    <p class="kicker" id="duo-kicker">Coopération sur le même écran</p>
     <h1>Qui descend ?</h1>
     <p class="lead" id="duo-hint">Chaque joueur appuie sur Espace, sur Entrée ou sur A de sa manette.</p>
     <div class="slots">
@@ -10453,14 +10453,32 @@ function deviceLabel(dev) {
   return `Manette ${gp ? gp.index + 1 : ''} : ${gp ? gp.id.replace(/\s*\(.*$/, '').slice(0, 32) : 'branchée'}`;
 }
 
+// Salon en ligne : les amis connectés s'installent seuls, et l'hôte prend sa place (sa manette si elle est branchée, sinon le clavier).
+const isOnlineDev = (dev) => dev?.startsWith('pad-') && Number(dev.slice(4)) >= ONLINE_PAD0;
+function seatOnline() {
+  const friends = [...NET.peers.values()].filter((p) => p.open).map((p) => `pad-${ONLINE_PAD0 + p.id}`);
+  lobby.slots = lobby.slots.map((dev) => (isOnlineDev(dev) && !friends.includes(dev) ? null : dev));
+  const seat = (dev) => {
+    const free = lobby.slots.indexOf(null);
+    if (!lobby.slots.includes(dev) && free >= 0) lobby.slots[free] = dev;
+  };
+  if (!lobby.slots.some((dev) => dev && !isOnlineDev(dev))) {
+    const real = readPads().find((g) => g.index < ONLINE_PAD0);
+    seat(real ? `pad-${real.index}` : 'kb-left');
+  }
+  for (const dev of friends) seat(dev);
+}
+
 function renderLobby() {
+  const online = !!NET.relay;
+  $('duo-kicker').textContent = online ? `Salon en ligne · ${NET.code ?? ''}` : 'Coopération sur le même écran';
   const joinLeft = keyList(binds.left.attack)[0] ?? 'une touche de gauche';
   const joinRight = keyList(binds.right.attack)[0] ?? 'une touche de droite';
   const free = [!lobby.slots.includes('kb-left') && `${joinLeft} (clavier gauche)`, !lobby.slots.includes('kb-right') && `${joinRight} (clavier droit)`, `${padLabel(0)} (manette)`].filter(Boolean);
   lobby.slots.forEach((dev, n) => {
     const cls = CLASSES[lobby.classes[n]];
     $(`slot-${n + 1}`).hidden = n >= 2 && !lobby.slots[n - 1];
-    $(`slot-${n + 1}-dev`).textContent = dev ? deviceLabel(dev) : `Appuie sur ${orList(free)}`;
+    $(`slot-${n + 1}-dev`).textContent = dev ? deviceLabel(dev) : online ? 'En attente d’un ami…' : `Appuie sur ${orList(free)}`;
     $(`slot-${n + 1}`).classList.toggle('ready', !!dev);
     $(`slot-${n + 1}-pick`).hidden = !dev;
     $(`slot-${n + 1}-hero`).textContent = cls.name;
@@ -10472,6 +10490,12 @@ function renderLobby() {
   $('duo-go').textContent = ready ? `Descendre à ${count}` : 'Descendre';
   const picked = lobby.slots.map((d, n) => d && lobby.classes[n]).filter(Boolean);
   $('duo-combo').hidden = !(picked.includes('lame') && picked.includes('arbalete'));
+  if (online) {
+    $('duo-hint').textContent = ready
+      ? `${count} prêts. Change le héros de chacun avec les flèches de sa carte, puis descends. Tes amis ne voient pas encore ce salon : ils verront la partie dès le départ.`
+      : `Donne le code ${NET.code ?? ''} à tes amis : ils apparaissent ici dès qu’ils sont connectés. Tes amis ne voient pas ce salon, seulement la partie.`;
+    return;
+  }
   $('duo-hint').textContent = ready ? `${count} prêts${count < 4 ? ', un autre peut encore rejoindre' : ''}. Frappe ou ${padLabel(0)} pour descendre, gauche ou droite pour changer de héros.`
     : `Chaque joueur rejoint avec son appareil : ${joinLeft} pour la moitié gauche du clavier, ${joinRight} pour la moitié droite, ${padLabel(0)} pour une manette. De deux à quatre joueurs.`;
 }
@@ -10487,6 +10511,7 @@ function openLobby() {
   initAudio();
   if (state !== 'menu') return;
   lobby.slots = [null, null, null, null];
+  if (NET.relay) seatOnline();
   state = 'lobby';
   renderLobby();
   showOverlay('menu-duo');
@@ -10529,7 +10554,7 @@ function startDuo() {
   const slots = lobby.slots.map((dev, n) => (dev ? { dev, cls: lobby.classes[n] } : null)).filter(Boolean);
   const devices = slots.map(({ dev }) => (dev.startsWith('pad-') ? { kind: 'pad', index: Number(dev.slice(4)) } : { kind: 'kb', map: dev === 'kb-left' ? 'left' : 'right' }));
   const keyboards = devices.filter((d) => d.kind === 'kb');
-  if (keyboards.length === 1 && devices.length === 2) keyboards[0].map = 'full';
+  if (keyboards.length === 1 && (devices.length === 2 || NET.relay)) keyboards[0].map = 'full';
   setupHeroes(devices, slots.map((x) => x.cls));
   newRun();
   state = 'play';
@@ -10967,6 +10992,10 @@ function onlineError(msg) {
 }
 
 function renderOnline() {
+  if (state === 'lobby' && NET.relay) {
+    seatOnline();
+    renderLobby();
+  }
   const room = $('online-room');
   if (!room) return;
   room.hidden = !NET.code;
