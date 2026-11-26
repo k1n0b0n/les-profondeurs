@@ -4863,22 +4863,26 @@ function updatePlayerTile() {
   computeFlow();
 }
 
-function movePlayer(dx, dz) {
+// Déplacement d'un héros avec ses collisions et l'aide d'angle ; le client en ligne l'utilise aussi pour prédire son héros.
+function moveHeroBody(b, dx, dz) {
   const r = PLAYER_R;
-  if (dx && !moveAxis(player, dx, 0, r) && Math.abs(dx) >= Math.abs(dz)) {
-    const row = tileOf(player.z);
-    if (!isWall(tileOf(player.x + Math.sign(dx) * TILE * 0.75), row)) {
-      const off = row * TILE - player.z;
-      moveAxis(player, 0, Math.sign(off) * Math.min(Math.abs(off), Math.abs(dx)), r);
+  if (dx && !moveAxis(b, dx, 0, r) && Math.abs(dx) >= Math.abs(dz)) {
+    const row = tileOf(b.z);
+    if (!isWall(tileOf(b.x + Math.sign(dx) * TILE * 0.75), row)) {
+      const off = row * TILE - b.z;
+      moveAxis(b, 0, Math.sign(off) * Math.min(Math.abs(off), Math.abs(dx)), r);
     }
   }
-  if (dz && !moveAxis(player, 0, dz, r) && Math.abs(dz) >= Math.abs(dx)) {
-    const col = tileOf(player.x);
-    if (!isWall(col, tileOf(player.z + Math.sign(dz) * TILE * 0.75))) {
-      const off = col * TILE - player.x;
-      moveAxis(player, Math.sign(off) * Math.min(Math.abs(off), Math.abs(dz)), 0, r);
+  if (dz && !moveAxis(b, 0, dz, r) && Math.abs(dz) >= Math.abs(dx)) {
+    const col = tileOf(b.x);
+    if (!isWall(col, tileOf(b.z + Math.sign(dz) * TILE * 0.75))) {
+      const off = col * TILE - b.x;
+      moveAxis(b, Math.sign(off) * Math.min(Math.abs(off), Math.abs(dz)), 0, r);
     }
   }
+}
+function movePlayer(dx, dz) {
+  moveHeroBody(player, dx, dz);
 }
 
 function updatePlayer(dt) {
@@ -4962,6 +4966,7 @@ function updatePlayer(dt) {
       player.sprinting = sprint;
       if (sprint && rnd() < 0.5) emit({ x: player.x + rand(-0.2, 0.2), y: 0.1, z: player.z + rand(-0.2, 0.2), vx: -nx * 1.5, vy: 0.5, vz: -nz * 1.5, g: -1, life: 0.3, max: 0.3, color: 0xc8c0b0, size: 0.45 });
       const sp = PLAYER_SPEED * player.speedMul * (inTranse() ? 1.12 : 1) * k * (player.swing >= 0 ? swingSlow : 1) * (player.chill > 0 ? 0.7 : 1) * (player.slowT > 0 ? 0.6 : 1) * (player.guardT > 0 ? 0.3 : 1) * (sprint ? SPRINT_MUL : 1);
+      player.spd = sp / k;
       wx = nx * sp;
       wz = nz * sp;
       if (player.swing < 0 && !attackHeld(player)) player.faceTarget = Math.atan2(nx, nz);
@@ -10759,7 +10764,7 @@ function floorMessage(peer) {
   };
 }
 
-// Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions.
+// Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions, dernière trame de commande traitée, vitesse effective.
 let snapN = 0;
 let snapAcc = 0;
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -10768,8 +10773,11 @@ function netSnapTick(dt) {
   snapAcc += dt;
   if (snapAcc < 0.05) return;
   snapAcc = 0;
-  const hs = heroes.map((h) => [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions]);
-  const msg = { t: 'snap', n: ++snapN, hs };
+  const hs = heroes.map((h) => {
+    const peer = h.device?.kind === 'pad' ? NET.peers.get(h.device.index - ONLINE_PAD0) : null;
+    return [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions, peer?.seq ?? 0, r2(h.spd ?? PLAYER_SPEED * h.speedMul)];
+  });
+  const msg = { t: 'snap', n: ++snapN, st: state, hs };
   for (const peer of NET.peers.values()) peerSend(peer, msg);
 }
 
@@ -10832,6 +10840,7 @@ function netWire(peer) {
     if (m.t === 'f') {
       const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? clamp(v, -1, 1) : 0);
       peer.frame = { b: Number.isInteger(m.b) ? m.b & 0x1ffff : 0, x: num(m.x), y: num(m.y) };
+      if (Number.isInteger(m.s)) peer.seq = m.s;
     } else if (m.t === 'p' && dc.readyState === 'open') {
       dc.send(JSON.stringify({ t: 'q', ts: m.ts }));
     }
@@ -11044,7 +11053,7 @@ async function joinRoom(raw) {
     onlineError(err.message);
     return;
   }
-  const client = { ws, pc: null, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0, pending: [], connected: false };
+  const client = { ws, pc: null, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0, pending: [], connected: false, seq: 0, hist: [], pred: null, spd: PLAYER_SPEED, st: '' };
   NET.client = client;
   relayListen(ws, (m) => clientOnRelay(client, m));
   ws.addEventListener('close', () => {
@@ -11144,6 +11153,8 @@ function puppetFloor(msg) {
   const fp = floorFingerprint();
   if (NET.client) {
     NET.client.snaps.length = 0;
+    NET.client.hist.length = 0;
+    NET.client.pred = null;
     NET.client.me = msg.me;
     NET.client.fpOk = fp === msg.fp;
   }
@@ -11159,6 +11170,26 @@ function puppetSnap(m) {
   c.snapN = m.n;
   c.snaps.push({ at: performance.now(), hs: m.hs });
   if (c.snaps.length > 8) c.snaps.shift();
+  c.st = m.st;
+  const mine = m.hs[c.me];
+  if (!mine || !c.pred) return;
+  if (mine[16] > 0) c.spd = mine[16];
+  const at = c.hist.findLast((e) => e.s === mine[15]);
+  if (!at) return;
+  // Écart entre la position de l'hôte et la nôtre au moment de la trame qu'il vient de traiter.
+  const ex = mine[0] - at.x;
+  const ez = mine[1] - at.z;
+  for (const e of c.hist) {
+    e.x += ex;
+    e.z += ez;
+  }
+  if (Math.hypot(ex, ez) > PREDICT_SNAP) {
+    c.pred.x += ex;
+    c.pred.z += ez;
+  } else {
+    c.pred.cx += ex;
+    c.pred.cz += ez;
+  }
 }
 
 function clientOnState(m) {
@@ -11168,6 +11199,38 @@ function clientOnState(m) {
 
 // Affichage différé de 100 ms, interpolé entre deux instantanés reçus ; jamais d'extrapolation.
 const SNAP_DELAY = 100;
+const PREDICT_SNAP = 1.5;
+
+// Prédiction du héros de l'ami : ses commandes sont appliquées tout de suite (même vitesse que l'hôte, mêmes collisions),
+// l'écart avec l'hôte est repris en douceur, ou d'un coup s'il dépasse le seuil (poussée, gel, téléportation).
+function predictHero(c, h, dt) {
+  const p = c.pred ?? (c.pred = { x: h.x, z: h.z, cx: 0, cz: 0 });
+  if (c.st !== 'play' || h.down) {
+    p.x = h.x;
+    p.z = h.z;
+    p.cx = p.cz = 0;
+    return;
+  }
+  const f = clientFrame(c);
+  const mag = Math.hypot(f.x, f.y);
+  if (mag > 0.18) {
+    const k = clamp((mag - 0.18) / 0.62, 0.3, 1);
+    const step = (c.spd * k * dt) / mag;
+    const body = { x: p.x, z: p.z };
+    moveHeroBody(body, f.x * step, f.y * step);
+    resolveProps(body, PLAYER_R);
+    p.x = body.x;
+    p.z = body.z;
+  }
+  const g = Math.min(1, dt * 10);
+  p.x += p.cx * g;
+  p.z += p.cz * g;
+  p.cx *= 1 - g;
+  p.cz *= 1 - g;
+  h.x = p.x;
+  h.z = p.z;
+}
+
 function puppetStep(dt) {
   const c = NET.client;
   if (!c || !c.snaps.length) return;
@@ -11201,6 +11264,7 @@ function puppetStep(dt) {
       player = heroes[0];
     }
   });
+  if (heroes[c.me]) predictHero(c, heroes[c.me], dt);
   c.hudT -= dt;
   if (c.hudT <= 0) {
     c.hudT = 0.1;
@@ -11269,12 +11333,13 @@ function remoteStart(client) {
   client.timer = setInterval(() => {
     if (client.dc?.readyState !== 'open') return;
     const frame = clientFrame(client);
-    const sig = `${frame.b}|${frame.x}|${frame.y}`;
+    frame.s = ++client.seq;
     beat++;
-    if (sig !== client.last || beat % 3 === 0) {
-      client.last = sig;
-      client.dc.send(JSON.stringify(frame));
+    if (client.pred) {
+      client.hist.push({ s: frame.s, x: client.pred.x, z: client.pred.z });
+      if (client.hist.length > 120) client.hist.shift();
     }
+    client.dc.send(JSON.stringify(frame));
     if (beat % 60 === 0) client.dc.send(JSON.stringify({ t: 'p', ts: performance.now() }));
     $('remote-ping').textContent = client.ping ? `${client.ping} ms` : 'connecté';
   }, 33);

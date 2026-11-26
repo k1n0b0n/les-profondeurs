@@ -18,8 +18,8 @@
 - [x] 2.2 Envoyer `floor` + graine au début d'un étage et reconstruire l'étage chez l'ami sans lancer la simulation (mode marionnette `NET.puppet`). Vérifier : empreinte identique, aucune boucle de simulation chez l'ami.
 - [x] 2.3 Envoyer les instantanés des héros (position, orientation, PV, état) à ~20 Hz, appliquer l'ordre des numéros, interpoler, caméra et HUD de base chez l'ami. Vérifier : l'ami voit bouger les héros, y compris le sien commandé par sa manette ou son clavier.
 
-- [ ] 2.4 Extraire de `updatePlayer` une fonction de déplacement et de collision partagée (sans effets ni sons), vérifier que le jeu local est inchangé, numéroter les trames `'f'` et renvoyer `ack` par héros dans les `snap`.
-- [ ] 2.5 Prédire le déplacement et l'esquive du héros de l'ami : rejouer les commandes non acquittées sur la position autoritaire, lisser sous le seuil, recaler au-dessus, désactiver hors de l'état de jeu. Vérifier avec une latence simulée de 150 ms : le héros réagit sans retard, reste collé à l'hôte, et se recale après une poussée ou une glace.
+- [x] 2.4 Extraire `moveHeroBody` (déplacement et collisions) de `movePlayer`, vérifier que le jeu local est inchangé, numéroter les trames `'f'` (30 Hz) et renvoyer par héros dans les `snap` le dernier numéro traité, la vitesse effective et l'état de l'hôte.
+- [x] 2.5 Prédire le déplacement du héros de l'ami (l'esquive reste celle de l'hôte) : historique des positions par numéro de trame, écart avec la position de l'hôte à la trame acquittée, lissage sous 1,5 unité, recalage au-dessus, aucune prédiction hors de l'état de jeu. Vérifié avec 150 ms de latence simulée dans chaque sens : le héros réagit sans retard, reste collé à l'hôte, se recale après une téléportation, et ne bouge pas quand l'hôte est en pause.
 
 ## 3. Entités dynamiques
 

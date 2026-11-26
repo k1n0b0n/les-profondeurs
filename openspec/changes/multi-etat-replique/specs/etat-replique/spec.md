@@ -51,7 +51,7 @@ L'hôte SHALL envoyer les événements ponctuels (sons, toasts, effets, transiti
 - **THEN** l'ami entend le même son, sans doublon local
 
 ### Requirement: Prédiction locale du héros de l'ami
-Le client SHALL appliquer immédiatement à son propre héros ses commandes de déplacement et d'esquive, avec les mêmes collisions que l'hôte, sans attendre l'instantané. Les dégâts, les ennemis et les effets MUST rester ceux de l'hôte.
+Le client SHALL appliquer immédiatement à son propre héros ses commandes de déplacement, à la vitesse effective de l'hôte et avec les mêmes collisions, sans attendre l'instantané. L'esquive, les coups et les parades MUST rester ceux de l'hôte. Les dégâts, les ennemis et les effets MUST rester ceux de l'hôte.
 
 #### Scenario: Déplacement sans latence
 - **WHEN** l'ami appuie sur une direction avec 150 ms de latence
