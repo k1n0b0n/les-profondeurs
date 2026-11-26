@@ -2,6 +2,14 @@
 
 Version affichée sur l'écran de démarrage et dans la pause (`GAME_VERSION` dans `index.html`). Ce fichier reflète le tableau `CHANGELOG` d'`index.html`, lu par la tuile Nouveautés de l'accueil : modifier les deux ensemble. Semver : majeur = refonte, mineur = fonctionnalités, correctif = corrections.
 
+## 1.14.0 — 2026-11-27
+
+- Jouer en ligne depuis l'accueil, à côté de « Jouer à deux sur cet écran » : l'hôte crée un salon et obtient un code de 4 caractères, ses amis le tapent pour rejoindre.
+- Chacun joue dans son navigateur, avec sa propre caméra et son interface : plus de partage d'écran. L'hôte envoie l'état de la partie (héros, ennemis, projectiles, butin, pièges, portes).
+- Les amis choisissent leur héros dans un salon, voient les joueurs présents, et leur héros réagit tout de suite à leurs commandes malgré la latence.
+- Les choix d'aptitude, l'autel, le marchand et la fin de partie s'affichent chez le joueur concerné ; sons, messages et effets de l'hôte sont rejoués chez les amis.
+- Un relais de mise en relation remplace les liens et les codes à copier ; il ne voit jamais la partie.
+
 ## 1.12.0 — 2026-11-26
 
 - Jusqu'à quatre joueurs sur le même écran : clavier gauche, clavier droit et autant de manettes que branchées. La partie démarre dès deux joueurs prêts.

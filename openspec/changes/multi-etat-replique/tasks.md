@@ -25,22 +25,22 @@
 
 ## 3. Entités dynamiques
 
-- [ ] 3.1 Répliquer ennemis et gardiens (création, mise à jour, retrait, animations d'attaque et de télégraphie) avec deltas et trame complète périodique. Vérifier : combat à deux pages, aucun doublon ni fantôme.
-- [ ] 3.2 Répliquer projectiles, bombes, braises, butin (écus, potions, coffres) et accessoires (jarres, caisses, murs fissurés, portes, grille modifiée par `sealRoom`). Vérifier : casser une jarre et ramasser un écu chez l'hôte se voit chez l'ami.
-- [ ] 3.3 Mesurer le débit à quatre joueurs avec beaucoup d'ennemis ; arrondir, borner et découper si besoin.
+- [x] 3.1 Répliquer ennemis et gardiens (création, mise à jour, retrait, animations d'attaque et de télégraphie) avec deltas et trame complète périodique. Vérifier : combat à deux pages, aucun doublon ni fantôme.
+- [x] 3.2 Répliquer projectiles, bombes, braises, butin (écus, potions, coffres) et accessoires (jarres, caisses, murs fissurés, portes, grille modifiée par `sealRoom`). Vérifier : casser une jarre et ramasser un écu chez l'hôte se voit chez l'ami. Répliqués : tirs, bombes (avec lancer), butin, potions, coffres, accessoires détruits, lames, piques et jets de feu (temps synchronisé), portes d'embuscade et de salles. Non répliqués (voir README) : braises, vagues, rochers de piège, stalactites, marques du gardien, couvercle des sarcophages.
+- [x] 3.3 Mesurer le débit avec beaucoup d'ennemis ; arrondir, borner et découper si besoin. Mesuré : 12 Ko/s avec 8 ennemis, 40 Ko/s avec 21 ennemis autour des héros (ennemis lointains non envoyés, positions arrondies) ; aucun découpage nécessaire.
 
 ## 4. Événements, écrans et HUD
 
-- [ ] 4.1 Introduire `emit(type, payload)` pour sons, toasts et effets de la logique, jouer localement chez l'hôte et rejouer chez l'ami sans doublon. Vérifier : un coup produit un seul son de chaque côté.
-- [ ] 4.2 Transmettre les écrans (choix d'aptitude, boutique, autel, mort, victoire, escalier) au joueur propriétaire et renvoyer sa réponse par le canal de commandes. Vérifier : montée de niveau d'un ami, choix chez lui, effet chez l'hôte.
-- [ ] 4.3 Compléter le HUD client (cartes de joueurs, PV, or, potions, minicarte, fog) depuis l'état reçu. Vérifier à l'écran à deux et quatre joueurs.
+- [x] 4.1 Introduire `emit(type, payload)` pour sons, toasts et effets de la logique, jouer localement chez l'hôte et rejouer chez l'ami sans doublon. Vérifier : un coup produit un seul son de chaque côté.
+- [x] 4.2 Transmettre les écrans (choix d'aptitude, boutique, autel, mort, victoire, escalier) au joueur propriétaire et renvoyer sa réponse par le canal de commandes. Vérifier : montée de niveau d'un ami, choix chez lui, effet chez l'hôte.
+- [x] 4.3 Compléter le HUD client (cartes de joueurs, PV, or, potions, minicarte, fog) depuis l'état reçu. Vérifier à l'écran à deux et quatre joueurs.
 
 ## 5. Livraison
 
-- [ ] 5.1 Retirer le flux vidéo et son repli (`netShare`, `getDisplayMedia`, `captureStream`, piste vidéo, plafond de débit, texte de l'écran « Jouer en ligne » sur le partage), sans conserver de repli ; vérifier qu'aucune demande de partage n'apparaît et que le jeu local (solo, duo, quatre joueurs) est inchangé.
-- [ ] 5.2 Mettre à jour le README (mode d'emploi, limites, vie privée), passer `GAME_VERSION` à 1.14.0 avec `CHANGELOG` d'`index.html` et `CHANGELOG.md`, vérifier la tuile Nouveautés.
-- [ ] 5.3 Parcourir un scénario complet hôte et deux amis en boucle locale : salon, deux étages, choix d'aptitude à distance, combat de gardien, déconnexion, aucune erreur console.
-- [ ] 5.4 Avertir l'hôte quand son onglet passe en arrière-plan (la partie se fige pour tous), et les amis par un message de l'hôte.
+- [x] 5.1 Retirer le flux vidéo et son repli (`netShare`, `getDisplayMedia`, `captureStream`, piste vidéo, plafond de débit, texte de l'écran « Jouer en ligne » sur le partage), sans conserver de repli ; vérifier qu'aucune demande de partage n'apparaît et que le jeu local (solo, duo, quatre joueurs) est inchangé.
+- [x] 5.2 Mettre à jour le README (mode d'emploi, limites, vie privée), passer `GAME_VERSION` à 1.14.0 avec `CHANGELOG` d'`index.html` et `CHANGELOG.md`, vérifier la tuile Nouveautés.
+- [x] 5.3 Parcourir un scénario complet hôte et deux amis en boucle locale : salon, deux étages, choix d'aptitude à distance, combat de gardien, déconnexion, aucune erreur console.
+- [x] 5.4 Avertir l'hôte quand son onglet passe en arrière-plan (la partie se fige pour tous), et les amis par un message de l'hôte.
 
 ## Workflow follow-up
 

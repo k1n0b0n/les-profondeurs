@@ -107,7 +107,7 @@ textarea.code { resize: none; }
 .join-row .code-input { flex: 1 1 0; width: 0; min-width: 0; box-sizing: border-box; padding: 10px 12px; font: 700 20px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.3em; text-transform: uppercase; text-align: center; color: var(--ink); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; }
 .join-row .secondary { flex: 0 0 auto; }
 #remote { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
-#remote-bar { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink-dim); background: rgba(11, 9, 16, 0.78); border: 1px solid var(--line); border-radius: 8px; }
+#remote-bar { position: absolute; left: 10px; bottom: 10px; max-width: calc(100vw - 20px); flex-wrap: wrap; display: flex; align-items: center; gap: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink-dim); background: rgba(11, 9, 16, 0.78); border: 1px solid var(--line); border-radius: 8px; }
 #remote-bar button { pointer-events: auto; padding: 4px 10px; font-size: 13px; }
 .pcard.corner { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(230px, 40vw); grid-column: auto; grid-row: auto; }
 #pcard-3 { left: max(12px, env(safe-area-inset-left, 0px)); }
@@ -1095,9 +1095,15 @@ const BOSS_EVERY = 3;
 const TORCH_I = 30;
 const BEST_KEY = 'profondeurs.best';
 // Version du jeu (semver) : à incrémenter à chaque changement publié, avec une ligne dans CHANGELOG.md.
-const GAME_VERSION = '1.13.0';
+const GAME_VERSION = '1.14.0';
 // Journal des versions, consultable depuis l'accueil. Même contenu que CHANGELOG.md : la plus récente en premier, la première entrée = GAME_VERSION.
 const CHANGELOG = [
+  { version: '1.14.0', date: '27/11/2026', items: [
+    'Jouer en ligne depuis l’accueil : l’hôte crée un salon et obtient un code de 4 caractères, ses amis le tapent pour rejoindre.',
+    'Chacun joue dans son navigateur, avec sa caméra et son interface : plus de partage d’écran. L’hôte envoie l’état de la partie.',
+    'Les amis choisissent leur héros dans un salon, et leur héros réagit tout de suite à leurs commandes malgré la latence.',
+    'Choix d’aptitude, autel, marchand et fin de partie s’affichent chez le joueur concerné ; sons et messages de l’hôte sont rejoués chez les amis.',
+  ] },
   { version: '1.13.0', date: '26/11/2026', items: [
     'Jeu en ligne : un joueur héberge, ses amis rejoignent par un lien, voient son écran en direct et jouent avec leur clavier ou leur manette. Jusqu’à quatre joueurs, toi compris.',
     'Aucun serveur de jeu ni compte : l’hôte envoie un lien d’invitation, l’ami lui renvoie un code de réponse.',
@@ -10883,7 +10889,7 @@ function netSnapTick(dt) {
     return [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions, peer?.seq ?? 0, r2(h.spd ?? PLAYER_SPEED * h.speedMul), h.maxPotions];
   });
   const owner = menuOwner();
-  const head = { t: 'snap', n: ++snapN, st: state, el: r2(elapsed), ow: owner ? heroes.indexOf(owner) : -1, tm: [team.level, team.xp], sl: L.stairs?.sealed ? 1 : 0, hs };
+  const head = { t: 'snap', n: ++snapN, st: state, el: r2(elapsed), ow: owner ? heroes.indexOf(owner) : -1, tm: [team.level, team.xp], sl: L.stairs?.sealed ? 1 : 0, kh: L.keyHeld ? 1 : 0, hs };
   for (const peer of NET.peers.values()) {
     if (!peer.known) netKnownReset(peer);
     const msg = { ...head };
@@ -10913,6 +10919,11 @@ function netSnapTick(dt) {
     peerSend(peer, msg);
   }
 }
+
+// Si l'onglet de l'hôte passe en arrière-plan, le navigateur suspend la boucle du jeu : les amis sont prévenus.
+document.addEventListener('visibilitychange', () => {
+  for (const peer of NET.peers.values()) peerSend(peer, { t: 'away', v: document.hidden });
+});
 
 function netBroadcastFloor() {
   if (!L || L.fp === undefined) return;
@@ -11353,6 +11364,7 @@ async function clientOnRelay(client, m) {
 function puppetFloor(msg) {
   const devices = msg.classes.map(() => ({ kind: 'pad', index: -1 }));
   NET.puppet = true;
+  $('remote-keys').hidden = true;
   setupHeroes(devices, msg.classes);
   runBiomes = msg.biomes.slice();
   run.pacts = msg.pacts.slice();
@@ -11507,6 +11519,10 @@ function puppetSnap(m) {
     applySnapshot(m);
     if (m.tm) [team.level, team.xp] = m.tm;
     if (L.stairs && !!m.sl !== L.stairs.sealed) setSealed(!!m.sl);
+    if (!!m.kh !== !!L.keyHeld) {
+      L.keyHeld = !!m.kh;
+      setKeyChip();
+    }
   }
   elapsed += (m.el - elapsed) * 0.5;
   state = m.st === 'dead' || m.st === 'victory' ? m.st : 'play';
@@ -11588,7 +11604,13 @@ function renderFriend() {
 }
 
 function clientOnState(m) {
-  if (m.t === 'ev') clientEvents(m.ev);
+  if (m.t === 'away') {
+    if (m.v) clientEvents([['t', 'Partie suspendue', 'L’hôte a quitté l’onglet du jeu : elle reprend à son retour.', 600]]);
+    else {
+      toastEl.classList.remove('show');
+      toastT = 0;
+    }
+  } else if (m.t === 'ev') clientEvents(m.ev);
   else if (m.t === 'ui') clientUi(m);
   else if (m.t === 'lobby' && NET.client) {
     NET.client.lobby = m;
@@ -11796,6 +11818,13 @@ function puppetWorld(dt) {
       gate.g.position.y += (0 - gate.g.position.y) * damp(12, dt);
     }
   }
+  const boss = L.boss;
+  const bossUp = !!boss && boss.awake && boss.dying < 0 && L.enemies.includes(boss);
+  if ($('boss').hidden === bossUp) $('boss').hidden = !bossUp;
+  if (bossUp) {
+    $('boss-name').textContent = bossSpec(boss).name;
+    setStyle($('boss-fill'), 'width', `${(clamp(boss.hp / boss.maxHp, 0, 1) * 100).toFixed(1)}%`);
+  }
   for (const d of [L.altar, L.merchant, L.fountain, L.keyItem, ...(L.shrines ?? [])]) if (d?.g) d.g.visible = tileSeen(d.x, d.z);
   if (L.stairs) L.stairs.g.visible = L.seen[idx(L.stairs.i, L.stairs.j)] === 1;
 }
@@ -11881,6 +11910,7 @@ function clientFrame(client) {
 
 function remoteStart(client) {
   client.connected = true;
+  $('remote-keys').hidden = false;
   try {
     client.ws?.close();
   } catch {

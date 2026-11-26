@@ -552,24 +552,31 @@ La caméra suit le centre des héros debout et dézoome jusqu'à × 1,55 quand i
 
 ### Jouer en ligne
 
-Le jeu en ligne n'utilise **aucun serveur de jeu**. Un joueur **héberge** : la partie tourne chez lui, comme en local. Ses amis voient son écran en direct (flux vidéo WebRTC) et lui envoient leurs commandes. Chaque ami apparaît dans le jeu comme une **manette standard supplémentaire** (index 1001 et suivants dans `readPads`), si bien que le salon, le combat et tous les menus se pilotent à distance sans code particulier.
+Chacun joue dans **son navigateur** : l'hôte simule la partie et envoie l'état utile (positions, ennemis, projectiles, butin, événements) aux amis, qui l'affichent avec leur propre caméra et leur propre interface. Aucun écran n'est partagé. Jusqu'à quatre joueurs, hôte compris, en ligne seulement ou mêlés à des joueurs sur le même écran.
 
 **Héberger**
-1. À l'accueil, « Jouer à deux sur cet écran », puis « Jouer en ligne avec des amis ».
-2. « Inviter un ami » : le navigateur demande de partager l'écran (choisir l'onglet du jeu). Si le partage est refusé ou indisponible, le jeu partage le canevas seul, sans interface, et le dit.
-3. Envoyer le lien affiché à l'ami. Il renvoie un **code de réponse** ; le coller dans la ligne de cet ami, « Connecter ».
-4. Revenir au salon : l'ami y rejoint avec Entrée (ou le bouton A de sa manette), choisit sa classe, et n'importe quel joueur lance la partie.
+1. À l'accueil, « Jouer en ligne », puis « Créer un salon » : un **code de 4 caractères** s'affiche.
+2. Le donner aux amis. Chaque ami connecté s'installe seul dans le salon.
+3. « Ouvrir le salon de jeu » : l'hôte est déjà installé (sa manette si elle est branchée, sinon le clavier). Les flèches de chaque carte changent le héros d'un joueur, puis « Descendre ».
 
-**Rejoindre** : ouvrir le lien, « Se connecter », envoyer le code de réponse à l'hôte. L'écran de l'hôte s'affiche en plein écran avec la latence et l'aide des touches ; Quitter ferme la connexion. L'ami joue à sa manette standard ou, à défaut, à son clavier (ses touches « solo », Entrée pour valider dans les menus). Il ne peut pas mettre la partie en pause.
+**Rejoindre** : « Jouer en ligne », taper le code, « Rejoindre » (ou ouvrir le jeu avec `?salon=CODE`). L'ami choisit son héros, voit la liste des joueurs et arrive dans l'étage dès que l'hôte lance. Seul l'hôte lance la partie et peut la mettre en pause. L'écran de choix d'aptitude, l'autel, le marchand, la descente d'escalier et la fin de partie s'affichent chez le joueur concerné, copiés depuis l'hôte, et se pilotent avec le clavier ou la manette de l'ami.
+
+**Ce qui circule.** À la mise en relation, un petit relais (`relay/`) transmet l'offre et la réponse WebRTC ; ensuite la partie passe en direct entre les navigateurs. Deux canaux : `pad` (commandes de l'ami vers l'hôte, 30 Hz, numérotées) et `state` (hôte vers amis : étage par graine, instantanés à 20 Hz, événements, écrans).
+
+**Principe de fonctionnement**
+- *Étage* : l'hôte envoie une graine et son contexte (profondeur, pression du directeur, ordre des biomes, pactes) ; chaque client reconstruit le même étage (`buildLevel` avec `rnd()` seedé) et compare une empreinte. Les entités de la génération ont des identifiants stables.
+- *État* : instantanés par type d'entité (ennemis avec zones d'alerte, tirs, bombes, butin, coffres, accessoires, lames) avec fiches des nouvelles entités et liste des disparues. Les ennemis proches sont envoyés, les lointains restent figés. Les pièges à pas fixe (piques, jets de feu) se jouent chez l'ami à partir du temps synchronisé.
+- *Prédiction* : le héros de l'ami se déplace tout de suite avec ses commandes (vitesse effective et collisions de l'hôte, `moveHeroBody`), puis est réconcilié par numéro de trame : lissage sous 1,5 unité, recalage au-dessus. L'esquive, les coups et les parades restent ceux de l'hôte.
+- *Événements* : sons, messages, effets d'explosion, secousses et fermetures de salle (`sealRoom`, `unsealRoom`) de l'hôte sont rejoués chez l'ami.
+- Client : `puppetFloor`, `puppetSnap`, `puppetStep`, `puppetWorld`, `predictHero`, `clientUi` ; hôte : `netSnapTick`, `REPL`, `netUiTick`, `netBroadcastLobby`.
 
 **Limites**
-- Quatre joueurs au plus, hôte compris ; une connexion qui tombe laisse le héros immobile.
-- Latence d'affichage d'environ 100 à 250 ms (flux vidéo) : la précision des esquives parfaites en pâtit pour les amis.
+- Quatre joueurs au plus ; une connexion qui tombe laisse le héros immobile chez l'hôte.
+- **L'onglet de l'hôte doit rester visible** : en arrière-plan, le navigateur suspend la boucle du jeu et la partie se fige pour tous (les amis sont prévenus).
 - Pas de serveur TURN : certains réseaux (NAT symétrique, pare-feu d'entreprise) empêchent la connexion directe.
-- Safari et Firefox partagent plutôt une fenêtre ou un écran qu'un onglet ; le son de l'hôte n'est transmis que par les navigateurs qui le permettent.
-- **Vie privée** : un lien d'invitation contient l'adresse réseau de l'hôte, et les deux parties interrogent le serveur STUN public `stun.l.google.com`. N'envoyer le lien qu'à des amis.
-
-Architecture : manettes virtuelles (`virtualPads`), codes d'offre et de réponse compressés (`packCode`, `unpackCode`), hôte (`netShare`, `netInvite`, `netAccept`), ami (`joinStart`, `remoteStart`). Une version à état répliqué (chaque client rend sa propre vue) supprimerait la latence ; elle demande de séparer simulation et rendu et n'est pas faite.
+- Hôte et amis doivent jouer la même version ; une version différente est refusée.
+- Non répliqués chez l'ami : les particules ambiantes, les marques au sol du gardien, les braises, les vagues, les rochers de piège, les stalactites, le couvercle des sarcophages, la barre d'épreuve et le tactile en ligne. Leurs dégâts s'appliquent quand même chez l'hôte : l'ami ne les voit pas venir.
+- **Vie privée** : le relais voit les codes de salon et les offres WebRTC (donc les adresses réseau) le temps de la mise en relation, et ne conserve rien ; les deux parties interrogent le serveur STUN public `stun.l.google.com`.
 
 ### Mode test
 
