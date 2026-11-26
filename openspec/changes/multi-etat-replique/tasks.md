@@ -2,8 +2,8 @@
 
 ## 1. Étage seedé
 
-- [ ] 1.1 Ajouter un RNG seedé (mulberry32) qui remplace temporairement `rand`, `randi`, `pick`, `shuffle` pendant la génération d'étage, et faire passer les `Math.random` directs de génération par lui. Vérifier : même graine, même empreinte de grille et de nombre d'entités ; sans graine, génération aléatoire comme avant.
-- [ ] 1.2 Donner des identifiants stables aux entités créées par la génération (ennemis, accessoires, coffres, pièges, portails) dans l'ordre de création. Vérifier : deux pages avec la même graine ont les mêmes identifiants.
+- [x] 1.1 Ajouter un RNG seedé (mulberry32) qui remplace temporairement `rand`, `randi`, `pick`, `shuffle` pendant la génération d'étage, et faire passer les `Math.random` directs de génération par lui. Vérifier : même graine, même empreinte de grille et de nombre d'entités ; sans graine, génération aléatoire comme avant.
+- [x] 1.2 Donner des identifiants stables aux entités créées par la génération (ennemis, accessoires, coffres, pièges, portails) dans l'ordre de création. Vérifier : deux pages avec la même graine ont les mêmes identifiants.
 
 ## 2. Canal d'état et héros seuls
 
