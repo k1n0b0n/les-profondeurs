@@ -1,0 +1,24 @@
+# Le port n'est publié que sur la boucle locale : un reverse proxy TLS se place devant (Docker contourne UFW).
+services:
+  relay:
+    build: .
+    image: profondeurs-relay:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${RELAY_PORT:-8090}:8080"
+    environment:
+      TRUST_PROXY: "1"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://k1n0b0n.github.io,http://localhost:8000,null}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"

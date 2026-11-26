@@ -1,0 +1,10 @@
+{
+  "name": "profondeurs-relay",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Relais de signalisation WebRTC pour le jeu en ligne de Les Profondeurs : salons en mémoire, aucun état conservé.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.mjs", "test": "node --test" },
+  "dependencies": { "ws": "8.18.3" }
+}
