@@ -10747,6 +10747,20 @@ function floorMessage(peer) {
   };
 }
 
+// Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions.
+let snapN = 0;
+let snapAcc = 0;
+const r2 = (v) => Math.round(v * 100) / 100;
+function netSnapTick(dt) {
+  if (!NET.peers.size || !L || NET.puppet || state === 'menu' || state === 'lobby') return;
+  snapAcc += dt;
+  if (snapAcc < 0.05) return;
+  snapAcc = 0;
+  const hs = heroes.map((h) => [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions]);
+  const msg = { t: 'snap', n: ++snapN, hs };
+  for (const peer of NET.peers.values()) peerSend(peer, msg);
+}
+
 function netBroadcastFloor() {
   if (!L || L.fp === undefined) return;
   for (const peer of NET.peers.values()) peerSend(peer, floorMessage(peer));
@@ -10949,7 +10963,7 @@ async function joinStart() {
     $('join-go').disabled = true;
     try {
       const pc = new RTCPeerConnection(RTC_CONFIG);
-      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null };
+      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0 };
       NET.client = client;
       pc.ondatachannel = (e) => {
         if (e.channel.label === 'state') {
@@ -11024,6 +11038,7 @@ function puppetFloor(msg) {
   teachDelay = 0;
   const fp = floorFingerprint();
   if (NET.client) {
+    NET.client.snaps.length = 0;
     NET.client.me = msg.me;
     NET.client.fpOk = fp === msg.fp;
   }
@@ -11033,8 +11048,59 @@ function puppetFloor(msg) {
   }
 }
 
+function puppetSnap(m) {
+  const c = NET.client;
+  if (!c || !Array.isArray(m.hs) || m.n <= c.snapN) return;
+  c.snapN = m.n;
+  c.snaps.push({ at: performance.now(), hs: m.hs });
+  if (c.snaps.length > 8) c.snaps.shift();
+}
+
 function clientOnState(m) {
   if (m.t === 'floor') puppetFloor(m);
+  else if (m.t === 'snap') puppetSnap(m);
+}
+
+// Affichage différé de 100 ms, interpolé entre deux instantanés reçus ; jamais d'extrapolation.
+const SNAP_DELAY = 100;
+function puppetStep(dt) {
+  const c = NET.client;
+  if (!c || !c.snaps.length) return;
+  const S = c.snaps;
+  const rt = performance.now() - SNAP_DELAY;
+  let j = -1;
+  for (let i = 0; i < S.length; i++) if (S[i].at <= rt) j = i;
+  const a = S[Math.max(0, j)];
+  const b = j >= 0 && j < S.length - 1 ? S[j + 1] : a;
+  const k = a === b ? 1 : clamp((rt - a.at) / Math.max(1, b.at - a.at), 0, 1);
+  heroes.forEach((h, n) => {
+    const A = a.hs[n];
+    const B = b.hs[n];
+    if (!A || !B) return;
+    h.x = A[0] + (B[0] - A[0]) * k;
+    h.z = A[1] + (B[1] - A[1]) * k;
+    h.face = lerpAngle(A[2], B[2], k);
+    [, , , h.hp, h.maxHp] = B;
+    h.down = !!B[5];
+    h.moving = !!B[6];
+    [, , , , , , , h.walk, h.dashT, h.swing] = B;
+    h.spinning = !!B[10];
+    [, , , , , , , , , , , h.guardT, h.reviveT, h.gold, h.potions] = B;
+    const ti = tileOf(h.x);
+    const tj = tileOf(h.z);
+    if (ti !== h.ti || tj !== h.tj) {
+      h.ti = ti;
+      h.tj = tj;
+      player = h;
+      reveal();
+      player = heroes[0];
+    }
+  });
+  c.hudT -= dt;
+  if (c.hudT <= 0) {
+    c.hudT = 0.1;
+    updateHud();
+  }
 }
 
 function clientFrame(client) {
@@ -11913,9 +11979,8 @@ function step(now) {
   const running = !FROZEN.has(state);
   if (running) {
     elapsed += dt;
-    if (NET.puppet) {
-      /* Client en ligne : l'état vient de l'hôte, aucune simulation locale. */
-    } else {
+    if (NET.puppet) puppetStep(dt);
+    else {
       if (state === 'play') {
         const standing = heroes.some((h) => !h.down);
         for (const h of heroes) {
@@ -11941,6 +12006,7 @@ function step(now) {
       updateItems(dt);
     }
   }
+  netSnapTick(realDt);
   for (const h of heroes) {
     player = h;
     updateHero(running ? dt : 0);
