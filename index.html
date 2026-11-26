@@ -1298,7 +1298,7 @@ const LABEL_KEY = 'profondeurs.clavier';
 const BIND_SLOTS = 3;
 const KB_ACTIONS = ['up', 'down', 'left', 'right', 'attack', 'dash', 'parry', 'potion'];
 const PAD_ACTIONS = ['attack', 'dash', 'parry', 'potion', 'pause'];
-const PAD_DEFAULT = { attack: [2, 7], dash: [0, 5], parry: [1, 4, 6], potion: [3], pause: [9] };
+const PAD_DEFAULT = { attack: [3, 7], dash: [0, 5], parry: [1, 4, 6], potion: [2], pause: [9] };
 const PAD_LEGACY = { attack: [0, 7], dash: [5, 3], parry: [1, 4, 6], potion: [2], pause: [9] };
 const fromPreset = (map) => Object.fromEntries(KB_ACTIONS.map((a) => [a, map[a].slice(0, BIND_SLOTS)]));
 const bindDefaults = () => ({

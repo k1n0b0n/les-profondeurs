@@ -503,8 +503,8 @@ Cinq actions : se déplacer, frapper, esquiver, parer, boire une potion. Les tou
 | Action | Clavier droitier | Clavier gaucher | Manette | Tactile |
 | --- | --- | --- | --- | --- |
 | Se déplacer | ZQSD (WASD en QWERTY), flèches | Flèches, OKLM, pavé 8 4 5 6 | Stick gauche ou croix | Glisser sur la moitié gauche de l'écran |
-| Frapper / tirer | Espace, J, Entrée | F, Espace | A, RT | Bouton épée, ou toucher la moitié droite |
-| Esquiver | Maj, K | D, Maj | RB, Y | Bouton esquive, ou glisser vite à droite (38 px en 0,35 s) |
+| Frapper / tirer | Espace, J, Entrée | F, Espace | Y, RT | Bouton épée, ou toucher la moitié droite |
+| Esquiver | Maj, K | D, Maj | A, RB | Bouton esquive, ou glisser vite à droite (38 px en 0,35 s) |
 | Parer (maintenir pour garder) | A ou I (Q ou I en QWERTY) | G, R | B, LB, LT | Bouton bouclier |
 | Boire | E, L | S, E | X | Bouton potion |
 | Pause | Échap, P | Échap, P | Start | Bouton pause |
