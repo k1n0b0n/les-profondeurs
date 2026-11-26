@@ -95,6 +95,19 @@ test('limite de connexions par IP', async () => {
   await small.close();
 });
 
+test('une version de protocole différente est refusée à la jonction', async () => {
+  const host = await open();
+  tx(host, { t: 'host', proto: 2 });
+  const { code } = await next(host);
+  const old = await open();
+  tx(old, { t: 'join', code, proto: 1 });
+  assert.deepEqual(await next(old), { t: 'err', why: 'version' });
+  const same = await open();
+  tx(same, { t: 'join', code, proto: 2 });
+  assert.equal((await next(same)).t, 'joined');
+  for (const ws of [old, same, host]) ws.close();
+});
+
 test('/health répond, le reste non', async () => {
   assert.equal((await fetch(`http://127.0.0.1:${port}/health`)).status, 200);
   assert.equal((await fetch(`http://127.0.0.1:${port}/`)).status, 404);

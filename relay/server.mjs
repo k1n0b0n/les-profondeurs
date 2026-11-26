@@ -97,7 +97,7 @@ export function createRelay(env = process.env) {
         if (rooms.size >= maxRooms) return send(ws, { t: 'err', why: 'full' });
         const code = newCode();
         if (!code) return send(ws, { t: 'err', why: 'full' });
-        rooms.set(code, { members: new Map([[0, ws]]), seen: now });
+        rooms.set(code, { members: new Map([[0, ws]]), seen: now, proto: Number(msg.proto) | 0 });
         m.code = code;
         m.id = 0;
         send(ws, { t: 'room', code, id: 0 });
@@ -106,6 +106,7 @@ export function createRelay(env = process.env) {
         const code = String(msg.code ?? '').toUpperCase().trim();
         const room = rooms.get(code);
         if (!room) return send(ws, { t: 'err', why: 'unknown' });
+        if ((Number(msg.proto) | 0) !== room.proto) return send(ws, { t: 'err', why: 'version' });
         if (room.members.size >= MAX_PEERS) return send(ws, { t: 'err', why: 'full' });
         let id = 1;
         while (room.members.has(id)) id++;

@@ -100,6 +100,12 @@ textarea.code { resize: none; }
 .invites .row { display: flex; gap: 6px; }
 .invites .row > * { flex: 1; }
 .invites .row > button { flex: 0 0 auto; }
+.room-code { margin: 0; text-align: center; font: 700 38px/1.1 ui-monospace, Menlo, monospace; letter-spacing: 0.32em; padding-left: 0.32em; color: var(--ink); user-select: all; }
+#online-room { display: grid; gap: 10px; }
+#online-room[hidden] { display: none; }
+.join-row { display: flex; gap: 8px; min-width: 0; }
+.join-row .code-input { flex: 1 1 0; width: 0; min-width: 0; box-sizing: border-box; padding: 10px 12px; font: 700 20px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.3em; text-transform: uppercase; text-align: center; color: var(--ink); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; }
+.join-row .secondary { flex: 0 0 auto; }
 #remote { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
 #remote-bar { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink-dim); background: rgba(11, 9, 16, 0.78); border: 1px solid var(--line); border-radius: 8px; }
 #remote-bar button { pointer-events: auto; padding: 4px 10px; font-size: 13px; }
@@ -786,6 +792,7 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     </div>
     <button class="primary" id="play" disabled>Chargement du donjon…</button>
     <button class="secondary" id="play-duo" hidden>Jouer à deux sur cet écran</button>
+    <button class="secondary" id="play-online">Jouer en ligne</button>
     <p class="boot-error" id="boot-error" role="alert" hidden></p>
     <div class="start-links">
       <button type="button" class="link-tile" id="keys-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg><span><b id="keys-start-label">Touches</b><small id="keys-start-sub">clavier et manette</small></span></button>
@@ -828,7 +835,6 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
     <p class="duo-combo" id="duo-combo" hidden>Lame + Arbalétrière : un carreau marque la cible, l'épée la fait exploser. Un ennemi frappé à l'épée prend un critique s'il reçoit un carreau dans la seconde.</p>
     <p class="keys-hint">Gauche ou droite pour changer de héros. Le niveau est commun, mais chacun choisit ses aptitudes, garde ses potions et ses PV. Chaque pièce ramassée remplit les deux bourses. Un joueur à terre se relève si l'autre reste 2 s à côté de lui.</p>
     <button class="primary" id="duo-go" disabled>Descendre</button>
-    <button class="secondary" id="duo-online">Jouer en ligne avec des amis</button>
     <button class="secondary" id="duo-back">Retour</button>
   </div>
 </div>
@@ -837,28 +843,23 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
   <div class="card">
     <p class="kicker">Jouer à distance</p>
     <h1>En ligne</h1>
-    <p class="lead">Tu héberges : le jeu tourne chez toi, tes amis voient ton écran et t'envoient leurs commandes. Jusqu'à quatre joueurs, toi compris.</p>
-    <p class="keys-hint" id="online-status"></p>
-    <button class="primary" id="online-invite">Inviter un ami</button>
-    <ul class="invites" id="online-list"></ul>
-    <p class="keys-hint">Un lien d'invitation contient ton adresse réseau : ne l'envoie qu'à des amis. Chaque ami renvoie un code de réponse à coller ici ; une fois connecté, il rejoint le salon avec Entrée ou le bouton A de sa manette.</p>
-    <button class="secondary" id="online-back">Retour au salon</button>
-  </div>
-</div>
-
-<div class="overlay" id="menu-join" hidden>
-  <div class="card">
-    <p class="kicker">Invitation reçue</p>
-    <h1>Rejoindre la partie</h1>
-    <p class="lead" id="join-lead">Tu vas voir l'écran de ton hôte et jouer avec ton clavier ou ta manette.</p>
-    <button class="primary" id="join-go">Se connecter</button>
-    <div id="join-answer" hidden>
-      <p class="keys-hint">Envoie ce code à ton hôte, il le colle de son côté :</p>
-      <textarea id="join-code" class="code" readonly rows="4"></textarea>
-      <button class="secondary" id="join-copy">Copier le code</button>
-      <p class="keys-hint">Dès qu'il l'aura saisi, la partie s'affiche ici.</p>
+    <p class="lead">Chacun joue dans son navigateur : seul l’état de la partie circule. Jusqu’à quatre joueurs, toi compris.</p>
+    <p class="section-label">Héberger une partie</p>
+    <button class="primary" id="online-host">Créer un salon</button>
+    <div id="online-room" hidden>
+      <p class="keys-hint">Donne ce code à tes amis, ils le tapent dans « Rejoindre » :</p>
+      <p class="room-code" id="online-code" aria-live="polite"></p>
+      <ul class="invites" id="online-list"></ul>
+      <button class="primary" id="online-lobby">Ouvrir le salon de jeu</button>
     </div>
-    <p class="boot-error" id="join-error" role="alert" hidden></p>
+    <p class="section-label">Rejoindre un ami</p>
+    <div class="join-row">
+      <input type="text" id="online-join-code" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Code du salon">
+      <button class="secondary" id="online-join">Rejoindre</button>
+    </div>
+    <p class="boot-error" id="online-error" role="alert" hidden></p>
+    <p class="keys-hint">Le code passe par un relais qui met les navigateurs en relation, puis la partie circule en direct. Le relais voit ton adresse réseau le temps de la mise en relation et ne garde rien.</p>
+    <button class="secondary" id="online-back">Retour</button>
   </div>
 </div>
 
@@ -9561,7 +9562,7 @@ function setupHeroes(devices, classes) {
 
 function showOverlay(id) {
   for (const o of document.querySelectorAll('.overlay')) o.hidden = o.id !== id;
-  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || id === 'menu-online' || id === 'menu-join' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
+  $('hud').classList.toggle('off', id === 'menu-start' || id === 'menu-debug' || id === 'menu-duo' || id === 'menu-online' || (id === 'menu-keys' && keysFrom?.state === 'menu'));
 }
 
 function pauseGame() {
@@ -10171,6 +10172,10 @@ const isGameKey = (code) => heroes.some((h) => { const km = heroKeymap(h); retur
 let keyboardSeen = !coarse;
 const ARROW_DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 window.addEventListener('keydown', (e) => {
+  if (!$('menu-online').hidden) {
+    if (e.code === 'Escape') leaveOnline();
+    return;
+  }
   if (learnKey(e) && !bindCapture) renderControls();
   if (state === 'keys') {
     if (bindCapture?.tab === 'kb') {
@@ -10500,16 +10505,17 @@ function lobbyInput(dev, action = 'go') {
 }
 
 function lobbyBack() {
-  if (!$('menu-online').hidden) {
-    showOverlay('menu-duo');
-    return;
-  }
   if (lobby.slots.some(Boolean)) {
     lobby.slots = [null, null, null, null];
     renderLobby();
     return;
   }
   state = 'menu';
+  if (NET.relay) {
+    showOverlay('menu-online');
+    renderOnline();
+    return;
+  }
   showOverlay('menu-start');
 }
 
@@ -10667,53 +10673,59 @@ const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const ONLINE_PAD0 = 1000;
 const ONLINE_MAX_FRIENDS = 3;
 const PROTOCOL = 2;
-const NET = { puppet: false, peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
+const NET = { puppet: false, peers: new Map(), relay: null, code: null, client: null };
 
-const b64u = {
-  enc: (bytes) => {
-    let bin = '';
-    for (const b of bytes) bin += String.fromCharCode(b);
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  },
-  dec: (str) => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)),
+// ----- Relais de signalisation
+// Le relais ne sert qu'à mettre en relation l'hôte et ses amis (code de salon) : offre, réponse et candidats ICE.
+// La partie passe ensuite en direct entre les navigateurs.
+const RELAY_URL = (() => {
+  const own = new URLSearchParams(location.search).get('relais');
+  return own && ['localhost', '127.0.0.1'].includes(location.hostname) ? own : 'wss://profondeurs.kobbo.fr/ws';
+})();
+const RELAY_ERRORS = {
+  unknown: 'Ce code ne correspond à aucun salon, ou il a expiré.',
+  full: 'Ce salon est complet.',
+  version: 'Ton hôte joue à une autre version du jeu : recharge la page des deux côtés.',
+  busy: 'Tu es déjà connecté.',
 };
 
-// Un code d'invitation ou de réponse : l'offre ou la réponse WebRTC en JSON, compressée quand le navigateur sait le faire.
-async function packCode(obj) {
-  const raw = new TextEncoder().encode(JSON.stringify(obj));
-  if (typeof CompressionStream === 'function') {
-    const out = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-    return `z${b64u.enc(new Uint8Array(await new Response(out).arrayBuffer()))}`;
-  }
-  return `p${b64u.enc(raw)}`;
+function relayConnect() {
+  return new Promise((resolve, reject) => {
+    let ws;
+    try {
+      ws = new WebSocket(RELAY_URL);
+    } catch {
+      reject(new Error('Relais injoignable.'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      ws.close();
+      reject(new Error('Le relais ne répond pas.'));
+    }, 8000);
+    ws.addEventListener('open', () => {
+      clearTimeout(timer);
+      resolve(ws);
+    }, { once: true });
+    ws.addEventListener('error', () => {
+      clearTimeout(timer);
+      reject(new Error('Relais injoignable : vérifie ta connexion.'));
+    }, { once: true });
+  });
 }
 
-async function unpackCode(code) {
-  const text = String(code).trim();
-  const kind = text[0];
-  if (!text || (kind !== 'z' && kind !== 'p')) throw new Error('Code invalide.');
-  const bytes = b64u.dec(text.slice(1));
-  let json;
-  if (kind === 'z') {
-    if (typeof DecompressionStream !== 'function') throw new Error('Ce navigateur ne sait pas lire ce code.');
-    json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
-  } else json = new TextDecoder().decode(bytes);
-  const data = JSON.parse(json);
-  if (!data || typeof data.v !== 'number' || !data.d || typeof data.d.sdp !== 'string') throw new Error('Code invalide.');
-  if (data.v !== PROTOCOL) throw new Error('Version du jeu différente : l’hôte et toi devez jouer à la même version. Recharge la page.');
-  return data.d;
+function relaySend(ws, msg) {
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
 }
 
-function iceDone(pc, ms = 3000) {
-  return new Promise((resolve) => {
-    if (pc.iceGatheringState === 'complete') return resolve();
-    const t = setTimeout(resolve, ms);
-    pc.addEventListener('icegatheringstatechange', () => {
-      if (pc.iceGatheringState === 'complete') {
-        clearTimeout(t);
-        resolve();
-      }
-    });
+function relayListen(ws, handler) {
+  ws.addEventListener('message', (ev) => {
+    let m;
+    try {
+      m = JSON.parse(ev.data);
+    } catch {
+      return;
+    }
+    if (m && typeof m === 'object') handler(m);
   });
 }
 
@@ -10851,30 +10863,86 @@ function netWire(peer) {
   };
 }
 
-async function netInvite() {
-  if (livePeers().length >= ONLINE_MAX_FRIENDS) throw new Error('Quatre joueurs au plus, toi compris.');
-  const id = NET.nextId++;
+// L'hôte ouvre un salon sur le relais, puis crée une connexion directe par ami annoncé.
+async function netHost() {
+  if (NET.relay) return;
+  const ws = await relayConnect();
+  NET.relay = ws;
+  relayListen(ws, hostOnRelay);
+  ws.addEventListener('close', () => {
+    if (NET.relay !== ws) return;
+    NET.relay = null;
+    NET.code = null;
+    renderOnline();
+  });
+  relaySend(ws, { t: 'host', proto: PROTOCOL });
+}
+
+function netStopHost() {
+  for (const peer of [...NET.peers.values()]) netDrop(peer, 'closed');
+  const ws = NET.relay;
+  NET.relay = null;
+  NET.code = null;
+  try {
+    ws?.close();
+  } catch {
+    /* déjà fermé */
+  }
+  renderOnline();
+}
+
+function hostOnRelay(m) {
+  if (m.t === 'room') {
+    NET.code = m.code;
+    renderOnline();
+  } else if (m.t === 'peer') {
+    netPeer(m.id).catch(() => {
+      const peer = NET.peers.get(m.id);
+      if (peer) netDrop(peer, 'failed');
+    });
+  } else if (m.t === 'sig') {
+    netSignal(m.from, m.data).catch(() => {});
+  } else if (m.t === 'gone') {
+    const peer = NET.peers.get(m.id);
+    if (peer && !peer.open) netDrop(peer, 'closed');
+  } else if (m.t === 'err') {
+    onlineError(RELAY_ERRORS[m.why] ?? 'Le relais a refusé la demande.');
+  } else if (m.t === 'closed') {
+    NET.relay = null;
+    NET.code = null;
+    renderOnline();
+  }
+}
+
+async function netPeer(id) {
+  const old = NET.peers.get(id);
+  if (old) netDrop(old, 'closed');
+  if (livePeers().length >= ONLINE_MAX_FRIENDS) return;
   const pc = new RTCPeerConnection(RTC_CONFIG);
-  const peer = { id, pc, dc: null, sc: null, open: false, stateOpen: false, frame: { b: 0, x: 0, y: 0 }, state: 'invited', link: '', lastSeen: 0 };
+  const peer = { id, pc, dc: null, sc: null, open: false, stateOpen: false, frame: { b: 0, x: 0, y: 0 }, state: 'connecting', lastSeen: 0, pending: [] };
   NET.peers.set(id, peer);
-  // Tous les canaux sont créés avant l'offre : l'échange manuel de codes ne permet pas de renégocier.
+  // Tous les canaux sont créés avant l'offre : le relais ne permet pas de renégocier.
   peer.dc = pc.createDataChannel('pad', { ordered: false, maxRetransmits: 0 });
   peer.sc = pc.createDataChannel('state', { ordered: true });
   netWire(peer);
+  pc.onicecandidate = (e) => {
+    if (e.candidate) relaySend(NET.relay, { t: 'sig', to: id, data: { ice: e.candidate.toJSON() } });
+  };
   await pc.setLocalDescription(await pc.createOffer());
-  await iceDone(pc);
-  peer.link = `${location.origin}${location.pathname}#join=${await packCode({ v: PROTOCOL, d: pc.localDescription.toJSON() })}`;
+  relaySend(NET.relay, { t: 'sig', to: id, data: { sdp: pc.localDescription.toJSON() } });
   renderOnline();
-  return peer;
 }
 
-async function netAccept(id, code) {
-  const peer = NET.peers.get(id);
-  if (!peer) throw new Error('Invitation inconnue.');
-  const desc = await unpackCode(code);
-  await peer.pc.setRemoteDescription(desc);
-  peer.state = 'connecting';
-  renderOnline();
+async function netSignal(from, data) {
+  const peer = NET.peers.get(from);
+  if (!peer) return;
+  if (data.sdp) {
+    await peer.pc.setRemoteDescription(data.sdp);
+    for (const c of peer.pending.splice(0)) await peer.pc.addIceCandidate(c).catch(() => {});
+  } else if (data.ice) {
+    if (peer.pc.remoteDescription) await peer.pc.addIceCandidate(data.ice).catch(() => {});
+    else peer.pending.push(data.ice);
+  }
 }
 
 setInterval(() => {
@@ -10882,143 +10950,180 @@ setInterval(() => {
   for (const peer of [...NET.peers.values()]) if (peer.open && now - peer.lastSeen > 10000) netDrop(peer, 'timeout');
 }, 2000);
 
+function onlineError(msg) {
+  const el = $('online-error');
+  if (!el) return;
+  el.textContent = msg ?? '';
+  el.hidden = !msg;
+}
+
 function renderOnline() {
-  const box = $('online-list');
-  if (!box) return;
-  const status = $('online-status');
-  status.textContent = 'Chaque ami joue dans son navigateur : seul l’état de la partie circule, aucun écran n’est partagé.';
-  $('online-invite').disabled = livePeers().length >= ONLINE_MAX_FRIENDS;
-  const keep = new Map([...box.querySelectorAll('li[data-id]')].map((li) => [li.dataset.id, li]));
-  for (const peer of NET.peers.values()) {
-    let li = keep.get(String(peer.id));
-    keep.delete(String(peer.id));
-    if (!li) {
-      li = document.createElement('li');
-      li.dataset.id = peer.id;
-      li.innerHTML = '<b></b><div class="row"><input type="text" readonly aria-label="Lien d’invitation"><button type="button" class="secondary" data-act="copy">Copier</button></div><div class="row" data-part="answer"><input type="text" placeholder="Colle ici le code de réponse de ton ami" aria-label="Code de réponse"><button type="button" class="secondary" data-act="accept">Connecter</button></div><small class="keys-hint" data-part="note"></small>';
-      li.querySelector('[data-act=copy]').addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(peer.link);
-          li.querySelector('[data-part=note]').textContent = 'Lien copié.';
-        } catch {
-          li.querySelector('input').select();
-        }
-      });
-      li.querySelector('[data-act=accept]').addEventListener('click', async () => {
-        const note = li.querySelector('[data-part=note]');
-        try {
-          await netAccept(peer.id, li.querySelector('[data-part=answer] input').value);
-          note.textContent = 'Connexion en cours…';
-        } catch (err) {
-          note.textContent = err.message || 'Code invalide.';
-        }
-      });
-      box.append(li);
+  const room = $('online-room');
+  if (!room) return;
+  room.hidden = !NET.code;
+  $('online-host').hidden = !!NET.relay;
+  $('online-code').textContent = NET.code ?? '';
+  const labels = { connecting: 'connexion…', connected: 'connecté', failed: 'échec', timeout: 'perdu', closed: 'parti' };
+  $('online-list').replaceChildren(...[...NET.peers.values()].map((peer) => {
+    const li = document.createElement('li');
+    const b = document.createElement('b');
+    b.textContent = `Ami ${peer.id} · ${labels[peer.state] ?? peer.state}`;
+    li.append(b);
+    if (peer.state === 'failed') {
+      const small = document.createElement('small');
+      small.className = 'keys-hint';
+      small.textContent = 'Connexion impossible : certains réseaux bloquent les connexions directes.';
+      li.append(small);
     }
-    li.querySelector('b').textContent = `Ami ${peer.id} · ${{ invited: 'en attente de sa réponse', connecting: 'connexion…', connected: 'connecté', failed: 'échec', timeout: 'perdu' }[peer.state] ?? peer.state}`;
-    li.querySelector('input').value = peer.link;
-    li.querySelector('[data-part=answer]').hidden = peer.state === 'connected';
-    if (peer.state === 'failed') li.querySelector('[data-part=note]').textContent = 'Connexion impossible : certains réseaux bloquent les connexions directes.';
-  }
-  for (const li of keep.values()) li.remove();
+    return li;
+  }));
 }
 
 function openOnline() {
+  initAudio();
+  if (state !== 'menu') return;
+  onlineError('');
+  $('online-join').disabled = false;
   showOverlay('menu-online');
   renderOnline();
 }
-$('duo-online').addEventListener('click', openOnline);
-$('online-back').addEventListener('click', () => showOverlay('menu-duo'));
-$('online-invite').addEventListener('click', async () => {
-  $('online-invite').disabled = true;
-  try {
-    await netInvite();
-  } catch (err) {
-    $('online-status').textContent = err.message || 'Impossible de créer l’invitation.';
-  }
-  renderOnline();
-});
 
-// ----- Ami (page ouverte par un lien d'invitation)
-function joinFail(msg) {
-  const el = $('join-error');
-  el.textContent = msg;
-  el.hidden = false;
+function leaveOnline() {
+  netStopHost();
+  if (NET.client && !NET.client.connected) joinCleanup(NET.client);
+  state = 'menu';
+  showOverlay('menu-start');
 }
 
-async function joinStart() {
-  window.__profondeursReady = true;
-  state = 'join';
-  showOverlay('menu-join');
-  let offer;
+$('play-online').addEventListener('click', openOnline);
+$('online-back').addEventListener('click', leaveOnline);
+$('online-host').addEventListener('click', async () => {
+  onlineError('');
+  $('online-host').disabled = true;
   try {
-    offer = await unpackCode(location.hash.slice('#join='.length));
-    if (offer.type !== 'offer') throw new Error('Code invalide.');
+    await netHost();
   } catch (err) {
-    $('join-go').hidden = true;
-    joinFail(`Ce lien d’invitation est incomplet ou périmé (${err.message}). Demande-en un nouveau à ton hôte.`);
+    onlineError(err.message || 'Impossible de créer le salon.');
+  }
+  $('online-host').disabled = false;
+  renderOnline();
+});
+$('online-lobby').addEventListener('click', openLobby);
+$('online-join').addEventListener('click', () => joinRoom($('online-join-code').value));
+$('online-join-code').addEventListener('keydown', (e) => {
+  if (e.code === 'Enter' || e.code === 'NumpadEnter') joinRoom($('online-join-code').value);
+});
+
+// ----- Ami : rejoindre un salon par son code
+function joinCleanup(client) {
+  if (NET.client === client) NET.client = null;
+  clearInterval(client.timer);
+  try {
+    client.ws?.close();
+    client.pc?.close();
+  } catch {
+    /* déjà fermées */
+  }
+  $('online-join').disabled = false;
+}
+
+async function joinRoom(raw) {
+  onlineError('');
+  const code = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 4) {
+    onlineError('Le code a 4 caractères.');
     return;
   }
-  $('join-go').addEventListener('click', async () => {
-    $('join-go').disabled = true;
-    try {
-      const pc = new RTCPeerConnection(RTC_CONFIG);
-      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0 };
-      NET.client = client;
-      pc.ondatachannel = (e) => {
-        if (e.channel.label === 'state') {
-          client.sc = e.channel;
-          client.sc.onmessage = (ev) => {
-            let m;
-            try {
-              m = JSON.parse(ev.data);
-            } catch {
-              return;
-            }
-            if (!m || typeof m !== 'object') return;
-            if (m.t === 'hello') {
-              if (m.proto !== PROTOCOL) remoteEnd('Version du jeu différente : l’hôte et toi devez jouer à la même version. Recharge la page.');
-              else client.sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
-            } else if (m.t === 'refuse') remoteEnd('L’hôte a refusé la connexion (version du jeu différente).');
-            else client.onState?.(m);
-          };
-          client.sc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+  if (NET.client) return;
+  $('online-join').disabled = true;
+  let ws;
+  try {
+    ws = await relayConnect();
+  } catch (err) {
+    $('online-join').disabled = false;
+    onlineError(err.message);
+    return;
+  }
+  const client = { ws, pc: null, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null, snaps: [], snapN: 0, hudT: 0, pending: [], connected: false };
+  NET.client = client;
+  relayListen(ws, (m) => clientOnRelay(client, m));
+  ws.addEventListener('close', () => {
+    if (NET.client !== client || client.connected) return;
+    joinCleanup(client);
+    onlineError('La connexion au relais a été perdue.');
+  });
+  relaySend(ws, { t: 'join', code, proto: PROTOCOL });
+}
+
+function clientWire(client) {
+  const { pc } = client;
+  pc.onicecandidate = (e) => {
+    if (e.candidate) relaySend(client.ws, { t: 'sig', to: 0, data: { ice: e.candidate.toJSON() } });
+  };
+  pc.ondatachannel = (e) => {
+    if (e.channel.label === 'state') {
+      client.sc = e.channel;
+      client.sc.onmessage = (ev) => {
+        let m;
+        try {
+          m = JSON.parse(ev.data);
+        } catch {
           return;
         }
-        client.dc = e.channel;
-        client.dc.onopen = () => remoteStart(client);
-        client.dc.onmessage = (ev) => {
-          try {
-            const m = JSON.parse(ev.data);
-            if (m.t === 'q') client.ping = Math.round(performance.now() - m.ts);
-          } catch {
-            /* message ignoré */
-          }
-        };
-        client.dc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+        if (!m || typeof m !== 'object') return;
+        if (m.t === 'hello') {
+          if (m.proto !== PROTOCOL) remoteEnd(RELAY_ERRORS.version);
+          else client.sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
+        } else if (m.t === 'refuse') remoteEnd(RELAY_ERRORS.version);
+        else client.onState?.(m);
       };
-      pc.onconnectionstatechange = () => {
-        if (['failed', 'closed'].includes(pc.connectionState)) remoteEnd('La connexion avec l’hôte est perdue.');
-      };
-      await pc.setRemoteDescription(offer);
-      await pc.setLocalDescription(await pc.createAnswer());
-      await iceDone(pc);
-      $('join-code').value = await packCode({ v: PROTOCOL, d: pc.localDescription.toJSON() });
-      $('join-answer').hidden = false;
-      $('join-go').hidden = true;
-    } catch (err) {
-      $('join-go').disabled = false;
-      joinFail(`Connexion impossible : ${err.message}`);
+      client.sc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+      return;
     }
-  });
-  $('join-copy').addEventListener('click', async () => {
+    client.dc = e.channel;
+    client.dc.onopen = () => remoteStart(client);
+    client.dc.onmessage = (ev) => {
+      try {
+        const m = JSON.parse(ev.data);
+        if (m.t === 'q') client.ping = Math.round(performance.now() - m.ts);
+      } catch {
+        /* message ignoré */
+      }
+    };
+    client.dc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+  };
+  pc.onconnectionstatechange = () => {
+    if (['failed', 'closed'].includes(pc.connectionState)) remoteEnd('La connexion avec l’hôte est perdue. Certains réseaux bloquent les connexions directes.');
+  };
+}
+
+async function clientOnRelay(client, m) {
+  if (m.t === 'joined') {
+    client.pc = new RTCPeerConnection(RTC_CONFIG);
+    clientWire(client);
+  } else if (m.t === 'sig' && client.pc) {
+    const { pc } = client;
     try {
-      await navigator.clipboard.writeText($('join-code').value);
-      $('join-copy').textContent = 'Code copié';
-    } catch {
-      $('join-code').select();
+      if (m.data.sdp) {
+        await pc.setRemoteDescription(m.data.sdp);
+        for (const c of client.pending.splice(0)) await pc.addIceCandidate(c).catch(() => {});
+        await pc.setLocalDescription(await pc.createAnswer());
+        relaySend(client.ws, { t: 'sig', to: 0, data: { sdp: pc.localDescription.toJSON() } });
+      } else if (m.data.ice) {
+        if (pc.remoteDescription) await pc.addIceCandidate(m.data.ice).catch(() => {});
+        else client.pending.push(m.data.ice);
+      }
+    } catch (err) {
+      joinCleanup(client);
+      onlineError(`Connexion impossible : ${err.message}`);
     }
-  });
+  } else if (m.t === 'err') {
+    joinCleanup(client);
+    onlineError(RELAY_ERRORS[m.why] ?? 'Le relais a refusé la demande.');
+  } else if (m.t === 'closed' && !client.connected) {
+    joinCleanup(client);
+    onlineError('L’hôte a fermé le salon.');
+  }
 }
 
 // Client : reconstruit l'étage de l'hôte (graine + contexte) et passe en mode marionnette, sans simulation locale.
@@ -11140,6 +11245,12 @@ function clientFrame(client) {
 }
 
 function remoteStart(client) {
+  client.connected = true;
+  try {
+    client.ws?.close();
+  } catch {
+    /* déjà fermé */
+  }
   showOverlay(null);
   $('remote').hidden = false;
   const km = binds.solo;
@@ -11173,20 +11284,18 @@ function remoteStart(client) {
 function remoteEnd(msg) {
   const client = NET.client;
   if (!client) return;
-  NET.client = null;
-  clearInterval(client.timer);
-  try {
-    client.pc.close();
-  } catch {
-    /* déjà fermée */
-  }
+  joinCleanup(client);
   $('remote').hidden = true;
+  const wasPlaying = NET.puppet;
   NET.puppet = false;
-  state = 'join';
-  showOverlay('menu-join');
-  $('join-answer').hidden = true;
-  $('join-go').hidden = true;
-  joinFail(msg ?? 'Tu as quitté la partie. Demande un nouveau lien à ton hôte pour revenir.');
+  if (wasPlaying) {
+    setupHeroes(null);
+    newRun();
+  }
+  state = 'menu';
+  showOverlay('menu-online');
+  renderOnline();
+  onlineError(msg ?? 'Tu as quitté la partie.');
 }
 
 function readPads() {
@@ -12103,13 +12212,20 @@ try {
 } catch {
   /* l'API de rechargement à chaud est optionnelle */
 }
-if (NET.joinMode) {
-  bootOnce({});
-  joinStart();
-} else if (typeof hot?.ready === 'function') {
+if (typeof hot?.ready === 'function') {
   hot.ready(bootOnce);
   setTimeout(() => bootOnce(hot.data ?? {}), 2000);
 } else {
   bootOnce(hot?.data ?? {});
+}
+// Lien `?salon=CODE` : ouvre l'écran en ligne avec le code déjà saisi.
+const salonParam = new URLSearchParams(location.search).get('salon');
+if (salonParam) {
+  const wait = setInterval(() => {
+    if (!booted || state !== 'menu') return;
+    clearInterval(wait);
+    openOnline();
+    $('online-join-code').value = salonParam.toUpperCase().slice(0, 4);
+  }, 100);
 }
 </script>
