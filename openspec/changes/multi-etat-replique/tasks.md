@@ -5,6 +5,13 @@
 - [x] 1.1 Ajouter un RNG seedé (mulberry32) qui remplace temporairement `rand`, `randi`, `pick`, `shuffle` pendant la génération d'étage, et faire passer les `Math.random` directs de génération par lui. Vérifier : même graine, même empreinte de grille et de nombre d'entités ; sans graine, génération aléatoire comme avant.
 - [x] 1.2 Donner des identifiants stables aux entités créées par la génération (ennemis, accessoires, coffres, pièges, portails) dans l'ordre de création. Vérifier : deux pages avec la même graine ont les mêmes identifiants.
 
+## 1b. Relais de signalisation
+
+- [x] 1b.1 Écrire le relais (`relay/server.mjs`, salons en mémoire, 4 membres, origines autorisées, limites de débit et d'IP, `/health`) avec ses tests (`node --test`) : 5 tests passent.
+- [x] 1b.2 Le livrer : Dockerfile, compose isolé (non-root, lecture seule, capacités retirées, 64 Mo, boucle locale), modèle nginx, déploiement derrière TLS sur `profondeurs.kobbo.fr`, certificat renouvelé par certbot. Vérifié en `wss://` depuis Internet : salon, jonction, signaux, origine refusée.
+- [ ] 1b.3 Écrire le README du relais (protocole, variables d'environnement, déploiement, vie privée).
+- [ ] 1b.4 Écrire le client de signalisation : hôte (créer le salon, afficher le code, un `RTCPeerConnection` par pair annoncé, ICE trickle) et ami (écran « Rejoindre », saisie du code, `?salon=CODE`, erreurs lisibles), vérification de version à la jonction. Retirer `#join=`, `packCode`, `unpackCode`, `iceDone` et l'ancien écran de codes. Vérifier à deux pages : connexion par code seul, code inconnu, relais injoignable, version différente.
+
 ## 2. Canal d'état et héros seuls
 
 - [x] 2.1 Créer le canal `'state'` (ordonné, fiable) dans `netInvite`/`joinStart`, avec échange d'une version de protocole et refus clair en cas d'écart. Vérifier : deux pages en boucle locale, message de version.

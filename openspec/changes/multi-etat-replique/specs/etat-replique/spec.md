@@ -73,11 +73,11 @@ Chaque trame de commande MUST porter un numéro et l'hôte MUST renvoyer dans se
 - **THEN** il est recalé immédiatement sur la position de l'hôte
 
 ### Requirement: Aucun flux vidéo
-Le jeu SHALL ne plus utiliser de flux vidéo ni de partage d'écran pour le jeu en ligne, et MUST NOT proposer de repli vidéo. Un lien ou un code d'une version de protocole différente MUST être refusé avec un message.
+Le jeu SHALL ne plus utiliser de flux vidéo ni de partage d'écran pour le jeu en ligne, et MUST NOT proposer de repli vidéo. Un hôte et un ami de versions de protocole différentes MUST être refusés avec un message.
 
 #### Scenario: Version différente
-- **WHEN** un ami ouvre un lien d'un hôte dont la version de protocole diffère de la sienne
-- **THEN** un message l'indique et aucune connexion n'est établie
+- **WHEN** un ami rejoint un salon dont l'hôte a une autre version de protocole
+- **THEN** un message l'indique et aucune partie en ligne ne démarre
 
 ### Requirement: Commandes de l'ami
 Les commandes de l'ami (manette ou clavier) SHALL continuer de parvenir à l'hôte comme celles d'une manette virtuelle, et l'ami MUST NOT pouvoir mettre la partie en pause.
@@ -86,8 +86,23 @@ Les commandes de l'ami (manette ou clavier) SHALL continuer de parvenir à l'hô
 - **WHEN** l'ami déplace son héros et attaque
 - **THEN** son héros se déplace et frappe chez l'hôte puis chez l'ami
 
-### Requirement: Connexion sans serveur et limites
-La connexion SHALL rester établie par lien et code de réponse, sans serveur de jeu ni de signalisation. La partie MUST accepter au plus quatre joueurs, hôte compris. La perte d'un ami MUST laisser la partie de l'hôte continuer sans erreur ; chez l'ami, un message l'indique et il peut quitter.
+### Requirement: Salon par code court
+L'hôte SHALL obtenir un code de salon de 4 caractères en ouvrant le jeu en ligne, et un ami MUST pouvoir rejoindre en le saisissant dans un écran « Rejoindre » ou en ouvrant le jeu avec `?salon=CODE`. La mise en relation MUST passer par un relais de signalisation qui ne transmet que l'offre, la réponse et les candidats de connexion ; ensuite la partie MUST passer en direct entre les navigateurs, sans que le relais voie la partie.
+
+#### Scenario: Rejoindre par code
+- **WHEN** l'ami tape le code affiché chez l'hôte
+- **THEN** la connexion s'établit sans copier-coller et l'ami apparaît chez l'hôte
+
+#### Scenario: Code inconnu ou salon plein
+- **WHEN** l'ami saisit un code inexistant, expiré ou d'un salon complet
+- **THEN** un message l'indique et aucune connexion n'est tentée
+
+#### Scenario: Relais injoignable
+- **WHEN** le relais ne répond pas
+- **THEN** l'hôte et l'ami voient un message, et le jeu local reste utilisable
+
+### Requirement: Connexion directe et limites
+Le jeu en ligne SHALL fonctionner sans serveur de jeu : le relais ne sert qu'à la mise en relation. La partie MUST accepter au plus quatre joueurs, hôte compris. La perte d'un ami MUST laisser la partie de l'hôte continuer sans erreur ; chez l'ami, un message l'indique et il peut quitter.
 
 #### Scenario: Ami déconnecté
 - **WHEN** la connexion d'un ami tombe
