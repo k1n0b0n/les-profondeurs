@@ -9415,8 +9415,8 @@ function acceptAltar() {
   showOverlay(null);
 }
 
-function startFloor(depth) {
-  buildLevel(depth);
+function startFloor(depth, ctx) {
+  buildLevel(depth, ctx);
   const sx = heroes[0].x;
   const sz = heroes[0].z;
   heroes.forEach((h, n) => {
@@ -9459,6 +9459,8 @@ function startFloor(depth) {
   }
   teachMech = FLOOR_MECH[depth] ?? null;
   teachDelay = teachMech ? TEACH_DELAY : 0;
+  L.fp = floorFingerprint();
+  netBroadcastFloor();
 }
 
 function newRun(saved) {
@@ -9563,7 +9565,7 @@ function showOverlay(id) {
 }
 
 function pauseGame() {
-  if (state !== 'play') return;
+  if (state !== 'play' || NET.puppet) return;
   state = 'paused';
   resetInputs();
   disarmAbandon();
@@ -10665,7 +10667,7 @@ const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const ONLINE_PAD0 = 1000;
 const ONLINE_MAX_FRIENDS = 3;
 const PROTOCOL = 2;
-const NET = { peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
+const NET = { puppet: false, peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
 
 const b64u = {
   enc: (bytes) => {
@@ -10713,6 +10715,41 @@ function iceDone(pc, ms = 3000) {
       }
     });
   });
+}
+
+// Empreinte de l'étage tel que généré : l'hôte l'envoie, le client la recalcule et signale toute divergence.
+function floorFingerprint() {
+  let h = 0;
+  const mix = (v) => {
+    h = (Math.imul(h, 31) + (v | 0)) | 0;
+  };
+  for (const v of L.grid) mix(v);
+  for (const k of ['enemies', 'props', 'chests', 'traps', 'coins', 'potions', 'portals']) {
+    for (const e of L[k]) {
+      mix(e.id);
+      mix(Math.round(e.x * 100));
+      mix(Math.round(e.z * 100));
+      for (const ch of String(e.type ?? e.kind ?? '')) mix(ch.charCodeAt(0));
+    }
+  }
+  return h;
+}
+
+const peerSend = (peer, msg) => {
+  if (peer.stateOpen && peer.sc?.readyState === 'open') peer.sc.send(JSON.stringify(msg));
+};
+
+function floorMessage(peer) {
+  const me = heroes.findIndex((h) => h.device?.kind === 'pad' && h.device.index === ONLINE_PAD0 + peer.id);
+  return {
+    t: 'floor', depth: L.depth, seed: L.seed, pressure: L.pressure, biomes: runBiomes.slice(), pacts: run.pacts.slice(), vow: run.vow, vowFloor: run.vowFloor,
+    recit: run.recit, classes: heroes.map((h) => h.cls), me, fp: L.fp,
+  };
+}
+
+function netBroadcastFloor() {
+  if (!L || L.fp === undefined) return;
+  for (const peer of NET.peers.values()) peerSend(peer, floorMessage(peer));
 }
 
 // ----- Hôte
@@ -10778,6 +10815,7 @@ function netWire(peer) {
   sc.onopen = () => {
     peer.stateOpen = true;
     sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
+    if (state !== 'menu' && state !== 'lobby') peerSend(peer, floorMessage(peer));
   };
   sc.onmessage = (e) => {
     let m;
@@ -10911,7 +10949,7 @@ async function joinStart() {
     $('join-go').disabled = true;
     try {
       const pc = new RTCPeerConnection(RTC_CONFIG);
-      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: null };
+      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: clientOnState, me: -1, fpOk: null };
       NET.client = client;
       pc.ondatachannel = (e) => {
         if (e.channel.label === 'state') {
@@ -10967,6 +11005,36 @@ async function joinStart() {
       $('join-code').select();
     }
   });
+}
+
+// Client : reconstruit l'étage de l'hôte (graine + contexte) et passe en mode marionnette, sans simulation locale.
+function puppetFloor(msg) {
+  const devices = msg.classes.map(() => ({ kind: 'pad', index: -1 }));
+  NET.puppet = true;
+  setupHeroes(devices, msg.classes);
+  runBiomes = msg.biomes.slice();
+  run.pacts = msg.pacts.slice();
+  run.vow = msg.vow;
+  run.vowFloor = msg.vowFloor;
+  run.recit = !!msg.recit;
+  state = 'play';
+  showOverlay(null);
+  startFloor(msg.depth, { seed: msg.seed, pressure: msg.pressure });
+  teachMech = null;
+  teachDelay = 0;
+  const fp = floorFingerprint();
+  if (NET.client) {
+    NET.client.me = msg.me;
+    NET.client.fpOk = fp === msg.fp;
+  }
+  if (fp !== msg.fp) {
+    console.error(`Étage différent de celui de l’hôte (empreinte ${fp} ≠ ${msg.fp}).`);
+    toast('Étage différent de l’hôte', 'La partie risque de ne pas correspondre. Recharge la page.', 6);
+  }
+}
+
+function clientOnState(m) {
+  if (m.t === 'floor') puppetFloor(m);
 }
 
 function clientFrame(client) {
@@ -11047,6 +11115,7 @@ function remoteEnd(msg) {
     /* déjà fermée */
   }
   $('remote').hidden = true;
+  NET.puppet = false;
   state = 'join';
   showOverlay('menu-join');
   $('join-answer').hidden = true;
@@ -11844,29 +11913,33 @@ function step(now) {
   const running = !FROZEN.has(state);
   if (running) {
     elapsed += dt;
-    if (state === 'play') {
-      const standing = heroes.some((h) => !h.down);
-      for (const h of heroes) {
-        player = h;
-        if (!h.down) updatePlayer(dt);
-        else if (standing) updateDowned(dt);
+    if (NET.puppet) {
+      /* Client en ligne : l'état vient de l'hôte, aucune simulation locale. */
+    } else {
+      if (state === 'play') {
+        const standing = heroes.some((h) => !h.down);
+        for (const h of heroes) {
+          player = h;
+          if (!h.down) updatePlayer(dt);
+          else if (standing) updateDowned(dt);
+        }
+        player = heroes[0];
+        enforceLeash();
+        updateRevives(dt);
+        updateCordee();
       }
-      player = heroes[0];
-      enforceLeash();
-      updateRevives(dt);
-      updateCordee();
+      updateEnemies(dt);
+      updateShots(dt);
+      updateWaves(dt);
+      updateEmbers(dt);
+      updateBombs(dt);
+      updateBlasts(dt);
+      updateTraps(dt);
+      updateFx(dt);
+      updateBiome(dt);
+      updateAmbushes(dt);
+      updateItems(dt);
     }
-    updateEnemies(dt);
-    updateShots(dt);
-    updateWaves(dt);
-    updateEmbers(dt);
-    updateBombs(dt);
-    updateBlasts(dt);
-    updateTraps(dt);
-    updateFx(dt);
-    updateBiome(dt);
-    updateAmbushes(dt);
-    updateItems(dt);
   }
   for (const h of heroes) {
     player = h;
@@ -11965,6 +12038,7 @@ try {
   /* l'API de rechargement à chaud est optionnelle */
 }
 if (NET.joinMode) {
+  bootOnce({});
   joinStart();
 } else if (typeof hot?.ready === 'function') {
   hot.ready(bootOnce);

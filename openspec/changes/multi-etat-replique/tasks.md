@@ -8,7 +8,7 @@
 ## 2. Canal d'état et héros seuls
 
 - [x] 2.1 Créer le canal `'state'` (ordonné, fiable) dans `netInvite`/`joinStart`, avec échange d'une version de protocole et refus clair en cas d'écart. Vérifier : deux pages en boucle locale, message de version.
-- [ ] 2.2 Envoyer `floor` + graine au début d'un étage et reconstruire l'étage chez l'ami sans lancer la simulation (mode marionnette `NET.puppet`). Vérifier : empreinte identique, aucune boucle de simulation chez l'ami.
+- [x] 2.2 Envoyer `floor` + graine au début d'un étage et reconstruire l'étage chez l'ami sans lancer la simulation (mode marionnette `NET.puppet`). Vérifier : empreinte identique, aucune boucle de simulation chez l'ami.
 - [ ] 2.3 Envoyer les instantanés des héros (position, orientation, PV, état) à ~20 Hz, appliquer l'ordre des numéros, interpoler, caméra et HUD de base chez l'ami. Vérifier : l'ami voit bouger les héros, y compris le sien commandé par sa manette ou son clavier.
 
 - [ ] 2.4 Extraire de `updatePlayer` une fonction de déplacement et de collision partagée (sans effets ni sons), vérifier que le jeu local est inchangé, numéroter les trames `'f'` et renvoyer `ack` par héros dans les `snap`.
