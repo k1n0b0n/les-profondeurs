@@ -100,8 +100,7 @@ textarea.code { resize: none; }
 .invites .row { display: flex; gap: 6px; }
 .invites .row > * { flex: 1; }
 .invites .row > button { flex: 0 0 auto; }
-#remote { position: fixed; inset: 0; z-index: 60; background: #000; }
-#remote video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+#remote { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
 #remote-bar { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink-dim); background: rgba(11, 9, 16, 0.78); border: 1px solid var(--line); border-radius: 8px; }
 #remote-bar button { pointer-events: auto; padding: 4px 10px; font-size: 13px; }
 .pcard.corner { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(230px, 40vw); grid-column: auto; grid-row: auto; }
@@ -864,7 +863,6 @@ button.bind-slot:hover, button.bind-slot:focus-visible, .bind-slot.pad-focus { b
 </div>
 
 <div id="remote" hidden>
-  <video id="remote-video" playsinline autoplay></video>
   <div id="remote-bar"><span id="remote-ping">connexion…</span><span id="remote-keys"></span><button type="button" id="remote-quit">Quitter</button></div>
 </div>
 
@@ -2476,8 +2474,11 @@ function buildLevelSeeded(depth, seed, pressure) {
 
 // Identifiant stable des entités répliquées : un compteur par étage, attribué dans l'ordre de création
 // (identique chez tous pendant la génération seedée).
+// `forcedId` : un client qui fabrique une entité depuis un instantané lui impose l'identifiant de l'hôte.
+let forcedId = null;
 function regPush(arr, e) {
-  e.id = L.nextId++;
+  e.id = forcedId ?? L.nextId++;
+  forcedId = null;
   return arr.push(e);
 }
 
@@ -10663,7 +10664,8 @@ const padStates = new Map();
 const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const ONLINE_PAD0 = 1000;
 const ONLINE_MAX_FRIENDS = 3;
-const NET = { stream: null, shareMode: null, peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
+const PROTOCOL = 2;
+const NET = { peers: new Map(), nextId: 1, joinMode: location.hash.startsWith('#join='), client: null };
 
 const b64u = {
   enc: (bytes) => {
@@ -10695,7 +10697,8 @@ async function unpackCode(code) {
     json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
   } else json = new TextDecoder().decode(bytes);
   const data = JSON.parse(json);
-  if (!data || data.v !== 1 || !data.d || typeof data.d.sdp !== 'string') throw new Error('Code invalide.');
+  if (!data || typeof data.v !== 'number' || !data.d || typeof data.d.sdp !== 'string') throw new Error('Code invalide.');
+  if (data.v !== PROTOCOL) throw new Error('Version du jeu différente : l’hôte et toi devez jouer à la même version. Recharge la page.');
   return data.d;
 }
 
@@ -10728,24 +10731,6 @@ function virtualPads() {
   return out;
 }
 
-async function netShare() {
-  if (NET.stream) return NET.shareMode;
-  try {
-    NET.stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true, preferCurrentTab: true });
-    NET.shareMode = 'screen';
-  } catch {
-    NET.stream = $('scene').captureStream(30);
-    NET.shareMode = 'canvas';
-  }
-  const track = NET.stream.getVideoTracks()[0];
-  track?.addEventListener('ended', () => {
-    NET.stream = null;
-    NET.shareMode = null;
-    renderOnline();
-  });
-  return NET.shareMode;
-}
-
 const livePeers = () => [...NET.peers.values()].filter((p) => p.state !== 'closed');
 
 function netDrop(peer, why = 'closed') {
@@ -10769,18 +10754,6 @@ function netWire(peer) {
     peer.open = true;
     peer.state = 'connected';
     peer.lastSeen = performance.now();
-    for (const sender of pc.getSenders()) {
-      if (sender.track?.kind !== 'video') continue;
-      try {
-        const params = sender.getParameters();
-        if (params.encodings?.length) {
-          params.encodings[0].maxBitrate = 2.5e6;
-          sender.setParameters(params).catch(() => {});
-        }
-      } catch {
-        /* débit non plafonnable sur ce navigateur */
-      }
-    }
     toast('Ami connecté', `Joueur en ligne ${peer.id} : il rejoint le salon avec Entrée ou A`, 3);
     renderOnline();
   };
@@ -10801,6 +10774,25 @@ function netWire(peer) {
     }
   };
   dc.onclose = () => netDrop(peer);
+  const { sc } = peer;
+  sc.onopen = () => {
+    peer.stateOpen = true;
+    sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
+  };
+  sc.onmessage = (e) => {
+    let m;
+    try {
+      m = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    if (!m || typeof m !== 'object') return;
+    peer.lastSeen = performance.now();
+    if (m.t === 'hello' && m.proto !== PROTOCOL) {
+      sc.send(JSON.stringify({ t: 'refuse', why: 'proto' }));
+      netDrop(peer, 'failed');
+    }
+  };
   pc.onconnectionstatechange = () => {
     if (['failed', 'closed'].includes(pc.connectionState)) netDrop(peer, 'failed');
     else renderOnline();
@@ -10809,17 +10801,17 @@ function netWire(peer) {
 
 async function netInvite() {
   if (livePeers().length >= ONLINE_MAX_FRIENDS) throw new Error('Quatre joueurs au plus, toi compris.');
-  await netShare();
   const id = NET.nextId++;
   const pc = new RTCPeerConnection(RTC_CONFIG);
-  const peer = { id, pc, dc: null, open: false, frame: { b: 0, x: 0, y: 0 }, state: 'invited', link: '', lastSeen: 0 };
+  const peer = { id, pc, dc: null, sc: null, open: false, stateOpen: false, frame: { b: 0, x: 0, y: 0 }, state: 'invited', link: '', lastSeen: 0 };
   NET.peers.set(id, peer);
-  for (const track of NET.stream.getTracks()) pc.addTrack(track, NET.stream);
+  // Tous les canaux sont créés avant l'offre : l'échange manuel de codes ne permet pas de renégocier.
   peer.dc = pc.createDataChannel('pad', { ordered: false, maxRetransmits: 0 });
+  peer.sc = pc.createDataChannel('state', { ordered: true });
   netWire(peer);
   await pc.setLocalDescription(await pc.createOffer());
   await iceDone(pc);
-  peer.link = `${location.origin}${location.pathname}#join=${await packCode({ v: 1, d: pc.localDescription.toJSON() })}`;
+  peer.link = `${location.origin}${location.pathname}#join=${await packCode({ v: PROTOCOL, d: pc.localDescription.toJSON() })}`;
   renderOnline();
   return peer;
 }
@@ -10842,7 +10834,7 @@ function renderOnline() {
   const box = $('online-list');
   if (!box) return;
   const status = $('online-status');
-  status.textContent = NET.stream ? (NET.shareMode === 'screen' ? 'Écran partagé : tes amis verront aussi l’interface et les menus.' : 'Partage d’écran indisponible : tes amis verront le jeu sans interface.') : 'Ton écran sera partagé quand tu invites un premier ami.';
+  status.textContent = 'Chaque ami joue dans son navigateur : seul l’état de la partie circule, aucun écran n’est partagé.';
   $('online-invite').disabled = livePeers().length >= ONLINE_MAX_FRIENDS;
   const keep = new Map([...box.querySelectorAll('li[data-id]')].map((li) => [li.dataset.id, li]));
   for (const peer of NET.peers.values()) {
@@ -10919,14 +10911,28 @@ async function joinStart() {
     $('join-go').disabled = true;
     try {
       const pc = new RTCPeerConnection(RTC_CONFIG);
-      const client = { pc, dc: null, keys: new Set(), last: '', timer: 0, ping: 0 };
+      const client = { pc, dc: null, sc: null, keys: new Set(), last: '', timer: 0, ping: 0, onState: null };
       NET.client = client;
-      pc.ontrack = (e) => {
-        const video = $('remote-video');
-        if (video.srcObject !== e.streams[0]) video.srcObject = e.streams[0];
-        video.play?.().catch(() => {});
-      };
       pc.ondatachannel = (e) => {
+        if (e.channel.label === 'state') {
+          client.sc = e.channel;
+          client.sc.onmessage = (ev) => {
+            let m;
+            try {
+              m = JSON.parse(ev.data);
+            } catch {
+              return;
+            }
+            if (!m || typeof m !== 'object') return;
+            if (m.t === 'hello') {
+              if (m.proto !== PROTOCOL) remoteEnd('Version du jeu différente : l’hôte et toi devez jouer à la même version. Recharge la page.');
+              else client.sc.send(JSON.stringify({ t: 'hello', proto: PROTOCOL }));
+            } else if (m.t === 'refuse') remoteEnd('L’hôte a refusé la connexion (version du jeu différente).');
+            else client.onState?.(m);
+          };
+          client.sc.onclose = () => remoteEnd('La connexion avec l’hôte est fermée.');
+          return;
+        }
         client.dc = e.channel;
         client.dc.onopen = () => remoteStart(client);
         client.dc.onmessage = (ev) => {
@@ -10945,7 +10951,7 @@ async function joinStart() {
       await pc.setRemoteDescription(offer);
       await pc.setLocalDescription(await pc.createAnswer());
       await iceDone(pc);
-      $('join-code').value = await packCode({ v: 1, d: pc.localDescription.toJSON() });
+      $('join-code').value = await packCode({ v: PROTOCOL, d: pc.localDescription.toJSON() });
       $('join-answer').hidden = false;
       $('join-go').hidden = true;
     } catch (err) {
@@ -11041,7 +11047,6 @@ function remoteEnd(msg) {
     /* déjà fermée */
   }
   $('remote').hidden = true;
-  $('remote-video').srcObject = null;
   state = 'join';
   showOverlay('menu-join');
   $('join-answer').hidden = true;
