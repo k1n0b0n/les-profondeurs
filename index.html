@@ -4830,7 +4830,7 @@ let toastT = 0;
 let runeAcc = 0;
 let trans = null;
 
-const addShake = (v) => { if (!reducedMotion) shake = Math.max(shake, v); };
+let addShake = (v) => { if (!reducedMotion) shake = Math.max(shake, v); };
 
 function heroKeymap(h) {
   const d = h.device;
@@ -10715,7 +10715,7 @@ const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const ONLINE_PAD0 = 1000;
 const ONLINE_MAX_FRIENDS = 3;
 const PROTOCOL = 2;
-const NET = { puppet: false, peers: new Map(), relay: null, code: null, client: null };
+const NET = { puppet: false, peers: new Map(), relay: null, code: null, client: null, evq: [], replay: false, locks: new Map(), mirror: null };
 
 // ----- Relais de signalisation
 // Le relais ne sert qu'à mettre en relation l'hôte et ses amis (code de salon) : offre, réponse et candidats ICE.
@@ -10821,26 +10821,178 @@ function hostPick(peer, cls) {
   renderLobby();
 }
 
-// Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions, dernière trame de commande traitée, vitesse effective.
+// Instantanés de l'état (20 Hz) : hôte -> amis. Chaque héros : x, z, face, hp, maxHp, à terre, marche, pas, esquive, coup, tournoi, garde, relève, or, potions, dernière trame de commande traitée, vitesse effective, potions max.
+// Les entités (ennemis, tirs, bombes, butin, coffres, accessoires, pièges) suivent par type : `ne` fiches des nouvelles, un tableau d'états par type, `rm` identifiants disparus.
 let snapN = 0;
 let snapAcc = 0;
 const r2 = (v) => Math.round(v * 100) / 100;
+const nearAnyHeroNet = (x, z, r) => heroes.some((h) => (h.x - x) ** 2 + (h.z - z) ** 2 < r * r);
+
+function enemyDyn(e) {
+  const tele = e.tele?.visible ? [r2(e.tele.position.x), r2(e.tele.position.z), r2(e.tele.scale.x), r2(e.teleFill?.scale.x ?? 0)] : 0;
+  return [e.id, r2(e.x), r2(e.z), r2(e.face), r2(e.hp), r2(e.maxHp), r2(e.dying), e.mode, r2(e.modeT ?? 0), r2(e.windMax ?? 0), e.act, r2(e.actT ?? 0), r2(e.actMax ?? 0), r2(e.armT ?? 0), r2(e.lunge ?? 0), e.hidden ? 1 : 0, e.awake ? 1 : 0, r2(e.chill ?? 0), r2(e.flash ?? 0), e.airborne ? 1 : 0, r2(e.markT ?? 0), tele];
+}
+
+// Entités répliquées : desc = fiche envoyée une fois à la première apparition, dyn = état envoyé à chaque instantané.
+// Les entités de la génération existent déjà chez l'ami (même graine, mêmes identifiants) : elles n'ont pas de fiche.
+const REPL = {
+  en: { list: () => L.enemies, near: true, desc: (e) => [e.id, e.type, e.size, e.elite ? 1 : 0, e.affix || 0, e.affix2 || 0, e.kind || 0, r2(e.x), r2(e.z)], dyn: enemyDyn },
+  sh: { list: () => L.shots, desc: (x) => [x.id, x.owner, r2(x.x), r2(x.z), r2(x.y ?? 0.85)], dyn: (x) => [x.id, r2(x.x), r2(x.z), r2(x.y ?? 0.85), r2(x.vx), r2(x.vz)] },
+  bo: { list: () => L.bombs, desc: (b) => [b.id, r2(b.x), r2(b.z), r2(b.R), r2(b.max), b.lob ? 1 : 0, r2(b.sx), r2(b.sz)], dyn: (b) => [b.id, r2(b.t)] },
+  co: { list: () => L.coins, desc: (c) => [c.id, r2(c.x), r2(c.z), c.value], dyn: (c) => [c.id, r2(c.x), r2(c.y), r2(c.z)] },
+  po: { list: () => L.potions, desc: (q) => [q.id, r2(q.x), r2(q.z)] },
+  ch: { list: () => L.chests, desc: (c) => [c.id, r2(c.x), r2(c.z), c.rich ? 1 : 0], dyn: (c) => [c.id, c.open ? 1 : 0, r2(c.t)] },
+  pr: { list: () => L.props, dyn: (q) => (q.kind === 'sarco' ? [q.id, q.open ? 1 : 0, r2(q.openT)] : null) },
+  tr: { list: () => L.traps, dyn: (t) => (t.kind === 'blade' ? [t.id, r2(t.angle), t.stage] : null) },
+};
+
+// Au début d'un étage, l'ami connaît déjà toutes les entités issues de la génération.
+function netKnownReset(peer) {
+  peer.known = {};
+  for (const [k, def] of Object.entries(REPL)) peer.known[k] = new Set(['sh', 'bo'].includes(k) ? [] : def.list().map((e) => e.id));
+}
+
+const UI_MIRROR = ['menu-choice', 'menu-altar', 'menu-stairs', 'menu-shop', 'menu-win', 'menu-dead'];
+function netUiTick() {
+  const open = UI_MIRROR.find((id) => !$(id).hidden) ?? null;
+  const html = open ? $(open).innerHTML : '';
+  const shared = open === 'menu-win' || open === 'menu-dead';
+  const owner = menuOwner();
+  for (const peer of NET.peers.values()) {
+    const mine = owner && peer.id === owner.device?.index - ONLINE_PAD0;
+    const cls = open ? $(open).className : '';
+    const key = open && (shared || mine) ? `${open}|${cls}|${html}` : '';
+    if (peer.uiKey === key) continue;
+    peer.uiKey = key;
+    peerSend(peer, key ? { t: 'ui', id: open, cls, html } : { t: 'ui', id: null });
+  }
+}
+
 function netSnapTick(dt) {
   if (!NET.peers.size || !L || NET.puppet || state === 'menu' || state === 'lobby') return;
+  if (NET.evq.length) {
+    const ev = NET.evq.splice(0);
+    for (const peer of NET.peers.values()) peerSend(peer, { t: 'ev', ev });
+  }
+  netUiTick();
   snapAcc += dt;
   if (snapAcc < 0.05) return;
   snapAcc = 0;
   const hs = heroes.map((h) => {
     const peer = h.device?.kind === 'pad' ? NET.peers.get(h.device.index - ONLINE_PAD0) : null;
-    return [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions, peer?.seq ?? 0, r2(h.spd ?? PLAYER_SPEED * h.speedMul)];
+    return [r2(h.x), r2(h.z), r2(h.face), r2(h.hp), h.maxHp, h.down ? 1 : 0, h.moving ? 1 : 0, r2(h.walk), r2(h.dashT), r2(h.swing), h.spinning ? 1 : 0, r2(h.guardT), r2(h.reviveT), h.gold, h.potions, peer?.seq ?? 0, r2(h.spd ?? PLAYER_SPEED * h.speedMul), h.maxPotions];
   });
-  const msg = { t: 'snap', n: ++snapN, st: state, hs };
-  for (const peer of NET.peers.values()) peerSend(peer, msg);
+  const owner = menuOwner();
+  const head = { t: 'snap', n: ++snapN, st: state, el: r2(elapsed), ow: owner ? heroes.indexOf(owner) : -1, tm: [team.level, team.xp], sl: L.stairs?.sealed ? 1 : 0, hs };
+  for (const peer of NET.peers.values()) {
+    if (!peer.known) netKnownReset(peer);
+    const msg = { ...head };
+    for (const [k, def] of Object.entries(REPL)) {
+      const known = peer.known[k] ?? (peer.known[k] = new Set());
+      const ne = [];
+      const up = [];
+      const live = new Set();
+      for (const e of def.list()) {
+        live.add(e.id);
+        if (!known.has(e.id)) {
+          known.add(e.id);
+          if (def.desc) ne.push(def.desc(e));
+        }
+        if (def.dyn && (!def.near || e.dying >= 0 || e.type === 'boss' || nearAnyHeroNet(e.x, e.z, 26))) {
+          const d = def.dyn(e);
+          if (d) up.push(d);
+        }
+      }
+      const rm = [];
+      for (const id of known) if (!live.has(id)) rm.push(id);
+      for (const id of rm) known.delete(id);
+      if (ne.length) (msg.ne ??= {})[k] = ne;
+      if (up.length) msg[k] = up;
+      if (rm.length) (msg.rm ??= {})[k] = rm;
+    }
+    peerSend(peer, msg);
+  }
 }
 
 function netBroadcastFloor() {
   if (!L || L.fp === undefined) return;
-  for (const peer of NET.peers.values()) peerSend(peer, floorMessage(peer));
+  for (const peer of NET.peers.values()) {
+    peerSend(peer, floorMessage(peer));
+    netKnownReset(peer);
+  }
+}
+
+// ----- Événements ponctuels
+// Les sons, messages, effets et fermetures de salle de l'hôte sont rejoués chez l'ami ; ses propres appels locaux sont coupés.
+const evPrim = (a) => a.every((v) => ['number', 'string', 'boolean'].includes(typeof v));
+function evQueue(ev) {
+  if (NET.peers.size && !NET.puppet && state !== 'menu' && state !== 'lobby' && NET.evq.length < 120) NET.evq.push(ev);
+}
+for (const name of Object.keys(sfx)) {
+  const f = sfx[name];
+  if (typeof f !== 'function') continue;
+  sfx[name] = (...a) => {
+    if (NET.puppet && !NET.replay) return undefined;
+    evQueue(['s', name, ...(evPrim(a) ? a : [])]);
+    return f(...a);
+  };
+}
+{
+  const baseToast = toast;
+  toast = (...a) => {
+    if (NET.puppet && !NET.replay) return;
+    evQueue(['t', ...(evPrim(a) ? a : [])]);
+    baseToast(...a);
+  };
+  const baseBurst = burst;
+  burst = (...a) => {
+    if (NET.puppet && !NET.replay) return;
+    evQueue(['b', ...(evPrim(a) ? a : [])]);
+    baseBurst(...a);
+  };
+  const baseShake = addShake;
+  addShake = (v) => {
+    if (NET.puppet && !NET.replay) return;
+    evQueue(['k', v]);
+    baseShake(v);
+  };
+  const baseSeal = sealRoom;
+  sealRoom = (a, mat = M.gate, halo = 0xb070ff, outside = false) => {
+    const { x, y, w, h, cx, cy } = a.room;
+    evQueue(['L', { x, y, w, h, cx, cy }, mat === M.vaultGate ? 1 : 0, halo, outside ? 1 : 0]);
+    baseSeal(a, mat, halo, outside);
+  };
+  const baseUnseal = unsealRoom;
+  unsealRoom = (a) => {
+    evQueue(['U', a.room.x, a.room.y]);
+    baseUnseal(a);
+  };
+}
+
+function findLock(room) {
+  const known = [...L.ambushes, L.trialRoom, L.vault?.lock, L.bossLock, ...NET.locks.values()].filter(Boolean);
+  let a = known.find((l) => l.room.x === room.x && l.room.y === room.y);
+  if (!a) {
+    a = { room, gates: [] };
+    NET.locks.set(`${room.x},${room.y}`, a);
+  }
+  return a;
+}
+
+function clientEvents(list) {
+  NET.replay = true;
+  try {
+    for (const [k, ...a] of list) {
+      if (k === 's') sfx[a[0]]?.(...a.slice(1));
+      else if (k === 't') toast(...a);
+      else if (k === 'b') burst(...a);
+      else if (k === 'k') addShake(a[0]);
+      else if (k === 'L') sealRoom(findLock(a[0]), a[1] ? M.vaultGate : M.gate, a[2], !!a[3]);
+      else if (k === 'U') unsealRoom(findLock({ x: a[0], y: a[1] }));
+    }
+  } finally {
+    NET.replay = false;
+  }
 }
 
 // ----- Hôte
@@ -11209,13 +11361,16 @@ function puppetFloor(msg) {
   run.recit = !!msg.recit;
   state = 'play';
   showOverlay(null);
+  NET.replay = true;
   startFloor(msg.depth, { seed: msg.seed, pressure: msg.pressure });
+  NET.replay = false;
   teachMech = null;
   teachDelay = 0;
   const fp = floorFingerprint();
   if (NET.client) {
     NET.client.snaps.length = 0;
     NET.client.hist.length = 0;
+    NET.locks.clear();
     NET.client.pred = null;
     NET.client.me = msg.me;
     NET.client.fpOk = fp === msg.fp;
@@ -11226,6 +11381,120 @@ function puppetFloor(msg) {
   }
 }
 
+function removeEntity(k, e) {
+  const list = { en: L.enemies, sh: L.shots, bo: L.bombs, co: L.coins, po: L.potions, ch: L.chests, pr: L.props, tr: L.traps }[k];
+  if (!list) return;
+  const at = list.indexOf(e);
+  if (at >= 0) list.splice(at, 1);
+  if (k === 'en') L.group.remove(e.model.g, e.bar.g, ...(e.tele ? [e.tele] : []));
+  else L.group.remove(e.g, ...(e.lob ? [e.lob] : []));
+}
+
+// Création d'une entité née en cours de partie, avec l'identifiant de l'hôte.
+const MAKE = {
+  en: (d) => spawnEnemy(d[1], d[7], d[8], { size: d[2], elite: !!d[3], affix: d[4] || undefined, affix2: d[5] || undefined, kind: d[6] || undefined }),
+  sh: (d) => {
+    spawnShot(d[2], d[3], 0, 0, null, d[1] === 'mine' ? 'mine' : 'foe');
+    return L.shots.at(-1);
+  },
+  bo: (d) => {
+    spawnBomb(d[1], d[2], d[3], 0, d[4], d[5] ? { x: d[6], z: d[7] } : null);
+    return L.bombs.at(-1);
+  },
+  co: (d) => {
+    spawnCoins(d[1], d[2], d[3], false);
+    return L.coins.at(-1);
+  },
+  po: (d) => {
+    spawnPotion(d[1], d[2]);
+    return L.potions.at(-1);
+  },
+  ch: (d) => {
+    spawnChest(d[1], d[2], !!d[3]);
+    return L.chests.at(-1);
+  },
+};
+const LISTS = { en: () => L.enemies, sh: () => L.shots, bo: () => L.bombs, co: () => L.coins, po: () => L.potions, ch: () => L.chests, pr: () => L.props, tr: () => L.traps };
+
+// État reçu : cibles de position pour l'interpolation, champs d'animation pour la présentation.
+const APPLY = {
+  en: (e, r) => {
+    e.tx = r[1];
+    e.tz = r[2];
+    e.face = r[3];
+    e.hp = r[4];
+    e.maxHp = r[5];
+    if (r[6] >= 0 && e.dying < 0) e.dying = r[6];
+    [, , , , , , , e.mode, e.modeT, e.windMax, e.act, e.actT, e.actMax, e.armT] = r;
+    e.lunge = Math.max(e.lunge ?? 0, r[14]);
+    e.hidden = !!r[15];
+    e.awake = !!r[16];
+    e.chill = r[17];
+    if (r[18] > (e.flash ?? 0)) e.flash = r[18];
+    e.airborne = !!r[19];
+    e.markT = r[20];
+    e.netTele = r[21];
+  },
+  sh: (e, r) => {
+    e.tx = r[1];
+    e.tz = r[2];
+    e.y = r[3];
+    e.vx = r[4];
+    e.vz = r[5];
+  },
+  bo: (e, r) => {
+    e.t = r[1];
+  },
+  co: (e, r) => {
+    e.tx = r[1];
+    e.y = r[2];
+    e.tz = r[3];
+  },
+  ch: (e, r) => {
+    e.open = !!r[1];
+    e.t = r[2];
+  },
+  pr: (e, r) => {
+    e.open = !!r[1];
+    e.openT = r[2];
+  },
+  tr: (e, r) => {
+    e.angle = r[1];
+    e.stage = r[2];
+  },
+};
+
+function applySnapshot(m) {
+  for (const [k, rms] of Object.entries(m.rm ?? {})) {
+    const list = LISTS[k]();
+    for (const id of rms) {
+      const e = list.find((x) => x.id === id);
+      if (e) removeEntity(k, e);
+    }
+  }
+  for (const [k, news] of Object.entries(m.ne ?? {})) {
+    const list = LISTS[k]();
+    for (const d of news) {
+      if (list.some((x) => x.id === d[0])) continue;
+      forcedId = d[0];
+      const e = MAKE[k]?.(d);
+      forcedId = null;
+      if (e) {
+        e.tx = e.x;
+        e.tz = e.z;
+      }
+    }
+  }
+  for (const k of Object.keys(APPLY)) {
+    if (!m[k]) continue;
+    const byId = new Map(LISTS[k]().map((e) => [e.id, e]));
+    for (const r of m[k]) {
+      const e = byId.get(r[0]);
+      if (e) APPLY[k](e, r);
+    }
+  }
+}
+
 function puppetSnap(m) {
   const c = NET.client;
   if (!c || !Array.isArray(m.hs) || m.n <= c.snapN) return;
@@ -11233,6 +11502,14 @@ function puppetSnap(m) {
   c.snaps.push({ at: performance.now(), hs: m.hs });
   if (c.snaps.length > 8) c.snaps.shift();
   c.st = m.st;
+  c.ow = m.ow;
+  if (L) {
+    applySnapshot(m);
+    if (m.tm) [team.level, team.xp] = m.tm;
+    if (L.stairs && !!m.sl !== L.stairs.sealed) setSealed(!!m.sl);
+  }
+  elapsed += (m.el - elapsed) * 0.5;
+  state = m.st === 'dead' || m.st === 'victory' ? m.st : 'play';
   const mine = m.hs[c.me];
   if (!mine || !c.pred) return;
   if (mine[16] > 0) c.spd = mine[16];
@@ -11252,6 +11529,37 @@ function puppetSnap(m) {
     c.pred.cx += ex;
     c.pred.cz += ez;
   }
+}
+
+// Écran de l'hôte recopié chez l'ami, sous le même id et la même classe pour garder le style : l'écran réel de l'ami est mis de côté,
+// puis remis en place. Le HTML est nettoyé (aucun script, aucun gestionnaire d'événement, aucun lien).
+function clientUi(m) {
+  const cur = NET.mirror;
+  if (cur && (!m.id || cur.id !== m.id)) {
+    cur.el.remove();
+    cur.real.id = cur.id;
+    NET.mirror = null;
+  }
+  if (!m.id) return;
+  const doc = new DOMParser().parseFromString(String(m.html), 'text/html');
+  for (const el of doc.body.querySelectorAll('script, iframe, object, embed, link, style, form')) el.remove();
+  for (const el of doc.body.querySelectorAll('*')) {
+    for (const attr of [...el.attributes]) if (/^(on|href|src|srcdoc|action|formaction|xlink)/i.test(attr.name)) el.removeAttribute(attr.name);
+  }
+  if (!NET.mirror) {
+    const real = document.getElementById(m.id);
+    if (!real) return;
+    real.id = `${m.id}-reel`;
+    real.hidden = true;
+    const el = document.createElement('div');
+    el.id = m.id;
+    real.after(el);
+    NET.mirror = { id: m.id, real, el };
+  }
+  const { el } = NET.mirror;
+  el.className = String(m.cls).replace(/\bhidden\b/, '');
+  el.hidden = false;
+  el.replaceChildren(...doc.body.childNodes);
 }
 
 function renderFriend() {
@@ -11280,7 +11588,9 @@ function renderFriend() {
 }
 
 function clientOnState(m) {
-  if (m.t === 'lobby' && NET.client) {
+  if (m.t === 'ev') clientEvents(m.ev);
+  else if (m.t === 'ui') clientUi(m);
+  else if (m.t === 'lobby' && NET.client) {
     NET.client.lobby = m;
     if (!NET.puppet) renderFriend();
   } else if (m.t === 'floor') puppetFloor(m);
@@ -11321,6 +11631,175 @@ function predictHero(c, h, dt) {
   h.z = p.z;
 }
 
+function puppetEnemy(e, dt) {
+  const { g, body, mats } = e.model;
+  if (e.dying >= 0) {
+    e.dying += dt;
+    const sc = Math.max(0.001, 1 - e.dying / 0.22);
+    g.scale.set((1 + (1 - sc) * 0.6) * e.size, sc * e.size, (1 + (1 - sc) * 0.6) * e.size);
+    return;
+  }
+  const k = damp(20, dt);
+  const bx = e.x;
+  const bz = e.z;
+  if (e.tx !== undefined) {
+    if (Math.hypot(e.tx - e.x, e.tz - e.z) > 4) {
+      e.x = e.tx;
+      e.z = e.tz;
+    } else {
+      e.x += (e.tx - e.x) * k;
+      e.z += (e.tz - e.z) * k;
+    }
+  }
+  const moving = Math.hypot(e.x - bx, e.z - bz) > 0.002;
+  const mv = { x: moving ? 1 : 0, z: 0 };
+  e.seen = heroes.some((h) => !h.down && Math.hypot(h.x - e.x, h.z - e.z) < L.biome.see && los(e.x, e.z, h.x, h.z));
+  const hop = e.type === 'slime' && e.mode === 'chase' ? Math.max(0, Math.sin(elapsed * 7 + e.phase)) : 0;
+  g.position.set(e.x, 0, e.z);
+  g.rotation.y = e.face;
+  g.visible = e.seen && !e.airborne;
+  e.lunge = Math.max(0, (e.lunge ?? 0) - dt);
+  const lungeZ = e.lunge > 0 ? Math.sin(((0.18 - e.lunge) / 0.18) * Math.PI) * 0.35 : 0;
+  const quiver = e.mode === 'windup' || e.armT > 0 ? Math.sin(elapsed * 70) * 0.05 : 0;
+  if (e.type === 'slime') {
+    const leap = e.mode === 'dash' ? Math.sin((1 - e.modeT / 0.32) * Math.PI) * 0.7 : 0;
+    const squash = e.mode === 'windup' ? 0.35 : 0;
+    body.position.set(quiver, hop * 0.22 + leap, lungeZ);
+    body.scale.set(1 + (1 - hop) * 0.1 + squash * 0.5, 0.9 + hop * 0.22 - squash, 1 + (1 - hop) * 0.1 + squash * 0.5);
+  } else if (e.type === 'rodeur') {
+    body.position.set(quiver, mv.x || mv.z ? Math.abs(Math.sin(elapsed * 10 + e.phase)) * 0.07 : 0, lungeZ);
+    body.rotation.x = e.mode === 'windup' ? -0.25 : e.mode === 'dash' ? 0.35 : e.mode === 'recover' ? 0.55 : 0;
+  } else if (e.type === 'sorcier') {
+    body.position.set(quiver, 0.12 + Math.sin(elapsed * 2.5 + e.phase) * 0.08, 0);
+  } else if (e.type === 'brute') {
+    body.position.set(quiver, e.mode === 'windup' ? (1 - e.modeT / Math.max(0.01, e.windMax)) * 0.25 : 0, lungeZ);
+    body.rotation.x = e.mode === 'windup' ? -0.3 : e.mode === 'recover' ? 0.25 : 0;
+    body.rotation.z = Math.sin(elapsed * 4 + e.phase) * 0.06;
+  } else if (e.type === 'garde') {
+    const down = e.mode === 'recover' || e.mode === 'stun';
+    body.position.set(quiver, mv.x || mv.z ? Math.abs(Math.sin(elapsed * 7 + e.phase)) * 0.05 : 0, e.mode === 'dash' ? 0.25 : 0);
+    body.rotation.x = e.mode === 'windup' ? -0.22 : e.mode === 'dash' ? 0.3 : 0;
+    e.model.extra.shield.rotation.x = down ? 1.1 : 0;
+    e.model.extra.shield.position.y = down ? 0.35 : 0.72;
+  } else if (e.type === 'chaman' || e.type === 'artificier') {
+    body.position.set(quiver, (e.type === 'chaman' ? 0.1 : 0) + Math.sin(elapsed * 2.5 + e.phase) * (e.type === 'chaman' ? 0.08 : 0.03), 0);
+  } else {
+    const am = Math.max(0.01, e.actMax);
+    const lift = e.act === 'stomp' ? (1 - Math.max(0, e.actT) / am) * 0.45 : e.act === 'leap' ? -(1 - Math.max(0, e.actT) / am) * 0.5 : 0;
+    const sink = e.hidden ? 3.4 : e.act === 'burrow' ? (1 - Math.max(0, e.actT) / am) * 3.4 : 0;
+    body.position.set(e.act === 'stomp' ? quiver * 2 : 0, lift - sink + (e.awake ? Math.abs(Math.sin(elapsed * 3)) * 0.05 : 0), 0);
+    body.rotation.x = e.act === 'stomp' ? -0.18 : e.act === 'recover' ? 0.12 : 0;
+  }
+  if (e.mode === 'stun') body.rotation.z = Math.sin(elapsed * 11) * 0.22;
+  e.flash = (e.flash ?? 0) - dt;
+  const look = e.flash > 0 ? 2 : e.armT > 0 ? 3 : e.chill > 0 ? 1 : 0;
+  if (look !== e.look) {
+    e.look = look;
+    for (const m of mats) m.emissive.setHex(look === 2 ? 0xffffff : look === 3 ? 0x9a4a08 : look === 1 ? FROST_TINT : m.userData.base);
+  }
+  if (e.chill > 0 && !e.frost) {
+    e.frost = buildFrost(e.def.r);
+    g.add(e.frost);
+  }
+  if (e.frost) showFrost(e.frost, e.hidden ? 0 : e.chill);
+  if (e.seen && e.hp < e.maxHp && e.type !== 'boss') {
+    const ratio = clamp(e.hp / e.maxHp, 0, 1);
+    e.bar.g.visible = true;
+    e.bar.g.position.set(e.x, e.def.barY * e.size, e.z);
+    e.bar.g.quaternion.copy(camera.quaternion);
+    e.bar.fg.scale.x = ratio;
+    e.bar.fg.position.x = -(1 - ratio) * 0.45;
+  } else {
+    e.bar.g.visible = false;
+  }
+  if (e.tele) {
+    const t = e.netTele;
+    e.tele.visible = !!t && e.seen;
+    if (t) {
+      e.tele.position.set(t[0], 0.03, t[1]);
+      e.tele.scale.setScalar(t[2]);
+      e.teleFill.scale.setScalar(Math.max(0.01, t[3]));
+      e.teleFill.material.opacity = 0.15 + t[3] * 0.3;
+    }
+  }
+}
+
+// Présentation du monde chez l'ami : aucune règle de jeu, seulement la mise en scène des entités reçues.
+function puppetWorld(dt) {
+  const k = damp(20, dt);
+  for (const e of L.enemies) puppetEnemy(e, dt);
+  for (const s of L.shots) {
+    if (s.tx !== undefined) {
+      s.x += (s.tx - s.x) * k;
+      s.z += (s.tz - s.z) * k;
+    }
+    s.g.position.set(s.x, s.y ?? 0.85, s.z);
+    s.g.visible = tileSeen(s.x, s.z);
+    if (s.halo) s.halo.scale.setScalar(1.1 + Math.sin(elapsed * 20) * 0.15);
+  }
+  for (const b of L.bombs) {
+    b.fill.scale.setScalar(b.R * Math.max(0.05, 1 - b.t / b.max));
+    b.g.visible = tileSeen(b.x, b.z);
+    if (b.lob) {
+      const q = clamp(1 - b.t / b.max, 0, 1);
+      b.lob.position.set(b.sx + (b.x - b.sx) * q, 1.2 * (1 - q) + Math.sin(q * Math.PI) * 3.2, b.sz + (b.z - b.sz) * q);
+      b.lob.visible = tileSeen(b.lob.position.x, b.lob.position.z) || b.g.visible;
+    }
+  }
+  for (const c of L.coins) {
+    if (c.tx !== undefined) {
+      c.x += (c.tx - c.x) * k;
+      c.z += (c.tz - c.z) * k;
+    }
+    c.g.visible = tileSeen(c.x, c.z);
+    c.sparkle.scale.setScalar(0.85 + Math.sin(elapsed * 5 + c.phase) * 0.25);
+    c.g.position.set(c.x, c.y, c.z);
+  }
+  for (const p of L.potions) {
+    p.g.visible = tileSeen(p.x, p.z);
+    p.inner.position.y = 0.06 + Math.sin(elapsed * 3 + p.phase) * 0.06;
+    p.inner.rotation.y = elapsed * 1.2;
+  }
+  for (const c of L.chests) {
+    c.g.visible = tileSeen(c.x, c.z);
+    if (c.open) {
+      c.lid.rotation.x = -1.9 * (1 - (1 - Math.min(1, c.t)) ** 3);
+      if (c.halo) c.halo.visible = false;
+    }
+  }
+  for (const p of L.props) p.g.visible = tileSeen(p.x, p.z);
+  for (const t of L.traps) {
+    t.g.visible = L.seen[idx(t.i, t.j)] === 1;
+    if (t.kind === 'spikes') {
+      const c = (elapsed + t.phase) % TRAP_PERIOD;
+      const stage = c < 1.7 ? 'down' : c < 2.1 ? 'warn' : 'up';
+      const targetY = stage === 'down' ? -0.5 : stage === 'warn' ? -0.33 + Math.sin(elapsed * 60) * 0.015 : 0.02;
+      t.spikes.position.y += (targetY - t.spikes.position.y) * damp(stage === 'up' ? 40 : 12, dt);
+    } else if (t.kind === 'fire') {
+      const c = (elapsed + t.phase) % VENT_PERIOD;
+      const stage = c < 1.9 ? 'idle' : c < 2.4 ? 'warn' : 'fire';
+      t.flame.visible = stage === 'fire';
+      t.mouth.scale.setScalar(stage === 'idle' ? 0.6 : stage === 'warn' ? 0.95 + Math.sin(elapsed * 40) * 0.25 : 1.4);
+      if (stage === 'fire') {
+        t.flame.scale.x = 0.7 + Math.sin(elapsed * 30) * 0.08;
+        t.flame.scale.y = 0.45 + Math.sin(elapsed * 23) * 0.06;
+      }
+    } else if (t.kind === 'blade') {
+      t.arm.rotation.y = t.angle;
+      for (const d of t.discs) d.rotation.y += dt * 20;
+    }
+  }
+  const locks = [...L.ambushes, L.trialRoom, L.vault?.lock, L.bossLock, ...NET.locks.values()].filter(Boolean);
+  for (const a of locks) {
+    for (const gate of a.gates) {
+      gate.g.visible = L.seen[idx(gate.i, gate.j)] === 1 || tileSeen(gate.ii * TILE, gate.jj * TILE);
+      gate.g.position.y += (0 - gate.g.position.y) * damp(12, dt);
+    }
+  }
+  for (const d of [L.altar, L.merchant, L.fountain, L.keyItem, ...(L.shrines ?? [])]) if (d?.g) d.g.visible = tileSeen(d.x, d.z);
+  if (L.stairs) L.stairs.g.visible = L.seen[idx(L.stairs.i, L.stairs.j)] === 1;
+}
+
 function puppetStep(dt) {
   const c = NET.client;
   if (!c || !c.snaps.length) return;
@@ -11344,6 +11823,7 @@ function puppetStep(dt) {
     [, , , , , , , h.walk, h.dashT, h.swing] = B;
     h.spinning = !!B[10];
     [, , , , , , , , , , , h.guardT, h.reviveT, h.gold, h.potions] = B;
+    if (B[17] !== undefined) h.maxPotions = B[17];
     const ti = tileOf(h.x);
     const tj = tileOf(h.z);
     if (ti !== h.ti || tj !== h.tj) {
@@ -11355,6 +11835,7 @@ function puppetStep(dt) {
     }
   });
   if (heroes[c.me]) predictHero(c, heroes[c.me], dt);
+  puppetWorld(dt);
   c.hudT -= dt;
   if (c.hudT <= 0) {
     c.hudT = 0.1;
@@ -11444,6 +11925,7 @@ function remoteEnd(msg) {
   $('remote').hidden = true;
   const wasPlaying = NET.puppet;
   NET.puppet = false;
+  clientUi({ id: null });
   if (wasPlaying) {
     setupHeroes(null);
     newRun();
